@@ -22,7 +22,7 @@ type TunnelManager struct {
 }
 
 func NewTunnelManager(cfCommandRunner CfCommandRunner, tunnels []Tunnel) *TunnelManager {
-	for _, tunnel := range tunnels {
+	for idx, tunnel := range tunnels {
 
 		connectionString := fmt.Sprintf(
 			"%s:%s@tcp(127.0.0.1:%d)/%s?interpolateParams=true&tls=skip-verify",
@@ -36,12 +36,12 @@ func NewTunnelManager(cfCommandRunner CfCommandRunner, tunnels []Tunnel) *Tunnel
 			log.Fatalf("Error creating database connection: %v", err)
 		}
 
-		tunnel.DB = db
+		tunnels[idx].DB = db
 	}
 
 	return &TunnelManager{
 		CmdRunner: cfCommandRunner,
-		Tunnels: tunnels,
+		Tunnels:   tunnels,
 	}
 }
 
@@ -58,36 +58,41 @@ func (t *TunnelManager) CreateSSHTunnel() error {
 	if err != nil {
 		return err
 	}
-
-	err = t.WaitForTunnel(60 * time.Second)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func (t *TunnelManager) WaitForTunnel(timeout time.Duration) error {
-
 	timerCh := time.After(timeout)
 	ticker := time.NewTicker(1 * time.Second)
+	tunnels := make([]Tunnel, len(t.Tunnels))
+	copy(tunnels, t.Tunnels)
+	tunnelStatus := make([]bool, len(t.Tunnels))
 
+	var isAllGood = func() bool {
+		for _, thing := range tunnelStatus {
+			if !thing {
+				return false
+			}
+		}
+
+		return true
+	}
 	for {
 		select {
 		case <-timerCh:
+			log.Println("Timeout: returning error")
 			return errors.New("Timeout")
 		case <-ticker.C:
-			var unused int
-			var tunnels []Tunnel
-			copy(tunnels, t.Tunnels)
-			for i, tunnel := range tunnels {
-				if err := tunnel.DB.QueryRow("SELECT 1").Scan(&unused); err == nil {
-					tunnels = append(tunnels[:i], tunnels[i+1:]...)
-				}
+			log.Println("Checking status of tunnels")
+			if isAllGood() {
+				return nil
 			}
 
-			if len(tunnels) == 0 {
-				return nil
+			for i, tunnel := range tunnels {
+				var unused int
+				if err := tunnel.DB.QueryRow("SELECT 1").Scan(&unused); err == nil {
+					tunnelStatus[i] = true
+				}
 			}
 		}
 	}
