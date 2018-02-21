@@ -1,0 +1,11 @@
+---
+applications:
+- name: plugins
+  env:
+    GOPACKAGENAME: code.cloudfoundry.org/cli-plugin-repo
+  instances: 2
+  buildpack: go_buildpack
+  memory: 128M
+  routes:
+  - route: plugins.cloudfoundry.org
+  - route: plugins.cfapps.io

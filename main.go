@@ -1,106 +1,179 @@
 package main
 
 import (
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/cli_utils"
-
 	"fmt"
-
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"strconv"
+	"time"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/cli_utils"
 
 	"code.cloudfoundry.org/cli/plugin"
 )
 
-// BasicPlugin is the struct implementing the interface defined by the core CLI. It can
-// be found at  "code.cloudfoundry.org/cli/plugin/plugin.go"
-type BasicPlugin struct{}
+type MySQLPlugin struct {
+	exitStatus int
+}
 
-// Run must be implemented by any plugin because it is part of the
-// plugin interface defined by the core CLI.
-//
-// Run(....) is the entry point when the core CLI is invoking a command defined
-// by a plugin. The first parameter, plugin.CliConnection, is a struct that can
-// be used to invoke cli commands. The second paramter, args, is a slice of
-// strings. args[0] will be the name of the command, and will be followed by
-// any additional arguments a cli user typed in.
-//
-// Any error handling should be handled with the plugin itself (this means printing
-// user facing errors). The CLI will exit 0 if the plugin exits 0 and will exit
-// 1 should the plugin exits nonzero.
-
-func (c *BasicPlugin) Run(cliConnection plugin.CliConnection, args []string) {
+func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	command := args[0]
 
 	switch command {
 	case "mysql-migrate":
 		if len(args) != 3 {
 			fmt.Fprintln(os.Stderr, "Usage: cf mysql-migrate <v1-service-instance> <v2-service-instance>")
-			os.Exit(1)
+			c.exitStatus = 1
+			return
 		}
 
 		srcInstanceName := args[1]
-		//dstInstanceName := args[2]
+		dstInstanceName := args[2]
 
 		tmpDir, err := ioutil.TempDir(os.TempDir(), "mysql-migrate")
 		if cli_utils.PushApp(cliConnection, tmpDir); err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
-			os.Exit(1)
+			fmt.Fprintf(os.Stderr, "Error pushing app: %v", err)
+			c.exitStatus = 1
+			return
 		}
 
 		defer func() {
 			if err = cli_utils.DeleteApp(cliConnection); err != nil {
-				fmt.Fprintf(os.Stderr, err.Error())
-				os.Exit(1)
+				fmt.Fprintf(os.Stderr, "Error deleting app: %v", err)
+				c.exitStatus = 1
 			}
 		}()
 
 		if err = cli_utils.CreateServiceKey(cliConnection, srcInstanceName); err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
-			os.Exit(1)
+			fmt.Fprintf(os.Stderr, "Error creating service key for instance %s: %v", srcInstanceName, err)
+			c.exitStatus = 1
+			return
 		}
 
 		defer func() {
 			if err = cli_utils.DeleteServiceKey(cliConnection, srcInstanceName); err != nil {
-				fmt.Fprintf(os.Stderr, err.Error())
-				os.Exit(1)
+				fmt.Fprintf(os.Stderr, "Error deleting service key for instance %s: %v", srcInstanceName, err)
+				c.exitStatus = 1
 			}
 		}()
 
-		serviceKey, err := cli_utils.GetServiceKey(cliConnection, srcInstanceName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
-			os.Exit(1)
+		if err = cli_utils.CreateServiceKey(cliConnection, dstInstanceName); err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating service key for instance %s: %v", dstInstanceName, err)
+			c.exitStatus = 1
+			return
 		}
 
-		closeTunnel, err := cli_utils.CreateSshTunnel(*serviceKey)
+		defer func() {
+			if err = cli_utils.DeleteServiceKey(cliConnection, dstInstanceName); err != nil {
+				fmt.Fprintf(os.Stderr, "Error deleting service key for instance %s: %v", dstInstanceName, err)
+				c.exitStatus = 1
+			}
+		}()
+
+		srcInstanceKey, err := cli_utils.GetServiceKey(cliConnection, srcInstanceName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
-			os.Exit(1)
+			fmt.Fprintf(os.Stderr, "Error fetching service key for %s: %v", srcInstanceName, err)
+			c.exitStatus = 1
+			return
 		}
 
-		defer closeTunnel()
+		dstInstanceKey, err := cli_utils.GetServiceKey(cliConnection, dstInstanceName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching service key for %s: %v", dstInstanceName, err)
+			c.exitStatus = 1
+			return
+		}
 
-		//create ssh tunnel instance1
-		//mysqldump --single-transaction --add-drop-table --add-locks --create-options --disable-keys --extended-insert --quick --set-charset --routines --flush-privileges -u USERNAME -p -h 0 -P 63306 DB_NAME > backup.sql
-		//create ssh tunnel instance2
-		//mysql -u USERNAME -p -h 0 -P 63306 -D service_instance_db < backup.sql
-		//validations
+		tunnels := []cli_utils.Tunnel{
+			{
+				ServiceKey: *srcInstanceKey,
+				Port:       63306,
+			},
+			{
+				ServiceKey: *dstInstanceKey,
+				Port:       63307,
+			},
+		}
+
+		tunnel := cli_utils.NewTunnelManager(cliConnection, tunnels)
+		tunnel.AppName = "static-app"
+
+		go func() {
+			err = tunnel.CreateSSHTunnel()
+			// NOTE this will exit with an error when we delete the app
+			// TODO replace the tunnel with something that uses golang/x/crypto/ssh
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error creating tunnel to %s: %v", srcInstanceName, err)
+				c.exitStatus = 1
+			}
+		}()
+
+		err = tunnel.WaitForTunnel(20 * time.Second)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error waiting for tunnel to %s: %v", srcInstanceName, err)
+			c.exitStatus = 1
+			return
+		}
+
+		// TODO come up with better name
+		path := "blah.sql"
+		tmpFile, err := os.Create(path)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating tempfile %s: %v", path, err)
+			c.exitStatus = 1
+			return
+		}
+
+		defer tmpFile.Close()
+
+		dumpArgs := []string{
+			"--routines",
+			"--set-gtid-purged=off",
+			"-u", tunnel.Tunnels[0].ServiceKey.Username,
+			"-h", "127.0.0.1",
+			"-P", strconv.Itoa(tunnel.Tunnels[0].Port),
+			tunnel.Tunnels[0].ServiceKey.DBName,
+		}
+
+		dumpCmd := exec.Command("mysqldump", dumpArgs...)
+		dumpCmd.Env = []string{"MYSQL_PWD=" + tunnel.Tunnels[0].ServiceKey.Password}
+		dumpCmd.Stderr = os.Stderr
+		dumpCmd.Stdout = tmpFile
+
+		err = dumpCmd.Run()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error dumping database: %v", err)
+			c.exitStatus = 1
+			return
+		}
+
+		tmpFile.Seek(0, 0)
+
+		restoreArgs := []string{
+			"-u", tunnel.Tunnels[1].ServiceKey.Username,
+			"-h", "127.0.0.1",
+			"-P", strconv.Itoa(tunnel.Tunnels[1].Port),
+			"-D", tunnel.Tunnels[1].ServiceKey.DBName,
+		}
+
+		restoreCmd := exec.Command("mysql", restoreArgs...)
+		restoreCmd.Env = []string{"MYSQL_PWD=" + tunnel.Tunnels[1].ServiceKey.Password}
+		restoreCmd.Stderr = os.Stderr
+		restoreCmd.Stdout = os.Stdout
+		restoreCmd.Stdin = tmpFile
+
+		err = restoreCmd.Run()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error restoring database: %v", err)
+			c.exitStatus = 1
+			return
+		}
 	}
 }
 
-// GetMetadata must be implemented as part of the plugin interface
-// defined by the core CLI.
-//
-// GetMetadata() returns a PluginMetadata struct. The first field, Name,
-// determines the name of the plugin which should generally be without spaces.
-// If there are spaces in the name a user will need to properly quote the name
-// during uninstall otherwise the name will be treated as seperate arguments.
-// The second value is a slice of Command structs. Our slice only contains one
-// Command Struct, but could contain any number of them. The first field Name
-// defines the command `cf basic-plugin-command` once installed into the CLI. The
-// second field, HelpText, is used by the core CLI to display help information
-// to the user in the core commands `cf help`, `cf`, or `cf -h`.
-func (c *BasicPlugin) GetMetadata() plugin.PluginMetadata {
+func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
 		Name: "MysqlMigrate",
 		Version: plugin.VersionType{
@@ -128,20 +201,10 @@ func (c *BasicPlugin) GetMetadata() plugin.PluginMetadata {
 	}
 }
 
-// Unlike most Go programs, the `Main()` function will not be used to run all of the
-// commands provided in your plugin. Main will be used to initialize the plugin
-// process, as well as any dependencies you might require for your
-// plugin.
 func main() {
-	// Any initialization for your plugin can be handled here
-	//
-	// Note: to run the plugin.Start method, we pass in a pointer to the struct
-	// implementing the interface defined at "code.cloudfoundry.org/cli/plugin/plugin.go"
-	//
-	// Note: The plugin's main() method is invoked at install time to collect
-	// metadata. The plugin will exit 0 and the Run([]string) method will not be
-	// invoked.
-	plugin.Start(new(BasicPlugin))
-	// Plugin code should be written in the Run([]string) method,
-	// ensuring the plugin environment is bootstrapped.
+
+	mysqlPlugin := new(MySQLPlugin)
+	plugin.Start(mysqlPlugin)
+	os.Exit(mysqlPlugin.exitStatus)
+
 }
