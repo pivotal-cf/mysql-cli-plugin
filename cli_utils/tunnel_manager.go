@@ -36,7 +36,7 @@ func NewTunnelManager(cfCommandRunner CfCommandRunner, tunnels []Tunnel) (*Tunne
 		l.Close()
 
 		connectionString := fmt.Sprintf(
-			"%s:%s@tcp(127.0.0.1:%d)/%s?interpolateParams=true&tls=skip-verify",
+			"%s:%s@tcp(127.0.0.1:%d)/%s?interpolateParams=true&tls=false",
 			tunnel.ServiceKey.Username,
 			tunnel.ServiceKey.Password,
 			port,

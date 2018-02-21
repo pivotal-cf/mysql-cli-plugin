@@ -32,6 +32,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		srcInstanceName := args[1]
 		dstInstanceName := args[2]
 
+		// TODO clean tempdir later?
 		tmpDir, err := ioutil.TempDir(os.TempDir(), "mysql-migrate")
 		if cli_utils.PushApp(cliConnection, tmpDir); err != nil {
 			fmt.Fprintf(os.Stderr, "Error pushing app: %v", err)

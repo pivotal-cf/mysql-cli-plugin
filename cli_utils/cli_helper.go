@@ -20,6 +20,13 @@ const (
 	ServiceKeyName = "service-key"
 )
 
+type ServiceKey struct {
+	Hostname string `json:"hostname"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	DBName   string `json:"name"`
+}
+
 //go:generate counterfeiter . CfCommandRunner
 type CfCommandRunner interface {
 	CliCommand(...string) ([]string, error)
@@ -43,7 +50,7 @@ func PushApp(cfCommandRunner CfCommandRunner, tmpDir string) error {
 		return err
 	}
 
-	_, err = cfCommandRunner.CliCommand("push", AppName, "-p", appDir)
+	_, err = cfCommandRunner.CliCommand("push", AppName, "--random-route", "-b", "staticfile_buildpack", "-p", appDir)
 
 	if err != nil {
 		return fmt.Errorf("Failed to push app: %s", err)
@@ -82,12 +89,6 @@ func DeleteServiceKey(cfCommandRunner CfCommandRunner, instanceName string) erro
 	return nil
 }
 
-type ServiceKey struct {
-	Hostname string `json:"hostname"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	DBName   string `json:"name"`
-}
 
 func GetServiceKey(cfCommandRunner CfCommandRunner, instanceName string) (*ServiceKey, error) {
 	outputElements, err := cfCommandRunner.CliCommand("service-key", instanceName, ServiceKeyName)
