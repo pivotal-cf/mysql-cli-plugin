@@ -4,6 +4,7 @@ package cli_utilsfakes
 import (
 	"sync"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/pivotal-cf/mysql-v2-cli-plugin/cli_utils"
 )
 
@@ -18,6 +19,19 @@ type FakeCfCommandRunner struct {
 		result2 error
 	}
 	cliCommandReturnsOnCall map[int]struct {
+		result1 []string
+		result2 error
+	}
+	CliCommandWithoutTerminalOutputStub        func(args ...string) ([]string, error)
+	cliCommandWithoutTerminalOutputMutex       sync.RWMutex
+	cliCommandWithoutTerminalOutputArgsForCall []struct {
+		args []string
+	}
+	cliCommandWithoutTerminalOutputReturns struct {
+		result1 []string
+		result2 error
+	}
+	cliCommandWithoutTerminalOutputReturnsOnCall map[int]struct {
 		result1 []string
 		result2 error
 	}
@@ -76,11 +90,64 @@ func (fake *FakeCfCommandRunner) CliCommandReturnsOnCall(i int, result1 []string
 	}{result1, result2}
 }
 
+func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutput(args ...string) ([]string, error) {
+	fake.cliCommandWithoutTerminalOutputMutex.Lock()
+	ret, specificReturn := fake.cliCommandWithoutTerminalOutputReturnsOnCall[len(fake.cliCommandWithoutTerminalOutputArgsForCall)]
+	fake.cliCommandWithoutTerminalOutputArgsForCall = append(fake.cliCommandWithoutTerminalOutputArgsForCall, struct {
+		args []string
+	}{args})
+	fake.recordInvocation("CliCommandWithoutTerminalOutput", []interface{}{args})
+	fake.cliCommandWithoutTerminalOutputMutex.Unlock()
+	if fake.CliCommandWithoutTerminalOutputStub != nil {
+		return fake.CliCommandWithoutTerminalOutputStub(args...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.cliCommandWithoutTerminalOutputReturns.result1, fake.cliCommandWithoutTerminalOutputReturns.result2
+}
+
+func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputCallCount() int {
+	fake.cliCommandWithoutTerminalOutputMutex.RLock()
+	defer fake.cliCommandWithoutTerminalOutputMutex.RUnlock()
+	return len(fake.cliCommandWithoutTerminalOutputArgsForCall)
+}
+
+func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputArgsForCall(i int) []string {
+	fake.cliCommandWithoutTerminalOutputMutex.RLock()
+	defer fake.cliCommandWithoutTerminalOutputMutex.RUnlock()
+	return fake.cliCommandWithoutTerminalOutputArgsForCall[i].args
+}
+
+func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputReturns(result1 []string, result2 error) {
+	fake.CliCommandWithoutTerminalOutputStub = nil
+	fake.cliCommandWithoutTerminalOutputReturns = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.CliCommandWithoutTerminalOutputStub = nil
+	if fake.cliCommandWithoutTerminalOutputReturnsOnCall == nil {
+		fake.cliCommandWithoutTerminalOutputReturnsOnCall = make(map[int]struct {
+			result1 []string
+			result2 error
+		})
+	}
+	fake.cliCommandWithoutTerminalOutputReturnsOnCall[i] = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCfCommandRunner) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.cliCommandMutex.RLock()
 	defer fake.cliCommandMutex.RUnlock()
+	fake.cliCommandWithoutTerminalOutputMutex.RLock()
+	defer fake.cliCommandWithoutTerminalOutputMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

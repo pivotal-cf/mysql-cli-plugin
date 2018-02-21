@@ -89,15 +89,19 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		tunnels := []cli_utils.Tunnel{
 			{
 				ServiceKey: *srcInstanceKey,
-				Port:       63306,
 			},
 			{
 				ServiceKey: *dstInstanceKey,
-				Port:       63307,
 			},
 		}
 
-		tunnel := cli_utils.NewTunnelManager(cliConnection, tunnels)
+		tunnel, err := cli_utils.NewTunnelManager(cliConnection, tunnels)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating tunnel: %v", err)
+			c.exitStatus = 1
+			return
+		}
+
 		tunnel.AppName = "static-app"
 
 		go func() {
@@ -105,7 +109,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			// NOTE this will exit with an error when we delete the app
 			// TODO replace the tunnel with something that uses golang/x/crypto/ssh
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error creating tunnel to %s: %v", srcInstanceName, err)
+				fmt.Fprintf(os.Stderr, "%v", err)
 				c.exitStatus = 1
 			}
 		}()
@@ -113,7 +117,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		log.Println("Waiting for tunnel to come online")
 		err = tunnel.WaitForTunnel(60 * time.Second)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error waiting for tunnel to %s: %v", srcInstanceName, err)
+			fmt.Fprintf(os.Stderr, "Error waiting for tunnel to app %s: %v", tunnel.AppName, err)
 			c.exitStatus = 1
 			return
 		}

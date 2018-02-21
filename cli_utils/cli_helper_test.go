@@ -2,18 +2,18 @@ package cli_utils_test
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
 
-	"code.cloudfoundry.org/cli/cf/commands/servicekey"
+	"github.com/DATA-DOG/go-sqlmock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/pivotal-cf/mysql-v2-cli-plugin/cli_utils"
 	"github.com/pivotal-cf/mysql-v2-cli-plugin/cli_utils/cli_utilsfakes"
-
-	"github.com/DATA-DOG/go-sqlmock"
 )
 
 var _ = Describe("CLI Helpers", func() {
@@ -90,7 +90,7 @@ var _ = Describe("CLI Helpers", func() {
 			err := cli_utils.DeleteServiceKey(cfCommandRunnerFake, srcInstanceName)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfCommandRunnerFake.CliCommandCallCount()).To(Equal(1))
-			Expect(cfCommandRunnerFake.CliCommandArgsForCall(0)).To(ConsistOf("delete-service-key", "some-instance", "service-key", "f"))
+			Expect(cfCommandRunnerFake.CliCommandArgsForCall(0)).To(Equal([]string{"delete-service-key", "some-instance", "service-key", "-f"}))
 		})
 
 		It("errors when the cf delete-service-key fails", func() {
@@ -119,7 +119,7 @@ var _ = Describe("CLI Helpers", func() {
 			serviceKey, err := cli_utils.GetServiceKey(cfCommandRunnerFake, srcInstanceName)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfCommandRunnerFake.CliCommandCallCount()).To(Equal(1))
-			Expect(cfCommandRunnerFake.CliCommandArgsForCall(0)).To(ConsistOf("service-key", "some-instance", "service-key"))
+			Expect(cfCommandRunnerFake.CliCommandArgsForCall(0)).To(Equal([]string{"service-key", "some-instance", "service-key"}))
 			Expect(serviceKey.Hostname).To(Equal("some-hostname"))
 			Expect(serviceKey.Username).To(Equal("some-username"))
 			Expect(serviceKey.Password).To(Equal("some-password"))
@@ -143,18 +143,58 @@ var _ = Describe("CLI Helpers", func() {
 	})
 
 	Context("CreateSshTunnel", func() {
+		var (
+			donorServiceKey     cli_utils.ServiceKey
+			recipientServiceKey cli_utils.ServiceKey
+			tunnels             []cli_utils.Tunnel
+			cfCommandRunnerFake *cli_utilsfakes.FakeCfCommandRunner
+		)
+		BeforeEach(func() {
+			cfCommandRunnerFake = &cli_utilsfakes.FakeCfCommandRunner{}
+
+			donorServiceKey = cli_utils.ServiceKey{Hostname: "10.0.0.1"}
+			recipientServiceKey = cli_utils.ServiceKey{Hostname: "10.0.0.2"}
+			tunnels = []cli_utils.Tunnel{
+				{
+					ServiceKey: donorServiceKey,
+				},
+				{
+					ServiceKey: recipientServiceKey,
+				},
+			}
+
+		})
 		It("calls the correct cf ssh commands", func() {
-			serviceKey := servicekey.ServiceKey{}
-			timeout := time.Second
-			tunnelManager := NewTunnelManager(serviceKey, timeout)
-			tunnelManager.CreateSshTunnel()
+			tunnelManager, err := cli_utils.NewTunnelManager(cfCommandRunnerFake, tunnels)
+			tunnelManager.AppName = "my-cool-app"
+			Expect(err).NotTo(HaveOccurred())
+
+			err = tunnelManager.CreateSSHTunnel()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(tunnels[0].Port).NotTo(BeZero())
+			Expect(tunnels[1].Port).NotTo(BeZero())
+			Expect(cfCommandRunnerFake.CliCommandWithoutTerminalOutputArgsForCall(0)).To(Equal([]string{
+				"ssh",
+				"my-cool-app",
+				"-N",
+				"-L",
+				fmt.Sprintf("%d:10.0.0.1:3306", tunnels[0].Port),
+				"-L",
+				fmt.Sprintf("%d:10.0.0.2:3306", tunnels[1].Port),
+			}))
 		})
 
 		It("errors when the cf ssh fails", func() {
-			cfCommandRunnerFake := &cli_utilsfakes.FakeCfCommandRunner{}
-			cfCommandRunnerFake.CliCommandReturns(nil, errors.New("some-error"))
-			err := cli_utils.CreateSshTunnel(cfCommandRunnerFake, "some-hostname")
-			Expect(err).To(MatchError("Failed to open ssh tunnel for service host some-hostname: some-error"))
+
+			tunnelManager, err := cli_utils.NewTunnelManager(cfCommandRunnerFake, tunnels)
+			tunnelManager.AppName = "my-cool-app"
+			Expect(err).NotTo(HaveOccurred())
+			tunnelManager.CreateSSHTunnel()
+
+			cfCommandRunnerFake.CliCommandWithoutTerminalOutputReturns(nil, errors.New("some-error"))
+			err = tunnelManager.CreateSSHTunnel()
+			Expect(err).To(MatchError("Failed to open ssh tunnel to app my-cool-app: some-error"))
 		})
 	})
 
@@ -162,20 +202,38 @@ var _ = Describe("CLI Helpers", func() {
 		It("waits for select 1 to succeed", func() {
 			db, mock, err := sqlmock.New()
 			Expect(err).NotTo(HaveOccurred())
+
+			tunnelManager := &cli_utils.TunnelManager{
+				Tunnels: []cli_utils.Tunnel{
+					{DB: db}, {DB: db},
+				},
+			}
+
+			mock.ExpectQuery("SELECT 1").WillReturnError(errors.New("some-error"))
 			mock.ExpectQuery("SELECT 1").WillReturnError(errors.New("some-error"))
 			mock.ExpectQuery("SELECT 1").WillReturnRows(sqlmock.NewRows([]string{"1"}).AddRow("1"))
+			mock.ExpectQuery("SELECT 1").WillReturnRows(sqlmock.NewRows([]string{"1"}).AddRow("1"))
 
-			Expect(cli_utils.WaitForTunnel(db, 2001*time.Millisecond)).To(Succeed())
+			Expect(tunnelManager.WaitForTunnel(5 * time.Second)).To(Succeed())
 			Expect(mock.ExpectationsWereMet()).To(Succeed())
 		})
 
-		It("errors if the select does not return before the timeout", func() {
+		It("returns a error if it doesn't succeed before timeout", func() {
 			db, mock, err := sqlmock.New()
 			Expect(err).NotTo(HaveOccurred())
+
+			tunnelManager := &cli_utils.TunnelManager{
+				Tunnels: []cli_utils.Tunnel{
+					{DB: db}, {DB: db},
+				},
+			}
+
+			mock.ExpectQuery("SELECT 1").WillReturnError(errors.New("some-error"))
 			mock.ExpectQuery("SELECT 1").WillReturnError(errors.New("some-error"))
 
-			Expect(cli_utils.WaitForTunnel(db, 1001*time.Millisecond)).NotTo(Succeed())
+			Expect(tunnelManager.WaitForTunnel(2 * time.Second)).To(MatchError("Timeout"))
 			Expect(mock.ExpectationsWereMet()).To(Succeed())
 		})
+
 	})
 })
