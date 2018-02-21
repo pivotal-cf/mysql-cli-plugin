@@ -109,6 +109,41 @@
   version = "1.1"
 
 [[projects]]
+  name = "github.com/aws/aws-sdk-go"
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/stscreds",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/sdkrand",
+    "internal/shareddefaults",
+    "private/protocol",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/restxml",
+    "private/protocol/xml/xmlutil",
+    "service/s3",
+    "service/s3/s3iface",
+    "service/s3/s3manager",
+    "service/sts"
+  ]
+  revision = "f9a6880d84e16e2a37055793e17164a228d637f4"
+  version = "v1.13.1"
+
+[[projects]]
   name = "github.com/blang/semver"
   packages = ["."]
   revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
@@ -119,6 +154,19 @@
   name = "github.com/bmizerany/pat"
   packages = ["."]
   revision = "6226ea591a40176dd3ff9cd8eff81ed6ca721a00"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/cloudfoundry-incubator/cf-test-helpers"
+  packages = [
+    "cf",
+    "commandreporter",
+    "commandstarter",
+    "config",
+    "generator",
+    "internal"
+  ]
+  revision = "1a8c223f1cc4110cc866f7298ff622b83e274173"
 
 [[projects]]
   branch = "master"
@@ -144,16 +192,16 @@
   revision = "b33733203bb48d7c56de7cb639d77f78b0449d19"
 
 [[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
-
-[[projects]]
   name = "github.com/fatih/color"
   packages = ["."]
   revision = "507f6050b8568533fb3f5504de8e5205fa62a114"
   version = "v1.6.0"
+
+[[projects]]
+  name = "github.com/go-ini/ini"
+  packages = ["."]
+  revision = "32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a"
+  version = "v1.32.0"
 
 [[projects]]
   name = "github.com/go-sql-driver/mysql"
@@ -182,6 +230,11 @@
   packages = ["."]
   revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
   version = "v1.2.0"
+
+[[projects]]
+  name = "github.com/jmespath/go-jmespath"
+  packages = ["."]
+  revision = "0b12d6b5"
 
 [[projects]]
   branch = "master"
@@ -248,6 +301,8 @@
   packages = [
     ".",
     "format",
+    "gbytes",
+    "gexec",
     "internal/assertion",
     "internal/asyncassertion",
     "internal/oraclematcher",
@@ -261,6 +316,12 @@
   ]
   revision = "003f63b7f4cff3fc95357005358af2de0f5fe152"
   version = "v1.3.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/pivotal-cf/dedicated-mysql-utils"
+  packages = ["testhelpers"]
+  revision = "491c00219d71510d96da76df836606ca341516a4"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -350,6 +411,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "45a9ed1bbefc45bbc7746c1985724055e088b0ed2c7fec0e6b8dc8a134dc26d3"
+  inputs-digest = "748f9711f1b50b737e993ee34a4bee4e65f2152183e2418d6cd0205a5fccc9c9"
   solver-name = "gps-cdcl"
   solver-version = 1
