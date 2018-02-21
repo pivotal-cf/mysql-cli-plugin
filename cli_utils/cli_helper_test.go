@@ -196,6 +196,17 @@ var _ = Describe("CLI Helpers", func() {
 			err = tunnelManager.CreateSSHTunnel()
 			Expect(err).To(MatchError("Failed to open ssh tunnel to app my-cool-app: some-error"))
 		})
+
+		It("returns no error when the cf ssh gives an EOF", func() {
+
+			tunnelManager, err := cli_utils.NewTunnelManager(cfCommandRunnerFake, tunnels)
+			tunnelManager.AppName = "my-cool-app"
+			Expect(err).NotTo(HaveOccurred())
+			tunnelManager.CreateSSHTunnel()
+
+			cfCommandRunnerFake.CliCommandWithoutTerminalOutputReturns(nil, errors.New("Error: EOF"))
+			Expect(tunnelManager.CreateSSHTunnel()).To(Succeed())
+		})
 	})
 
 	Context("WaitForTunnel", func() {

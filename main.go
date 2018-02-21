@@ -123,7 +123,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		}
 
 		// TODO come up with better name
-		path := "blah.sql"
+		path := "mysql-v2-migrate.sql"
 		tmpFile, err := os.Create(path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating tempfile %s: %v", path, err)

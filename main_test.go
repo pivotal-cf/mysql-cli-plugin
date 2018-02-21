@@ -39,14 +39,15 @@ var _ = Describe("MysqlV2CliPlugin", func() {
 	It("migrates the contents of one database to another", func() {
 		By("writing some information to the donor instance")
 		donorDeploymentName := test_helpers.GetDeploymentName(donorService)
-		writeStmt := `CREATE DATABASE pickles; CREATE TABLE pickles.ketchup(num INT PRIMARY KEY); INSERT INTO pickles.ketchup values(1),(2),(3);`
+		restoreDeploymentName := test_helpers.GetDeploymentName(restoreService)
+		writeStmt := `CREATE TABLE service_instance_db.ketchup(num INT PRIMARY KEY); INSERT INTO service_instance_db.ketchup values(1),(2),(3);`
 		test_helpers.ExecuteMysqlQueryAsAdmin(donorDeploymentName, "0", writeStmt)
 
 		By("running the plugin")
 		test_helpers.ExecuteCfCmd("mysql-migrate", donorService, restoreService)
 
 		By("seeing the data on the restore service")
-		dataOnFollower := test_helpers.ExecuteMysqlQueryAsAdmin(restoreService, "1", "SELECT num FROM pickles.ketchup")
+		dataOnFollower := test_helpers.ExecuteMysqlQueryAsAdmin(restoreDeploymentName, "0", "SELECT num FROM service_instance_db.ketchup")
 		Expect(dataOnFollower).To(ContainSubstring("1"))
 		Expect(dataOnFollower).To(ContainSubstring("2"))
 		Expect(dataOnFollower).To(ContainSubstring("3"))

@@ -64,7 +64,7 @@ func (t *TunnelManager) CreateSSHTunnel() error {
 		args = append(args, "-L", tunnelSpec)
 	}
 	_, err := t.CmdRunner.CliCommandWithoutTerminalOutput(args...)
-	if err != nil {
+	if err != nil && err.Error() != "Error: EOF" {
 		return errors.Wrapf(err, "Failed to open ssh tunnel to app %s", t.AppName)
 	}
 	return nil
@@ -73,17 +73,18 @@ func (t *TunnelManager) CreateSSHTunnel() error {
 func (t *TunnelManager) WaitForTunnel(timeout time.Duration) error {
 	timerCh := time.After(timeout)
 	ticker := time.NewTicker(1 * time.Second)
-	tunnelStatus := make([]bool, len(t.Tunnels))
+	tunnelStatuses := make([]bool, len(t.Tunnels))
 
-	var isAllGood = func() bool {
-		for _, thing := range tunnelStatus {
-			if !thing {
+	var allTunnelsOpen = func() bool {
+		for _, status := range tunnelStatuses {
+			if !status {
 				return false
 			}
 		}
 
 		return true
 	}
+
 	for {
 		select {
 		case <-timerCh:
@@ -92,11 +93,11 @@ func (t *TunnelManager) WaitForTunnel(timeout time.Duration) error {
 			for i, tunnel := range t.Tunnels {
 				var unused int
 				if err := tunnel.DB.QueryRow("SELECT 1").Scan(&unused); err == nil {
-					tunnelStatus[i] = true
+					tunnelStatuses[i] = true
 				}
 			}
 
-			if isAllGood() {
+			if allTunnelsOpen() {
 				return nil
 			}
 		}

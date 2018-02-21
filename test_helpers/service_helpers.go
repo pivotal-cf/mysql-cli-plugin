@@ -88,7 +88,7 @@ func WaitForService(name string, success string) {
 	pollcf.ReportPoll(commandReport)
 	Eventually(func() string {
 		session := pollcf.PollCf("service", name).Wait(cfCommandTimeout)
-		output := string(session.Out.Contents())
+		output := string(session.Out.Contents()) + string(session.Err.Contents())
 		Expect(output).ToNot(ContainSubstring("failed"))
 		return output
 	}, cfServiceWaitTimeout, cfServicePollingInterval).Should(ContainSubstring(success))
@@ -292,7 +292,7 @@ func httpClient(skipSsl bool) *http.Client {
 
 func ExecuteCfCmd(args ...string) string {
 	session := cf.Cf(args...).Wait(cfCommandTimeout)
-	Eventually(session).Should(gexec.Exit(0))
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	return string(session.Out.Contents())
 }
 
