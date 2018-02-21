@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pivotal-cf/mysql-v2-cli-plugin/cli_utils"
 
 	"code.cloudfoundry.org/cli/plugin"
@@ -110,7 +110,8 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			}
 		}()
 
-		err = tunnel.WaitForTunnel(20 * time.Second)
+		log.Println("Waiting for tunnel to come online")
+		err = tunnel.WaitForTunnel(60 * time.Second)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error waiting for tunnel to %s: %v", srcInstanceName, err)
 			c.exitStatus = 1
@@ -137,6 +138,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			tunnel.Tunnels[0].ServiceKey.DBName,
 		}
 
+		log.Printf("Executing 'mysqldump' with args %v", dumpArgs)
 		dumpCmd := exec.Command("mysqldump", dumpArgs...)
 		dumpCmd.Env = []string{"MYSQL_PWD=" + tunnel.Tunnels[0].ServiceKey.Password}
 		dumpCmd.Stderr = os.Stderr
@@ -158,6 +160,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			"-D", tunnel.Tunnels[1].ServiceKey.DBName,
 		}
 
+		log.Printf("Executing 'mysql' with args %v", restoreArgs)
 		restoreCmd := exec.Command("mysql", restoreArgs...)
 		restoreCmd.Env = []string{"MYSQL_PWD=" + tunnel.Tunnels[1].ServiceKey.Password}
 		restoreCmd.Stderr = os.Stderr
