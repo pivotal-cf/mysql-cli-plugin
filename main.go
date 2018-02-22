@@ -14,7 +14,12 @@ import (
 	"code.cloudfoundry.org/cli/plugin"
 )
 
+type UserReporter interface {
+	IsSpaceDeveloper() (bool, error)
+}
+
 type MySQLPlugin struct {
+	userReporter UserReporter
 	exitStatus int
 }
 
@@ -31,6 +36,20 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 		srcInstanceName := args[1]
 		dstInstanceName := args[2]
+		userReporter := cli_utils.NewUserReporter(cliConnection)
+
+		ok, err := userReporter.IsSpaceDeveloper()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting user information: %v", err)
+			c.exitStatus = 1
+			return
+		}
+
+		if !ok {
+			fmt.Fprintln(os.Stderr, "You must have the 'Space Developer' privilege to use the 'cf mysql migrate' command")
+			c.exitStatus = 1
+			return
+		}
 
 		// TODO clean tempdir later?
 		tmpDir, err := ioutil.TempDir(os.TempDir(), "mysql-migrate")
