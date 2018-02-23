@@ -1,25 +1,19 @@
 package main
 
 import (
+	"code.cloudfoundry.org/cli/plugin"
 	"fmt"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/ssh"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/user"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"strconv"
-	"time"
-
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/cli_utils"
-
-	"code.cloudfoundry.org/cli/plugin"
 )
 
-type UserReporter interface {
-	IsSpaceDeveloper() (bool, error)
-}
-
 type MySQLPlugin struct {
-	userReporter UserReporter
 	exitStatus int
 }
 
@@ -34,11 +28,23 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			return
 		}
 
-		srcInstanceName := args[1]
-		dstInstanceName := args[2]
-		userReporter := cli_utils.NewUserReporter(cliConnection)
+		tmpDir, err := ioutil.TempDir(os.TempDir(), "mysql-migrate")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating temporary directory: %v", err)
+			c.exitStatus = 1
+			return
+		}
 
-		ok, err := userReporter.IsSpaceDeveloper()
+		var (
+			srcInstanceName = args[1]
+			dstInstanceName = args[2]
+			user            = user.NewReporter(cliConnection)
+			srcInstance     = service.NewServiceInstance(cliConnection, srcInstanceName)
+			dstInstance     = service.NewServiceInstance(cliConnection, dstInstanceName)
+			tunnerManager   = ssh.NewTunnerManager(cliConnection, tmpDir)
+		)
+
+		ok, err := user.IsSpaceDeveloper()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting user information: %v", err)
 			c.exitStatus = 1
@@ -51,93 +57,30 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			return
 		}
 
-		// TODO clean tempdir later?
-		tmpDir, err := ioutil.TempDir(os.TempDir(), "mysql-migrate")
-		if cli_utils.PushApp(cliConnection, tmpDir); err != nil {
-			fmt.Fprintf(os.Stderr, "Error pushing app: %v", err)
-			c.exitStatus = 1
-			return
-		}
-
 		defer func() {
-			if err = cli_utils.DeleteApp(cliConnection); err != nil {
-				fmt.Fprintf(os.Stderr, "Error deleting app: %v", err)
-				c.exitStatus = 1
-			}
+			os.RemoveAll(tmpDir)
+			tunnerManager.Close()
+			srcInstance.Cleanup()
+			dstInstance.Cleanup()
 		}()
 
-		if err = cli_utils.CreateServiceKey(cliConnection, srcInstanceName); err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating service key for instance %s: %v", srcInstanceName, err)
-			c.exitStatus = 1
-			return
-		}
-
-		defer func() {
-			if err = cli_utils.DeleteServiceKey(cliConnection, srcInstanceName); err != nil {
-				fmt.Fprintf(os.Stderr, "Error deleting service key for instance %s: %v", srcInstanceName, err)
-				c.exitStatus = 1
-			}
-		}()
-
-		if err = cli_utils.CreateServiceKey(cliConnection, dstInstanceName); err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating service key for instance %s: %v", dstInstanceName, err)
-			c.exitStatus = 1
-			return
-		}
-
-		defer func() {
-			if err = cli_utils.DeleteServiceKey(cliConnection, dstInstanceName); err != nil {
-				fmt.Fprintf(os.Stderr, "Error deleting service key for instance %s: %v", dstInstanceName, err)
-				c.exitStatus = 1
-			}
-		}()
-
-		srcInstanceKey, err := cli_utils.GetServiceKey(cliConnection, srcInstanceName)
+		srcServiceKey, err := srcInstance.ServiceInfo()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching service key for %s: %v", srcInstanceName, err)
+			fmt.Fprintf(os.Stderr, "Error: %s", err)
 			c.exitStatus = 1
 			return
 		}
 
-		dstInstanceKey, err := cli_utils.GetServiceKey(cliConnection, dstInstanceName)
+		dstServiceKey, err := dstInstance.ServiceInfo()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching service key for %s: %v", dstInstanceName, err)
+			fmt.Fprintf(os.Stderr, "Error: %s", err)
 			c.exitStatus = 1
 			return
 		}
 
-		tunnels := []cli_utils.Tunnel{
-			{
-				ServiceKey: *srcInstanceKey,
-			},
-			{
-				ServiceKey: *dstInstanceKey,
-			},
-		}
-
-		tunnel, err := cli_utils.NewTunnelManager(cliConnection, tunnels)
+		err = tunnerManager.Start([]*service.ServiceInfo{&srcServiceKey, &dstServiceKey})
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating tunnel: %v", err)
-			c.exitStatus = 1
-			return
-		}
-
-		tunnel.AppName = "static-app"
-
-		go func() {
-			err = tunnel.CreateSSHTunnel()
-			// NOTE this will exit with an error when we delete the app
-			// TODO replace the tunnel with something that uses golang/x/crypto/ssh
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%v", err)
-				c.exitStatus = 1
-			}
-		}()
-
-		log.Println("Waiting for tunnel to come online")
-		err = tunnel.WaitForTunnel(60 * time.Second)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error waiting for tunnel to app %s: %v", tunnel.AppName, err)
+			fmt.Fprintf(os.Stderr, "Error: %s", err)
 			c.exitStatus = 1
 			return
 		}
@@ -156,15 +99,15 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		dumpArgs := []string{
 			"--routines",
 			"--set-gtid-purged=off",
-			"-u", tunnel.Tunnels[0].ServiceKey.Username,
+			"-u", srcServiceKey.Username,
 			"-h", "127.0.0.1",
-			"-P", strconv.Itoa(tunnel.Tunnels[0].Port),
-			tunnel.Tunnels[0].ServiceKey.DBName,
+			"-P", strconv.Itoa(srcServiceKey.LocalSSHPort),
+			srcServiceKey.DBName,
 		}
 
 		log.Printf("Executing 'mysqldump' with args %v", dumpArgs)
 		dumpCmd := exec.Command("mysqldump", dumpArgs...)
-		dumpCmd.Env = []string{"MYSQL_PWD=" + tunnel.Tunnels[0].ServiceKey.Password}
+		dumpCmd.Env = []string{"MYSQL_PWD=" + srcServiceKey.Password}
 		dumpCmd.Stderr = os.Stderr
 		dumpCmd.Stdout = tmpFile
 
@@ -178,15 +121,15 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		tmpFile.Seek(0, 0)
 
 		restoreArgs := []string{
-			"-u", tunnel.Tunnels[1].ServiceKey.Username,
+			"-u", dstServiceKey.Username,
 			"-h", "127.0.0.1",
-			"-P", strconv.Itoa(tunnel.Tunnels[1].Port),
-			"-D", tunnel.Tunnels[1].ServiceKey.DBName,
+			"-P", strconv.Itoa(dstServiceKey.LocalSSHPort),
+			"-D", dstServiceKey.DBName,
 		}
 
 		log.Printf("Executing 'mysql' with args %v", restoreArgs)
 		restoreCmd := exec.Command("mysql", restoreArgs...)
-		restoreCmd.Env = []string{"MYSQL_PWD=" + tunnel.Tunnels[1].ServiceKey.Password}
+		restoreCmd.Env = []string{"MYSQL_PWD=" + dstServiceKey.Password}
 		restoreCmd.Stderr = os.Stderr
 		restoreCmd.Stdout = os.Stdout
 		restoreCmd.Stdin = tmpFile
@@ -217,9 +160,6 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 			{
 				Name:     "mysql-migrate",
 				HelpText: "Plugin to migrate mysql instances",
-
-				// UsageDetails is optional
-				// It is used to show help of usage of each command
 				UsageDetails: plugin.Usage{
 					Usage: "mysql-migrate\n   cf mysql-migrate <v1-service-instance> <v2-service-instance>",
 				},

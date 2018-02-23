@@ -1,22 +1,23 @@
-package cli_utils_test
+package user_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/cli_utils"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/cli_utils/cli_utilsfakes"
 	"code.cloudfoundry.org/cli/plugin/models"
 	"github.com/pkg/errors"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/user/userfakes"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/user"
 )
-var _ = Describe("UserReporter IsSpaceDeveloper", func() {
+
+var _ = Describe("Reporter IsSpaceDeveloper", func() {
 	var (
-		userReporter *cli_utils.UserReporter
-		fakeCliConnection *cli_utilsfakes.FakeCliConnection
+		userReporter *user.Reporter
+		fakeCliConnection *userfakes.FakeCliConnection
 	)
 
 	BeforeEach(func() {
-		fakeCliConnection = new(cli_utilsfakes.FakeCliConnection)
-		userReporter = cli_utils.NewUserReporter(fakeCliConnection)
+		fakeCliConnection = new(userfakes.FakeCliConnection)
+		userReporter = user.NewReporter(fakeCliConnection)
 
 		fakeCliConnection.GetCurrentOrgReturns(plugin_models.Organization{
 			plugin_models.OrganizationFields{Name: "some-org-name"},

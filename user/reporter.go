@@ -1,4 +1,4 @@
-package cli_utils
+package user
 
 import "code.cloudfoundry.org/cli/plugin/models"
 
@@ -12,17 +12,17 @@ type CliConnection interface {
 
 const RoleSpaceDeveloper = "RoleSpaceDeveloper"
 
-type UserReporter struct {
+type Reporter struct {
 	cliConnection CliConnection
 }
 
-func NewUserReporter(cliConnection CliConnection) *UserReporter {
-	return &UserReporter{
+func NewReporter(cliConnection CliConnection) *Reporter {
+	return &Reporter{
 		cliConnection: cliConnection,
 	}
 }
 
-func (u *UserReporter) IsSpaceDeveloper() (bool, error) {
+func (u *Reporter) IsSpaceDeveloper() (bool, error) {
 	org, err := u.cliConnection.GetCurrentOrg()
 	if err != nil {
 		return false, err

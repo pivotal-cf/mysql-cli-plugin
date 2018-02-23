@@ -1,4 +1,4 @@
-package cli_utils_test
+package service_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestMysqlV2CliPlugin(t *testing.T) {
+func TestService(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "MysqlV2CliPlugin Suite")
+	RunSpecs(t, "Service Suite")
 }
