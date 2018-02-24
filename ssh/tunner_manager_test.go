@@ -1,8 +1,6 @@
 package ssh_test
 
 import (
-	"database/sql"
-	"github.com/DATA-DOG/go-sqlmock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
@@ -13,16 +11,17 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 var _ = Describe("TunnelManager", func() {
 	var (
-		tmpDir                string
-		tunnelManager         *ssh.TunnelManager
-		fakeCfCommandRunner   *sshfakes.FakeCfCommandRunner
-		fakeDatabaseConnector *sshfakes.FakeDatabaseConnector
-		servicesInfo          []*service.ServiceInfo
-		appDir                = func() string {
+		tmpDir              string
+		tunnelManager       *ssh.TunnelManager
+		fakeCfCommandRunner *sshfakes.FakeCfCommandRunner
+		fakeDB              *sshfakes.FakeDB
+		servicesInfo        []*service.ServiceInfo
+		appDir              = func() string {
 			return filepath.Join(tmpDir, "static-app")
 		}
 	)
@@ -33,8 +32,8 @@ var _ = Describe("TunnelManager", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		fakeCfCommandRunner = new(sshfakes.FakeCfCommandRunner)
-		fakeDatabaseConnector = new(sshfakes.FakeDatabaseConnector)
-		tunnelManager = ssh.NewTunnerManager(fakeCfCommandRunner, tmpDir)
+		fakeDB = new(sshfakes.FakeDB)
+		tunnelManager = ssh.NewTunnerManager(fakeCfCommandRunner, fakeDB, tmpDir, 3*time.Second)
 
 		servicesInfo = []*service.ServiceInfo{
 			{Hostname: "10.0.0.1"},
@@ -73,6 +72,14 @@ var _ = Describe("TunnelManager", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandCallCount()).To(Equal(1))
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+
+			serviceInfo, port := fakeDB.PingArgsForCall(0)
+			Expect(serviceInfo).To(Equal(servicesInfo[0]))
+			Expect(port).NotTo(BeZero())
+
+			serviceInfo, port = fakeDB.PingArgsForCall(1)
+			Expect(serviceInfo).To(Equal(servicesInfo[1]))
+			Expect(port).NotTo(BeZero())
 		})
 
 		Context("when pushing an application fails", func() {
@@ -91,6 +98,28 @@ var _ = Describe("TunnelManager", func() {
 			It("returns an error", func() {
 				err := tunnelManager.Start(servicesInfo)
 				Expect(err).To(MatchError("failed to push application: some-error"))
+			})
+		})
+
+		Context("when waiting for ssh requires multiple attempts", func() {
+			BeforeEach(func() {
+				fakeDB.PingReturnsOnCall(0, errors.New("some-error"))
+				fakeDB.PingReturnsOnCall(1, errors.New("some-error"))
+			})
+
+			It("eventually succeeds", func() {
+				Expect(tunnelManager.Start(servicesInfo)).To(Succeed())
+			})
+		})
+
+		Context("when waiting for ssh doesn't succeed before timeout", func() {
+			BeforeEach(func() {
+				fakeDB.PingReturns(errors.New("some-error"))
+			})
+
+			It("returns an error", func() {
+				err := tunnelManager.Start(servicesInfo)
+				Expect(err).To(MatchError("timeout"))
 			})
 		})
 	})

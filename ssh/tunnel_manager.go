@@ -3,7 +3,6 @@ package ssh
 import (
 	_ "github.com/go-sql-driver/mysql"
 
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
@@ -20,6 +19,11 @@ type CfCommandRunner interface {
 	CliCommandWithoutTerminalOutput(args ...string) ([]string, error)
 }
 
+//go:generate counterfeiter . DB
+type DB interface {
+	Ping(serviceInfo *service.ServiceInfo, port int) error
+}
+
 var (
 	// TODO don't hardcode app name
 	appName    = "static-app"
@@ -29,13 +33,17 @@ var (
 
 type TunnelManager struct {
 	cfCommandRunner CfCommandRunner
+	db              DB
 	tmpDir          string
+	dbPollTimeout   time.Duration
 }
 
-func NewTunnerManager(cfCommandRunner CfCommandRunner, tmpDir string) *TunnelManager {
+func NewTunnerManager(cfCommandRunner CfCommandRunner, db DB, tmpDir string, dbPollTimeout time.Duration) *TunnelManager {
 	return &TunnelManager{
 		cfCommandRunner: cfCommandRunner,
+		db:              db,
 		tmpDir:          tmpDir,
+		dbPollTimeout:   dbPollTimeout,
 	}
 }
 
@@ -70,8 +78,8 @@ func (m *TunnelManager) Close() {
 
 func (m *TunnelManager) waitForSSHTunnel(servicesInfo []*service.ServiceInfo, ports []int) error {
 	var (
-		timerCh        = time.After(time.Minute)
-		ticker         = time.NewTicker(1 * time.Second)
+		timerCh        = time.After(m.dbPollTimeout)
+		ticker         = time.NewTicker(time.Second)
 		tunnelStatuses = make([]bool, len(servicesInfo))
 		allTunnelsOpen = func() bool {
 			for _, status := range tunnelStatuses {
@@ -87,12 +95,11 @@ func (m *TunnelManager) waitForSSHTunnel(servicesInfo []*service.ServiceInfo, po
 	for {
 		select {
 		case <-timerCh:
-			return errors.New("Timeout")
+			return errors.New("timeout")
 		case <-ticker.C:
 			for i, serviceInfo := range servicesInfo {
-				db := m.getDBConnection(serviceInfo, ports[i])
-
-				if err := db.Ping(); err == nil {
+				err := m.db.Ping(serviceInfo, ports[i])
+				if err == nil {
 					tunnelStatuses[i] = true
 				}
 			}
@@ -171,17 +178,4 @@ func (m *TunnelManager) getFreePort() (int, error) {
 
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
-}
-
-func (m *TunnelManager) getDBConnection(serviceInfo *service.ServiceInfo, port int) *sql.DB {
-	connectionString := fmt.Sprintf(
-		"%s:%s@tcp(127.0.0.1:%d)/%s?interpolateParams=true&tls=false",
-		serviceInfo.Username,
-		serviceInfo.Password,
-		port,
-		serviceInfo.DBName,
-	)
-
-	db, _ := sql.Open("mysql", connectionString)
-	return db
 }

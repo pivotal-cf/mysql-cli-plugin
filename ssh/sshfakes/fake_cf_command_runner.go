@@ -4,6 +4,7 @@ package sshfakes
 import (
 	"sync"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/pivotal-cf/mysql-v2-cli-plugin/ssh"
 )
 

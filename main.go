@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"time"
 )
 
 type MySQLPlugin struct {
@@ -41,7 +42,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			user            = user.NewReporter(cliConnection)
 			srcInstance     = service.NewServiceInstance(cliConnection, srcInstanceName)
 			dstInstance     = service.NewServiceInstance(cliConnection, dstInstanceName)
-			tunnerManager   = ssh.NewTunnerManager(cliConnection, tmpDir)
+			tunnerManager   = ssh.NewTunnerManager(cliConnection, ssh.NewDB(), tmpDir, time.Minute)
 		)
 
 		ok, err := user.IsSpaceDeveloper()
