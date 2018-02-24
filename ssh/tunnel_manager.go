@@ -1,16 +1,15 @@
 package ssh
 
 import (
-	_ "github.com/go-sql-driver/mysql"
-
 	"errors"
 	"fmt"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
 	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
 )
 
 //go:generate counterfeiter . CfCommandRunner
@@ -47,7 +46,7 @@ func NewTunnerManager(cfCommandRunner CfCommandRunner, db DB, tmpDir string, dbP
 	}
 }
 
-func (m *TunnelManager) Start(servicesInfo []*service.ServiceInfo) error {
+func (m *TunnelManager) Start(servicesInfo ...*service.ServiceInfo) error {
 	err := m.pushApp()
 	if err != nil {
 		return err

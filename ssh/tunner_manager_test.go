@@ -46,40 +46,27 @@ var _ = Describe("TunnelManager", func() {
 	})
 
 	Describe("Start", func() {
-		BeforeEach(func() {
-			fakeCfCommandRunner.CliCommandStub = func(args ...string) ([]string, error) {
-				switch args[0] {
-				case "push":
-					Expect(args).To(Equal([]string{"push", "static-app", "--random-route", "-b", "staticfile_buildpack", "-p", appDir()}))
-					return nil, nil
-				default:
-					Fail("unexpected call to CliCommand")
-					return nil, errors.New("")
-				}
-			}
-
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputStub = func(args ...string) ([]string, error) {
-				Expect(strings.Join(args, " ")).To(MatchRegexp(`ssh static-app -N -L \d+:10.0.0.1:3306 -L \d+:10.0.0.2:3306`))
-				return nil, nil
-			}
-		})
-
 		It("creates pushes up an app exposes ssh ports to service instances", func() {
-			Expect(tunnelManager.Start(servicesInfo)).To(Succeed())
+			Expect(tunnelManager.Start(servicesInfo...)).To(Succeed())
 
 			Expect(filepath.Join(appDir(), "Staticfile")).To(BeAnExistingFile())
 			Expect(filepath.Join(appDir(), "index.html")).To(BeAnExistingFile())
 
-			Expect(fakeCfCommandRunner.CliCommandCallCount()).To(Equal(1))
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+			args := fakeCfCommandRunner.CliCommandArgsForCall(0)
+			Expect(args).To(Equal([]string{"push", "static-app", "--random-route", "-b", "staticfile_buildpack", "-p", appDir()}))
+
+			args = fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+			Expect(strings.Join(args, " ")).To(MatchRegexp(`ssh static-app -N -L \d+:10.0.0.1:3306 -L \d+:10.0.0.2:3306`))
 
 			serviceInfo, port := fakeDB.PingArgsForCall(0)
-			Expect(serviceInfo).To(Equal(servicesInfo[0]))
+			Expect(serviceInfo).To(BeEquivalentTo(servicesInfo[0]))
 			Expect(port).NotTo(BeZero())
+			Expect(servicesInfo[0].LocalSSHPort).To(Equal(port))
 
 			serviceInfo, port = fakeDB.PingArgsForCall(1)
 			Expect(serviceInfo).To(Equal(servicesInfo[1]))
 			Expect(port).NotTo(BeZero())
+			Expect(servicesInfo[1].LocalSSHPort).To(Equal(port))
 		})
 
 		Context("when pushing an application fails", func() {
@@ -96,7 +83,7 @@ var _ = Describe("TunnelManager", func() {
 			})
 
 			It("returns an error", func() {
-				err := tunnelManager.Start(servicesInfo)
+				err := tunnelManager.Start(servicesInfo...)
 				Expect(err).To(MatchError("failed to push application: some-error"))
 			})
 		})
@@ -108,7 +95,7 @@ var _ = Describe("TunnelManager", func() {
 			})
 
 			It("eventually succeeds", func() {
-				Expect(tunnelManager.Start(servicesInfo)).To(Succeed())
+				Expect(tunnelManager.Start(servicesInfo...)).To(Succeed())
 			})
 		})
 
@@ -118,7 +105,7 @@ var _ = Describe("TunnelManager", func() {
 			})
 
 			It("returns an error", func() {
-				err := tunnelManager.Start(servicesInfo)
+				err := tunnelManager.Start(servicesInfo...)
 				Expect(err).To(MatchError("timeout"))
 			})
 		})

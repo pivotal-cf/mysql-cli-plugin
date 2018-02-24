@@ -79,7 +79,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			return
 		}
 
-		err = tunnerManager.Start([]*service.ServiceInfo{&srcServiceKey, &dstServiceKey})
+		err = tunnerManager.Start(&srcServiceKey, &dstServiceKey)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %s", err)
 			c.exitStatus = 1
