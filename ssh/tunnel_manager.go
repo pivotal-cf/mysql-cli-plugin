@@ -47,7 +47,8 @@ func NewTunnerManager(cfCommandRunner CfCommandRunner, db DB, tmpDir string, dbP
 }
 
 func (m *TunnelManager) Start(servicesInfo ...*service.ServiceInfo) error {
-	err := m.pushApp()
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "mysql-migrate")
+	err = m.PushApp(tmpDir)
 	if err != nil {
 		return err
 	}
@@ -123,8 +124,8 @@ func (m *TunnelManager) createSSHTunnel(servicesInfo []*service.ServiceInfo, por
 	m.cfCommandRunner.CliCommandWithoutTerminalOutput(args...)
 }
 
-func (m *TunnelManager) pushApp() error {
-	appDir := filepath.Join(m.tmpDir, appName)
+func (m *TunnelManager) PushApp(tmpDir string) error {
+	appDir := filepath.Join(tmpDir, appName)
 
 	err := os.Mkdir(appDir, 0700)
 	if err != nil {

@@ -1,16 +1,13 @@
 package main
 
 import (
-	"code.cloudfoundry.org/cli/plugin"
 	"fmt"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/ssh"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/user"
 	"io/ioutil"
-	"log"
 	"os"
-	"os/exec"
-	"strconv"
+	"code.cloudfoundry.org/cli/plugin"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/user"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/ssh"
 	"time"
 )
 
@@ -37,6 +34,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		}
 
 		var (
+			appName         = "static-app"
 			srcInstanceName = args[1]
 			dstInstanceName = args[2]
 			user            = user.NewReporter(cliConnection)
@@ -60,7 +58,6 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 		defer func() {
 			os.RemoveAll(tmpDir)
-			tunnerManager.Close()
 			srcInstance.Cleanup()
 			dstInstance.Cleanup()
 		}()
@@ -79,66 +76,22 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			return
 		}
 
-		err = tunnerManager.Start(&srcServiceKey, &dstServiceKey)
+		err = tunnerManager.PushApp(tmpDir)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s", err)
 			c.exitStatus = 1
 			return
 		}
 
-		// TODO come up with better name
-		path := "mysql-v2-migrate.sql"
-		tmpFile, err := os.Create(path)
+		agentUser := "lf-agent"
+		agentPassword := "REPLACE-ME"
+
+		curlCmd := fmt.Sprintf(`curl -X POST http://%s:%s@%s:8443/migrate -d '{"source":"%s", "dest": "%s"}'`,
+			agentUser, agentPassword, dstServiceKey.Hostname, srcServiceKey, dstServiceKey)
+
+		_, err = cliConnection.CliCommand("ssh", appName, "-c", curlCmd)
+
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating tempfile %s: %v", path, err)
-			c.exitStatus = 1
-			return
-		}
-
-		defer tmpFile.Close()
-
-		dumpArgs := []string{
-			"--routines",
-			"--set-gtid-purged=off",
-			"-u", srcServiceKey.Username,
-			"-h", "127.0.0.1",
-			"-P", strconv.Itoa(srcServiceKey.LocalSSHPort),
-			srcServiceKey.DBName,
-		}
-
-		log.Printf("Executing 'mysqldump' with args %v", dumpArgs)
-		dumpCmd := exec.Command("mysqldump", dumpArgs...)
-		dumpCmd.Env = []string{"MYSQL_PWD=" + srcServiceKey.Password}
-		dumpCmd.Stderr = os.Stderr
-		dumpCmd.Stdout = tmpFile
-
-		err = dumpCmd.Run()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error dumping database: %v", err)
-			c.exitStatus = 1
-			return
-		}
-
-		tmpFile.Seek(0, 0)
-
-		restoreArgs := []string{
-			"-u", dstServiceKey.Username,
-			"-h", "127.0.0.1",
-			"-P", strconv.Itoa(dstServiceKey.LocalSSHPort),
-			"-D", dstServiceKey.DBName,
-		}
-
-		log.Printf("Executing 'mysql' with args %v", restoreArgs)
-		restoreCmd := exec.Command("mysql", restoreArgs...)
-		restoreCmd.Env = []string{"MYSQL_PWD=" + dstServiceKey.Password}
-		restoreCmd.Stderr = os.Stderr
-		restoreCmd.Stdout = os.Stdout
-		restoreCmd.Stdin = tmpFile
-
-		err = restoreCmd.Run()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error restoring database: %v", err)
-			c.exitStatus = 1
+			fmt.Fprintf(os.Stderr, "error running ssh: %v", err)
 			return
 		}
 	}
