@@ -1,55 +1,37 @@
 package main_test
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/test_helpers"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"os/exec"
+	"github.com/onsi/gomega/gexec"
+	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("MysqlV2CliPlugin", func() {
-
-	var (
-		donorService   string
-		restoreService string
-	)
-
-	BeforeEach(func() {
-		donorService = generator.PrefixedRandomName("MYSQL", "DED")
-		test_helpers.CreateService(os.Getenv("SERVICE_NAME"), os.Getenv("PLAN_NAME"), donorService)
-
-		restoreService = generator.PrefixedRandomName("MYSQL", "DED")
-		test_helpers.CreateService(os.Getenv("SERVICE_NAME"), os.Getenv("PLAN_NAME"), restoreService)
-
-		test_helpers.WaitForService(donorService, "status:    create succeeded")
-		test_helpers.WaitForService(restoreService, "status:    create succeeded")
+	It("pushes an app given the right number of args", func() {
+		cmd := exec.Command("cf", "mysql-tools", "migrate", "test-v1-donor", "test-v2-recipient")
+		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "5m", "1s").Should(gexec.Exit(0))
 	})
 
-	AfterEach(func() {
-		test_helpers.DeleteService(donorService)
-		test_helpers.DeleteService(restoreService)
-		test_helpers.WaitForService(donorService, fmt.Sprintf("Service instance %s not found", donorService))
-		test_helpers.WaitForService(restoreService, fmt.Sprintf("Service instance %s not found", restoreService))
+	It("requires exactly 4 arguments", func() {
+		cmd := exec.Command("cf", "mysql-tools")
+		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
+
+		Expect(session.Err).To(gbytes.Say(`Usage: cf mysql-tools migrate <v1-service-instance> <v2-service-instance>`))
 	})
 
-	It("migrates the contents of one database to another", func() {
-		By("writing some information to the donor instance")
-		donorDeploymentName := test_helpers.GetDeploymentName(donorService)
-		restoreDeploymentName := test_helpers.GetDeploymentName(restoreService)
-		writeStmt := `CREATE TABLE service_instance_db.ketchup(num INT PRIMARY KEY); INSERT INTO service_instance_db.ketchup values(1),(2),(3);`
-		test_helpers.ExecuteMysqlQueryAsAdmin(donorDeploymentName, "0", writeStmt)
+	It("reports an error when given an unknown subcommand", func() {
+		cmd := exec.Command("cf", "mysql-tools", "invalid")
+		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		By("running the plugin")
-		test_helpers.ExecuteCfCmd("mysql-migrate", donorService, restoreService)
+		Expect(session.Err).To(gbytes.Say(`Unknown command 'invalid'`))
 
-		By("seeing the data on the restore service")
-		dataOnFollower := test_helpers.ExecuteMysqlQueryAsAdmin(restoreDeploymentName, "0", "SELECT num FROM service_instance_db.ketchup")
-		Expect(dataOnFollower).To(ContainSubstring("1"))
-		Expect(dataOnFollower).To(ContainSubstring("2"))
-		Expect(dataOnFollower).To(ContainSubstring("3"))
 	})
 })

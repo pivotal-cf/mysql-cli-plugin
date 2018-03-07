@@ -1,17 +1,14 @@
 package main
 
 import (
-	"code.cloudfoundry.org/cli/plugin"
 	"fmt"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/ssh"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/user"
-	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
-	"strconv"
 	"time"
+
+	"code.cloudfoundry.org/cli/plugin"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/cfapi"
+	"github.com/pivotal-cf/mysql-v2-cli-plugin/user"
 )
 
 type MySQLPlugin struct {
@@ -19,134 +16,90 @@ type MySQLPlugin struct {
 }
 
 func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
-	command := args[0]
-
-	switch command {
-	case "mysql-migrate":
-		if len(args) != 3 {
-			fmt.Fprintln(os.Stderr, "Usage: cf mysql-migrate <v1-service-instance> <v2-service-instance>")
-			c.exitStatus = 1
-			return
-		}
-
-		tmpDir, err := ioutil.TempDir(os.TempDir(), "mysql-migrate")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating temporary directory: %v", err)
-			c.exitStatus = 1
-			return
-		}
-
-		var (
-			srcInstanceName = args[1]
-			dstInstanceName = args[2]
-			user            = user.NewReporter(cliConnection)
-			srcInstance     = service.NewServiceInstance(cliConnection, srcInstanceName)
-			dstInstance     = service.NewServiceInstance(cliConnection, dstInstanceName)
-			tunnerManager   = ssh.NewTunnerManager(cliConnection, ssh.NewDB(), tmpDir, time.Minute)
-		)
-
-		ok, err := user.IsSpaceDeveloper()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting user information: %v", err)
-			c.exitStatus = 1
-			return
-		}
-
-		if !ok {
-			fmt.Fprintln(os.Stderr, "You must have the 'Space Developer' privilege to use the 'cf mysql migrate' command")
-			c.exitStatus = 1
-			return
-		}
-
-		defer func() {
-			os.RemoveAll(tmpDir)
-			tunnerManager.Close()
-			srcInstance.Cleanup()
-			dstInstance.Cleanup()
-		}()
-
-		srcServiceKey, err := srcInstance.ServiceInfo()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s", err)
-			c.exitStatus = 1
-			return
-		}
-
-		dstServiceKey, err := dstInstance.ServiceInfo()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s", err)
-			c.exitStatus = 1
-			return
-		}
-
-		err = tunnerManager.Start(&srcServiceKey, &dstServiceKey)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s", err)
-			c.exitStatus = 1
-			return
-		}
-
-		// TODO come up with better name
-		path := "mysql-v2-migrate.sql"
-		tmpFile, err := os.Create(path)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating tempfile %s: %v", path, err)
-			c.exitStatus = 1
-			return
-		}
-
-		defer tmpFile.Close()
-
-		dumpArgs := []string{
-			"--routines",
-			"--set-gtid-purged=off",
-			"-u", srcServiceKey.Username,
-			"-h", "127.0.0.1",
-			"-P", strconv.Itoa(srcServiceKey.LocalSSHPort),
-			srcServiceKey.DBName,
-		}
-
-		log.Printf("Executing 'mysqldump' with args %v", dumpArgs)
-		dumpCmd := exec.Command("mysqldump", dumpArgs...)
-		dumpCmd.Env = []string{"MYSQL_PWD=" + srcServiceKey.Password}
-		dumpCmd.Stderr = os.Stderr
-		dumpCmd.Stdout = tmpFile
-
-		err = dumpCmd.Run()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error dumping database: %v", err)
-			c.exitStatus = 1
-			return
-		}
-
-		tmpFile.Seek(0, 0)
-
-		restoreArgs := []string{
-			"-u", dstServiceKey.Username,
-			"-h", "127.0.0.1",
-			"-P", strconv.Itoa(dstServiceKey.LocalSSHPort),
-			"-D", dstServiceKey.DBName,
-		}
-
-		log.Printf("Executing 'mysql' with args %v", restoreArgs)
-		restoreCmd := exec.Command("mysql", restoreArgs...)
-		restoreCmd.Env = []string{"MYSQL_PWD=" + dstServiceKey.Password}
-		restoreCmd.Stderr = os.Stderr
-		restoreCmd.Stdout = os.Stdout
-		restoreCmd.Stdin = tmpFile
-
-		err = restoreCmd.Run()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error restoring database: %v", err)
-			c.exitStatus = 1
-			return
-		}
+	if args[0] == "CLI-MESSAGE-UNINSTALL" {
+		return
 	}
+
+	if len(args) >= 2 && args[1] != "migrate" {
+		log.Printf("Unknown command '%s'", args[1])
+		c.exitStatus = 1
+		return
+	}
+
+	if len(args) != 4 {
+		log.Println("Usage: cf mysql-tools migrate <v1-service-instance> <v2-service-instance>")
+		c.exitStatus = 1
+		return
+	}
+
+	var (
+		user = user.NewReporter(cliConnection)
+	)
+
+	ok, err := user.IsSpaceDeveloper()
+	if err != nil {
+		log.Printf("Error getting user information: %v", err)
+		c.exitStatus = 1
+		return
+	}
+
+	if !ok {
+		log.Println("You must have the 'Space Developer' privilege to use the 'cf mysql migrate' command")
+		c.exitStatus = 1
+		return
+	}
+
+	_, err = cliConnection.CliCommand("push",
+		"migrate-app",
+		"-b", "binary_buildpack",
+		"-u", "none",
+		"-c", "sleep infinity",
+		"-p", "./app",
+		"--no-start",
+	)
+	if err != nil {
+		log.Printf("failed to push application: %s", err)
+		c.exitStatus = 1
+		return
+	}
+
+	sourceServiceName := args[2]
+	destServiceName := args[3]
+
+	if _, err := cliConnection.CliCommand("bind-service", "migrate-app", sourceServiceName); err != nil {
+		log.Printf("failed to bind-service %q to application %q: %s", "migrate-app", sourceServiceName, err)
+		c.exitStatus = 1
+		return
+	}
+
+	if _, err := cliConnection.CliCommand("bind-service", "migrate-app", destServiceName); err != nil {
+		log.Printf("failed to bind-service %q to application %q: %s", "migrate-app", destServiceName, err)
+		c.exitStatus = 1
+		return
+	}
+
+	if _, err := cliConnection.CliCommand("start", "migrate-app"); err != nil {
+		log.Printf("failed to start application %q: %s", "migrate-app", err)
+		c.exitStatus = 1
+		return
+	}
+
+	app := cfapi.GetAppByName("migrate-app", cliConnection)
+
+	cmd := fmt.Sprintf(`bin/migrate %s %s`, sourceServiceName, destServiceName)
+	task := cfapi.CreateTask(app, cmd, cliConnection)
+
+	for task.State != "SUCCEEDED" && task.State != "FAILED" {
+		time.Sleep(1 * time.Second)
+		task = cfapi.GetTaskByGUID(task.Guid, cliConnection)
+	}
+
+	log.Printf("Done: %s", task.State)
 }
 
 func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
-		Name: "MysqlMigrate",
+		Name: "MysqlTools",
 		Version: plugin.VersionType{
 			Major: 1,
 			Minor: 0,
@@ -159,10 +112,10 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 		},
 		Commands: []plugin.Command{
 			{
-				Name:     "mysql-migrate",
+				Name:     "mysql-tools",
 				HelpText: "Plugin to migrate mysql instances",
 				UsageDetails: plugin.Usage{
-					Usage: "mysql-migrate\n   cf mysql-migrate <v1-service-instance> <v2-service-instance>",
+					Usage: "mysql-tools\n   cf mysql-tools migrate <v1-service-instance> <v2-service-instance>",
 				},
 			},
 		},
@@ -170,9 +123,7 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 }
 
 func main() {
-
-	mysqlPlugin := new(MySQLPlugin)
+	mysqlPlugin := &MySQLPlugin{}
 	plugin.Start(mysqlPlugin)
 	os.Exit(mysqlPlugin.exitStatus)
-
 }

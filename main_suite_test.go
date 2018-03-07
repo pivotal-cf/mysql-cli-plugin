@@ -21,7 +21,7 @@ var _ = BeforeSuite(func() {
 	command := exec.Command("cf", "install-plugin", binaryPath, "-f")
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
-	Eventually(session).Should(gexec.Exit(0))
+	Eventually(session, "1m", "1s").Should(gexec.Exit(0))
 })
 
 var _ = AfterSuite(func() {
