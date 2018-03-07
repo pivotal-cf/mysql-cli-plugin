@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"code.cloudfoundry.org/cli/plugin"
+	"github.com/gobuffalo/packr"
 	"github.com/pivotal-cf/mysql-v2-cli-plugin/cfapi"
 	"github.com/pivotal-cf/mysql-v2-cli-plugin/user"
 )
@@ -15,6 +19,7 @@ type MySQLPlugin struct {
 	exitStatus int
 }
 
+//go:generate packr --compress
 func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
 		return
@@ -49,12 +54,48 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		return
 	}
 
+	box := packr.NewBox("./app")
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
+	if err != nil {
+		panic(err)
+	}
+
+	err = box.Walk(func(name string, file packr.File) error {
+		info, err := file.FileInfo()
+		if err != nil {
+			log.Printf("Failed to state fileinfo: %s", err)
+			return err
+		}
+		log.Printf("box.path: %s [%d]", name, info.Size())
+
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(tmpDir, name)), 0700); err != nil {
+			return err
+		}
+
+		dest, err := os.Create(filepath.Join(tmpDir, name))
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(dest, file); err != nil {
+			return err
+		}
+
+		return dest.Chmod(0700)
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	log.Printf("Pushing app from %s", tmpDir)
+
 	_, err = cliConnection.CliCommand("push",
 		"migrate-app",
 		"-b", "binary_buildpack",
 		"-u", "none",
 		"-c", "sleep infinity",
-		"-p", "./app",
+		"-p", tmpDir,
 		"--no-start",
 	)
 	if err != nil {
