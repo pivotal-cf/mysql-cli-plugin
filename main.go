@@ -11,7 +11,7 @@ import (
 
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/gobuffalo/packr"
-	"github.com/pivotal-cf/mysql-cli-plugin/cfapi"
+	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/user"
 )
 
@@ -39,6 +39,9 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 	var (
 		user = user.NewReporter(cliConnection)
+		api = cf.NewApi(cliConnection)
+		sourceServiceName = args[2]
+		destServiceName = args[3]
 	)
 
 	ok, err := user.IsSpaceDeveloper()
@@ -109,9 +112,6 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		return
 	}
 
-	sourceServiceName := args[2]
-	destServiceName := args[3]
-
 	if _, err := cliConnection.CliCommand("bind-service", "migrate-app", sourceServiceName); err != nil {
 		log.Printf("failed to bind-service %q to application %q: %s", "migrate-app", sourceServiceName, err)
 		c.exitStatus = 1
@@ -130,14 +130,29 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		return
 	}
 
-	app := cfapi.GetAppByName("migrate-app", cliConnection)
+	app, err := api.GetAppByName("migrate-app")
+	if err != nil {
+		log.Printf("Error: %s", err)
+		c.exitStatus = 1
+		return
+	}
 
 	cmd := fmt.Sprintf(`./migrate %s %s`, sourceServiceName, destServiceName)
-	task := cfapi.CreateTask(app, cmd, cliConnection)
+	task, err := api.CreateTask(app, cmd)
+	if err != nil {
+		log.Printf("Error: %s", err)
+		c.exitStatus = 1
+		return
+	}
 
 	for task.State != "SUCCEEDED" && task.State != "FAILED" {
 		time.Sleep(1 * time.Second)
-		task = cfapi.GetTaskByGUID(task.Guid, cliConnection)
+		task, err = api.GetTaskByGUID(task.Guid)
+		if err != nil {
+			log.Printf("Error: %s", err)
+			c.exitStatus = 1
+			return
+		}
 	}
 
 	log.Printf("Done: %s", task.State)
