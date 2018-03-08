@@ -111,19 +111,26 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		c.exitStatus = 1
 		return
 	}
-	defer cliConnection.CliCommand("delete", "migrate-app", "-f")
+	defer func(){
+		cliConnection.CliCommand("delete", "migrate-app", "-f")
+		log.Print("Successfully deleted app")
+	}()
+	log.Print("Sucessfully pushed app")
 
 	if _, err := cliConnection.CliCommand("bind-service", "migrate-app", sourceServiceName); err != nil {
 		log.Printf("failed to bind-service %q to application %q: %s", "migrate-app", sourceServiceName, err)
 		c.exitStatus = 1
 		return
 	}
+	log.Print("Sucessfully bound app to v1 instance")
+
 
 	if _, err := cliConnection.CliCommand("bind-service", "migrate-app", destServiceName); err != nil {
 		log.Printf("failed to bind-service %q to application %q: %s", "migrate-app", destServiceName, err)
 		c.exitStatus = 1
 		return
 	}
+	log.Print("Sucessfully bound app to v2 instance")
 
 	if _, err := cliConnection.CliCommand("start", "migrate-app"); err != nil {
 		log.Printf("failed to start application %q: %s", "migrate-app", err)
@@ -138,6 +145,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		return
 	}
 
+	log.Print("Started to run migration task")
 	cmd := fmt.Sprintf(`./migrate %s %s`, sourceServiceName, destServiceName)
 	task, err := api.CreateTask(app, cmd)
 	if err != nil {
@@ -156,7 +164,8 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		}
 	}
 
-	log.Printf("Done: %s", task.State)
+	log.Printf("Finished running migration task: %s", task.State)
+	log.Print("Migration completed successfully")
 }
 
 func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
