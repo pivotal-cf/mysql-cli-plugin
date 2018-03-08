@@ -14,6 +14,9 @@ var _ = Describe("MysqlV2CliPlugin", func() {
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "5m", "1s").Should(gexec.Exit(0))
+		cmd = exec.Command("cf", "app", "migrate-app")
+		output, _ := cmd.CombinedOutput()
+		Expect(string(output)).To(ContainSubstring("App migrate-app not found"))
 	})
 
 	It("requires exactly 4 arguments", func() {

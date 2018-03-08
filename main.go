@@ -111,6 +111,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		c.exitStatus = 1
 		return
 	}
+	defer cliConnection.CliCommand("delete", "migrate-app", "-f")
 
 	if _, err := cliConnection.CliCommand("bind-service", "migrate-app", sourceServiceName); err != nil {
 		log.Printf("failed to bind-service %q to application %q: %s", "migrate-app", sourceServiceName, err)
