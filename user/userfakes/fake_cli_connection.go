@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/cli/plugin/models"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/user"
+	"github.com/pivotal-cf/mysql-cli-plugin/user"
 )
 
 type FakeCliConnection struct {

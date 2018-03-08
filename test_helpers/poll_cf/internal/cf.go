@@ -2,7 +2,7 @@ package internal
 
 import (
 	"github.com/onsi/gomega/gexec"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/test_helpers/poll_cf/commandreporter"
+	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers/poll_cf/commandreporter"
 )
 
 func Cf(cmdStarter Starter, args ...string) *gexec.Session {

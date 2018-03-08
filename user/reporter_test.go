@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"code.cloudfoundry.org/cli/plugin/models"
 	"github.com/pkg/errors"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/user/userfakes"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/user"
+	"github.com/pivotal-cf/mysql-cli-plugin/user/userfakes"
+	"github.com/pivotal-cf/mysql-cli-plugin/user"
 )
 
 var _ = Describe("Reporter IsSpaceDeveloper", func() {

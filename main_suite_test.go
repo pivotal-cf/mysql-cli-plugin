@@ -15,7 +15,7 @@ func TestMysqlV2CliPlugin(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	binaryPath, err := gexec.Build("github.com/pivotal-cf/mysql-v2-cli-plugin")
+	binaryPath, err := gexec.Build("github.com/pivotal-cf/mysql-cli-plugin")
 	Expect(err).NotTo(HaveOccurred())
 
 	command := exec.Command("cf", "install-plugin", binaryPath, "-f")

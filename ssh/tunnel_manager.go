@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
+	"github.com/pivotal-cf/mysql-cli-plugin/service"
 )
 
 //go:generate counterfeiter . CfCommandRunner

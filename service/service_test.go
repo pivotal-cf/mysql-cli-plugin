@@ -5,8 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/service/servicefakes"
+	"github.com/pivotal-cf/mysql-cli-plugin/service"
+	"github.com/pivotal-cf/mysql-cli-plugin/service/servicefakes"
 )
 
 var _ = Describe("ServiceInstance", func() {

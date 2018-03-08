@@ -5,7 +5,7 @@ import (
 
 	"database/sql"
 	"fmt"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
+	"github.com/pivotal-cf/mysql-cli-plugin/service"
 )
 
 type db struct{}

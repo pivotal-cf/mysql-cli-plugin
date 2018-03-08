@@ -11,8 +11,8 @@ import (
 
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/gobuffalo/packr"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/cfapi"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/user"
+	"github.com/pivotal-cf/mysql-cli-plugin/cfapi"
+	"github.com/pivotal-cf/mysql-cli-plugin/user"
 )
 
 type MySQLPlugin struct {

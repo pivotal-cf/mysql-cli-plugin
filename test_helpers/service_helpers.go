@@ -13,7 +13,7 @@ import (
 	"os/exec"
 	"strings"
 
-	pollcf "github.com/pivotal-cf/mysql-v2-cli-plugin/test_helpers/poll_cf/cf"
+	pollcf "github.com/pivotal-cf/mysql-cli-plugin/test_helpers/poll_cf/cf"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/config"

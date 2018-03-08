@@ -4,9 +4,8 @@ package sshfakes
 import (
 	"sync"
 
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/ssh"
+	"github.com/pivotal-cf/mysql-cli-plugin/service"
+	"github.com/pivotal-cf/mysql-cli-plugin/ssh"
 )
 
 type FakeDB struct {

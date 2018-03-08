@@ -3,9 +3,9 @@ package ssh_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/service"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/ssh"
-	"github.com/pivotal-cf/mysql-v2-cli-plugin/ssh/sshfakes"
+	"github.com/pivotal-cf/mysql-cli-plugin/service"
+	"github.com/pivotal-cf/mysql-cli-plugin/ssh"
+	"github.com/pivotal-cf/mysql-cli-plugin/ssh/sshfakes"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
