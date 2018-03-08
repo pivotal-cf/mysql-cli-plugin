@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
+export PATH="$SCRIPT_DIR/assets:$PATH"
+
+if [[ $# != 2 ]]; then
+  echo "Usage: $0 <source service> <target service>"
+  exit 64
+fi
+
+src_svc="$1"
+tgt_svc="$2"
+
+function vcap_credentials() {
+  local service_name="$1"
+
+  jq --raw-output \
+     --arg svc "${service_name}" \
+     '.[][] | select(.name == $svc) | .credentials' \
+     <<< "${VCAP_SERVICES}"
+}
+
+function vcap_cred() {
+  local name="$1"
+  local creds="$2"
+
+  jq --raw-output ".${name}" <<< "${creds}"
+
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to extract .${name} from creds='${creds}'" 1>&2
+  fi
+}
+
+function backup_source() {
+  local src_creds="$(vcap_credentials "${src_svc}")"
+  #echo "Extracted source credentials from VCAP_SERVICES: '${src_creds}'" 1>&2
+  MYSQL_PWD="$(vcap_cred "password" "${src_creds}" )" \
+    mysqldump --user="$(vcap_cred "username" "${src_creds}" )" \
+              --host="$(vcap_cred "hostname" "${src_creds}" )" \
+              --port="$(vcap_cred "port" "${src_creds}" )" \
+              --max-allowed-packet=1G \
+              --single-transaction \
+              --routines \
+              --events \
+              --set-gtid-purged=off \
+              "$(vcap_cred "name" "${src_creds}")"
+}
+
+function restore_target() {
+  local tgt_creds="$(vcap_credentials "${tgt_svc}")"
+
+  MYSQL_PWD="$(vcap_cred "password" "${tgt_creds}")" \
+    mysql --user="$(vcap_cred "username" "${tgt_creds}")" \
+          --host="$(vcap_cred "hostname" "${tgt_creds}")" \
+          --port="$(vcap_cred "port" "${tgt_creds}")" \
+          --database="$(vcap_cred "name" "${tgt_creds}")"
+}
+
+backup_source | restore_target

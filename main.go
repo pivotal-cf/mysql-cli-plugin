@@ -96,6 +96,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		"-u", "none",
 		"-c", "sleep infinity",
 		"-p", tmpDir,
+		"--no-route",
 		"--no-start",
 	)
 	if err != nil {
@@ -127,7 +128,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 	app := cfapi.GetAppByName("migrate-app", cliConnection)
 
-	cmd := fmt.Sprintf(`bin/migrate %s %s`, sourceServiceName, destServiceName)
+	cmd := fmt.Sprintf(`./migrate %s %s`, sourceServiceName, destServiceName)
 	task := cfapi.CreateTask(app, cmd, cliConnection)
 
 	for task.State != "SUCCEEDED" && task.State != "FAILED" {

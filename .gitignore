@@ -3,3 +3,4 @@ mysql-v2-cli-plugin
 .idea/
 *-packr.go
 .DS_Store
+app/assets

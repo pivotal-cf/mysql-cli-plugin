@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+set -e
+
+tmp_dir=$(mktemp -d)
+output_dir='app/assets'
+boost_version='1_59_0'
+percona_version='5.7.21-20'
+
+DEBIAN_FRONTEND=noninteractive apt-get update && \
+DEBIAN_FRONTEND=noninteractive apt-get -y install \
+  --no-install-recommends \
+  cmake g++ make \
+  libreadline6-dev \
+  libncurses5-dev \
+  libssl-dev \
+  zlib1g-dev
+
+wget -O $tmp_dir/boost.tgz http://jenkins.percona.com/downloads/boost/boost_${boost_version}.tar.gz
+wget -O $tmp_dir/percona.tgz https://www.percona.com/downloads/Percona-Server-LATEST/Percona-Server-${percona_version}/source/tarball/percona-server-5.7.21-20.tar.gz
+
+tar -xf $tmp_dir/boost.tgz -C $tmp_dir && \
+tar -xf $tmp_dir/percona.tgz -C $tmp_dir && \
+
+pushd $tmp_dir/percona-server-${percona_version} >/dev/null
+CMAKE_INCLUDE_PATH=/usr/include/ cmake . \
+  -DBUILD_CONFIG=mysql_release \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_INSTALL_PREFIX=/build \
+  -DFEATURE_SET=community \
+  -DINSTALL_MYSQLTESTDIR= \
+  -DWITH_BOOST=../boost_${boost_version} \
+  -DWITH_EMBEDDED_SERVER=OFF \
+  -DWITH_READLINE=system \
+  -DWITH_SSL=system \
+  -DWITH_ZLIB=system \
+  -DIGNORE_AIO_CHECK=ON \
+  -DWITHOUT_SERVER=ON && \
+  make --jobs 4 && \
+  make install
+popd >/dev/null
+
+rm -rf ${output_dir}
+mkdir -p ${output_dir}
+mv /build/COPYING ${output_dir}
+mv /build/README.MySQL ${output_dir}
+mv /build/bin/mysql ${output_dir}
+mv /build/bin/mysqldump ${output_dir}
