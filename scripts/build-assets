@@ -17,7 +17,7 @@ DEBIAN_FRONTEND=noninteractive apt-get -y install \
   zlib1g-dev
 
 wget -O $tmp_dir/boost.tgz http://jenkins.percona.com/downloads/boost/boost_${boost_version}.tar.gz
-wget -O $tmp_dir/percona.tgz https://www.percona.com/downloads/Percona-Server-LATEST/Percona-Server-${percona_version}/source/tarball/percona-server-5.7.21-20.tar.gz
+wget -O $tmp_dir/percona.tgz https://www.percona.com/downloads/Percona-Server-LATEST/Percona-Server-${percona_version}/source/tarball/percona-server-${percona_version}.tar.gz
 
 tar -xf $tmp_dir/boost.tgz -C $tmp_dir && \
 tar -xf $tmp_dir/percona.tgz -C $tmp_dir && \
