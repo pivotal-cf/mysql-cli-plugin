@@ -57,7 +57,9 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	box := packr.NewBox("./app")
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
 	if err != nil {
-		panic(err)
+		log.Printf("Error creating temp directory: %s", err)
+		c.exitStatus = 1
+		return
 	}
 
 	err = box.Walk(func(name string, file packr.File) error {
@@ -85,7 +87,9 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	})
 
 	if err != nil {
-		panic(err)
+		log.Printf("Error extracting migrate assets: %s", err)
+		c.exitStatus = 1
+		return
 	}
 
 	log.Printf("Pushing app from %s", tmpDir)
