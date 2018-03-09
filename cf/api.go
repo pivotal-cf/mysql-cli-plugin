@@ -102,3 +102,15 @@ func (a *Api) CreateTask(app App, command string) (Task, error) {
 
 	return taskInfo, nil
 }
+
+func (a *Api) WaitForTask(task Task) (string, error) {
+	var t Task
+	var err error
+	for t.State != "SUCCEEDED" && t.State != "FAILED" {
+		t, err = a.GetTaskByGUID(task.Guid)
+		if err != nil {
+			return "", err
+		}
+	}
+	return t.State, nil
+}

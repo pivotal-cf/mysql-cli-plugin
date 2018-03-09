@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/gobuffalo/packr"
@@ -38,10 +37,10 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 
 	var (
-		user = user.NewReporter(cliConnection)
-		api = cf.NewApi(cliConnection)
+		user              = user.NewReporter(cliConnection)
+		api               = cf.NewApi(cliConnection)
 		sourceServiceName = args[2]
-		destServiceName = args[3]
+		destServiceName   = args[3]
 	)
 
 	ok, err := user.IsSpaceDeveloper()
@@ -64,6 +63,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		c.exitStatus = 1
 		return
 	}
+	defer os.RemoveAll(tmpDir)
 
 	err = box.Walk(func(name string, file packr.File) error {
 		info, err := file.FileInfo()
@@ -71,7 +71,6 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			log.Printf("Failed to state fileinfo: %s", err)
 			return err
 		}
-		log.Printf("box.path: %s [%d]", name, info.Size())
 
 		if err := os.MkdirAll(filepath.Dir(filepath.Join(tmpDir, name)), 0700); err != nil {
 			return err
@@ -81,6 +80,8 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		if err != nil {
 			return err
 		}
+
+		log.Printf("Extracting: %s [%d bytes] to %s", name, info.Size(), dest.Name())
 
 		if _, err := io.Copy(dest, file); err != nil {
 			return err
@@ -97,7 +98,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 	log.Printf("Pushing app from %s", tmpDir)
 
-	_, err = cliConnection.CliCommand("push",
+	_, err = cliConnection.CliCommandWithoutTerminalOutput("push",
 		"migrate-app",
 		"-b", "binary_buildpack",
 		"-u", "none",
@@ -111,28 +112,27 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		c.exitStatus = 1
 		return
 	}
-	defer func(){
-		cliConnection.CliCommand("delete", "migrate-app", "-f")
-		log.Print("Successfully deleted app")
+	defer func() {
+		cliConnection.CliCommandWithoutTerminalOutput("delete", "migrate-app", "-f")
+		log.Print("Cleaning up...")
 	}()
 	log.Print("Sucessfully pushed app")
 
-	if _, err := cliConnection.CliCommand("bind-service", "migrate-app", sourceServiceName); err != nil {
+	if _, err := cliConnection.CliCommandWithoutTerminalOutput("bind-service", "migrate-app", sourceServiceName); err != nil {
 		log.Printf("failed to bind-service %q to application %q: %s", "migrate-app", sourceServiceName, err)
 		c.exitStatus = 1
 		return
 	}
 	log.Print("Sucessfully bound app to v1 instance")
 
-
-	if _, err := cliConnection.CliCommand("bind-service", "migrate-app", destServiceName); err != nil {
+	if _, err := cliConnection.CliCommandWithoutTerminalOutput("bind-service", "migrate-app", destServiceName); err != nil {
 		log.Printf("failed to bind-service %q to application %q: %s", "migrate-app", destServiceName, err)
 		c.exitStatus = 1
 		return
 	}
 	log.Print("Sucessfully bound app to v2 instance")
 
-	if _, err := cliConnection.CliCommand("start", "migrate-app"); err != nil {
+	if _, err := cliConnection.CliCommandWithoutTerminalOutput("start", "migrate-app"); err != nil {
 		log.Printf("failed to start application %q: %s", "migrate-app", err)
 		c.exitStatus = 1
 		return
@@ -154,18 +154,21 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		return
 	}
 
-	for task.State != "SUCCEEDED" && task.State != "FAILED" {
-		time.Sleep(1 * time.Second)
-		task, err = api.GetTaskByGUID(task.Guid)
-		if err != nil {
-			log.Printf("Error: %s", err)
-			c.exitStatus = 1
-			return
-		}
+	finalState, err := api.WaitForTask(task)
+	if err != nil {
+		log.Printf("Error when waiting for task to complete: %s", err)
+		c.exitStatus = 1
 	}
 
-	log.Printf("Finished running migration task: %s", task.State)
-	log.Print("Migration completed successfully")
+	log.Printf("Final migration task state: %s", finalState)
+
+	if finalState == "SUCCEEDED" {
+		log.Print("Migration completed successfully")
+	} else {
+		log.Print("Migration failed")
+		cliConnection.CliCommand("logs", "--recent", "migrate-app")
+		c.exitStatus = 1
+	}
 }
 
 func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {

@@ -2,6 +2,7 @@ package cf_test
 
 import (
 	"errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
@@ -198,5 +199,69 @@ var _ = Describe("CreateTask", func() {
 			Expect(err).To(MatchError("failed to create a task: 404: some-title - some-detail"))
 		})
 
+	})
+})
+
+var _ = Describe("WaitForTask", func() {
+	var (
+		client              *cf.Api
+		fakeCfCommandRunner *cffakes.FakeCfCommandRunner
+	)
+
+	BeforeEach(func() {
+		fakeCfCommandRunner = new(cffakes.FakeCfCommandRunner)
+		client = cf.NewApi(fakeCfCommandRunner)
+	})
+
+	Context("when the task succeeds", func() {
+		It("returns no error", func() {
+			task := cf.Task{Guid: "some-guid"}
+			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
+				`{`,
+				`"guid": "some-guid",`,
+				`"state": "SUCCEEDED"`,
+				`}`,
+			}, nil)
+
+			Expect(client.WaitForTask(task)).To(Equal("SUCCEEDED"))
+		})
+	})
+
+	Context("when the task fails", func() {
+		It("returns the error", func() {
+			task := cf.Task{Guid: "some-guid"}
+			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(nil, errors.New("some-error"))
+
+			_, err := client.WaitForTask(task)
+			Expect(err).To(MatchError("failed to retrieve a task by guid: some-error"))
+		})
+	})
+
+	Context("when polling the task has a network blip and eventually succeeds", func() {
+		It("returns no error", func() {
+
+			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(0,
+				[]string{`{"guid": "some-guid", "state": "RUNNING"}`}, nil,
+			)
+			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+				[]string{`{"errors":[{"detail":"Invalid Auth Token","title":"CF-InvalidAuthToken","code":1000}]}`}, nil,
+			)
+			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(2,
+				[]string{`{"guid": "some-guid", "state": "SUCCEEDED"}`}, nil,
+			)
+
+			task := cf.Task{Guid: "some-guid"}
+			Expect(client.WaitForTask(task)).To(Equal("SUCCEEDED"))
+
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).To(Equal(
+				[]string{"curl", "/v3/tasks/some-guid"},
+			))
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)).To(Equal(
+				[]string{"curl", "/v3/tasks/some-guid"},
+			))
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)).To(Equal(
+				[]string{"curl", "/v3/tasks/some-guid"},
+			))
+		})
 	})
 })

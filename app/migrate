@@ -35,7 +35,13 @@ function vcap_cred() {
 
 function backup_source() {
   local src_creds="$(vcap_credentials "${src_svc}")"
-  #echo "Extracted source credentials from VCAP_SERVICES: '${src_creds}'" 1>&2
+  local use_tls="$(jq 'has("tls")' <<<"${src_creds}")"
+  local mysql_tls_opts=""
+
+  if [[ "${use_tls}" == "true" ]]; then
+    mysql_tls_opts="--ssl-mode=VERIFY_CA --ssl-capath=/etc/ssl/certs"
+  fi
+
   MYSQL_PWD="$(vcap_cred "password" "${src_creds}" )" \
     mysqldump --user="$(vcap_cred "username" "${src_creds}" )" \
               --host="$(vcap_cred "hostname" "${src_creds}" )" \
@@ -45,17 +51,25 @@ function backup_source() {
               --routines \
               --events \
               --set-gtid-purged=off \
+              ${mysql_tls_opts} \
               "$(vcap_cred "name" "${src_creds}")"
 }
 
 function restore_target() {
   local tgt_creds="$(vcap_credentials "${tgt_svc}")"
+  local use_tls="$(jq 'has("tls")' <<<"${tgt_creds}")"
+  local mysql_tls_opts=""
+
+  if [[ "${use_tls}" == "true" ]]; then
+    mysql_tls_opts="--ssl-mode=VERIFY_CA --ssl-capath=/etc/ssl/certs"
+  fi
 
   MYSQL_PWD="$(vcap_cred "password" "${tgt_creds}")" \
     mysql --user="$(vcap_cred "username" "${tgt_creds}")" \
           --host="$(vcap_cred "hostname" "${tgt_creds}")" \
           --port="$(vcap_cred "port" "${tgt_creds}")" \
-          --database="$(vcap_cred "name" "${tgt_creds}")"
+          --database="$(vcap_cred "name" "${tgt_creds}")" \
+          ${mysql_tls_opts}
 }
 
 backup_source | restore_target
