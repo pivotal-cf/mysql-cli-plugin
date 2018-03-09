@@ -39,7 +39,7 @@ function backup_source() {
   local mysql_tls_opts=""
 
   if [[ "${use_tls}" == "true" ]]; then
-    mysql_tls_opts="--ssl-mode=VERIFY_CA --ssl-capath=/etc/ssl/certs"
+    mysql_tls_opts="--ssl-mode=VERIFY_IDENTITY --ssl-capath=/etc/ssl/certs"
   fi
 
   MYSQL_PWD="$(vcap_cred "password" "${src_creds}" )" \
@@ -61,7 +61,7 @@ function restore_target() {
   local mysql_tls_opts=""
 
   if [[ "${use_tls}" == "true" ]]; then
-    mysql_tls_opts="--ssl-mode=VERIFY_CA --ssl-capath=/etc/ssl/certs"
+    mysql_tls_opts="--ssl-mode=VERIFY_IDENTITY --ssl-capath=/etc/ssl/certs"
   fi
 
   MYSQL_PWD="$(vcap_cred "password" "${tgt_creds}")" \

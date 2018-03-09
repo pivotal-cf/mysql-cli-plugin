@@ -9,7 +9,7 @@ import (
 )
 
 var _ = Describe("MysqlV2CliPlugin", func() {
-	It("pushes an app given the right number of args", func() {
+	It("migrates data given the right number of args", func() {
 		cmd := exec.Command("cf", "mysql-tools", "migrate", "test-v1-donor", "test-v2-recipient")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
@@ -19,7 +19,7 @@ var _ = Describe("MysqlV2CliPlugin", func() {
 		Expect(string(output)).To(ContainSubstring("App migrate-app not found"))
 	})
 
-	It("pushes an app given the right number of args", func() {
+	It("migrates data to a tls database given the right number of args", func() {
 		cmd := exec.Command("cf", "mysql-tools", "migrate", "test-v1-donor", "test-v2-tls-recipient")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
