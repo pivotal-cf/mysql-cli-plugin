@@ -18,7 +18,8 @@ type MySQLPlugin struct {
 	exitStatus int
 }
 
-//go:generate packr --compress
+//go:generate go install github.com/pivotal-cf/mysql-cli-plugin/vendor/github.com/gobuffalo/packr/...
+//go:generate $GOPATH/bin/packr --compress
 func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
 		return

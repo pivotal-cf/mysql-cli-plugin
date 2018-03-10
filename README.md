@@ -23,7 +23,7 @@ $ go get github.com/pivotal-cf/mysql-cli-plugin
    ```
 1. Run go generate to create golang compatible static assets out of the utilities
    ```
-   $ go generate ./...
+   $ go generate .
    ```
 1. Compile the final binary
    ```
