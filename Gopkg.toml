@@ -20,6 +20,8 @@
 #  name = "github.com/x/y"
 #  version = "2.4.0"
 
+# The following are necessary for building packr
+required = [ "golang.org/x/sync/errgroup", "github.com/markbates/grift", "github.com/spf13/cobra" ]
 
 [[constraint]]
   name = "code.cloudfoundry.org/cli"
@@ -36,3 +38,4 @@
 [[constraint]]
   name = "github.com/gobuffalo/packr"
   version = "1.10.4"
+
