@@ -67,12 +67,6 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	defer os.RemoveAll(tmpDir)
 
 	err = box.Walk(func(name string, file packr.File) error {
-		info, err := file.FileInfo()
-		if err != nil {
-			log.Printf("Failed to state fileinfo: %s", err)
-			return err
-		}
-
 		if err := os.MkdirAll(filepath.Dir(filepath.Join(tmpDir, name)), 0700); err != nil {
 			return err
 		}
@@ -81,8 +75,6 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		if err != nil {
 			return err
 		}
-
-		log.Printf("Extracting: %s [%d bytes] to %s", name, info.Size(), dest.Name())
 
 		if _, err := io.Copy(dest, file); err != nil {
 			return err
@@ -97,7 +89,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		return
 	}
 
-	log.Printf("Pushing app from %s", tmpDir)
+	log.Print("Started to push app")
 
 	_, err = cliConnection.CliCommandWithoutTerminalOutput("push",
 		"migrate-app",
