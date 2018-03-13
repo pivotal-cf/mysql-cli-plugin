@@ -8,7 +8,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 )
 
-var _ = Describe("MysqlV2CliPlugin", func() {
+var _ = Describe("MysqlCliPlugin", func() {
 	It("migrates data given the right number of args", func() {
 		cmd := exec.Command("cf", "mysql-tools", "migrate", "test-v1-donor", "test-v2-recipient")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
