@@ -12,11 +12,10 @@ import (
 	"github.com/gobuffalo/packr"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/user"
+	"github.com/pkg/errors"
 )
 
-type MySQLPlugin struct {
-	exitStatus int
-}
+type MySQLPlugin struct{}
 
 //go:generate go install github.com/pivotal-cf/mysql-cli-plugin/vendor/github.com/gobuffalo/packr/...
 //go:generate $GOPATH/bin/packr --compress
@@ -27,42 +26,45 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 	if len(args) >= 2 && args[1] != "migrate" {
 		log.Printf("Unknown command '%s'", args[1])
-		c.exitStatus = 1
+		os.Exit(1)
 		return
 	}
 
 	if len(args) != 4 {
 		log.Println("Usage: cf mysql-tools migrate <v1-service-instance> <v2-service-instance>")
-		c.exitStatus = 1
+		os.Exit(1)
 		return
 	}
 
+	sourceServiceName := args[2]
+	destServiceName := args[3]
+
+	err := c.run(cliConnection, sourceServiceName, destServiceName)
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+}
+
+func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName, destServiceName string) error {
 	var (
-		user              = user.NewReporter(cliConnection)
-		api               = cf.NewApi(cliConnection)
-		sourceServiceName = args[2]
-		destServiceName   = args[3]
+		user = user.NewReporter(cliConnection)
+		api  = cf.NewApi(cliConnection)
 	)
 
 	ok, err := user.IsSpaceDeveloper()
 	if err != nil {
-		log.Printf("Error getting user information: %v", err)
-		c.exitStatus = 1
-		return
+		return errors.Errorf("Error getting user information: %v", err)
 	}
 
 	if !ok {
-		log.Println("You must have the 'Space Developer' privilege to use the 'cf mysql migrate' command")
-		c.exitStatus = 1
-		return
+		return errors.New("You must have the 'Space Developer' privilege to use the 'cf mysql migrate' command")
 	}
 
 	box := packr.NewBox("./app")
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
 	if err != nil {
-		log.Printf("Error creating temp directory: %s", err)
-		c.exitStatus = 1
-		return
+		return errors.Errorf("Error creating temp directory: %s", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
@@ -84,9 +86,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	})
 
 	if err != nil {
-		log.Printf("Error extracting migrate assets: %s", err)
-		c.exitStatus = 1
-		return
+		return errors.Errorf("Error extracting migrate assets: %s", err)
 	}
 
 	log.Print("Started to push app")
@@ -101,9 +101,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		"--no-start",
 	)
 	if err != nil {
-		log.Printf("failed to push application: %s", err)
-		c.exitStatus = 1
-		return
+		return errors.Errorf("failed to push application: %s", err)
 	}
 	defer func() {
 		cliConnection.CliCommandWithoutTerminalOutput("delete", "migrate-app", "-f")
@@ -112,55 +110,45 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	log.Print("Sucessfully pushed app")
 
 	if _, err := cliConnection.CliCommandWithoutTerminalOutput("bind-service", "migrate-app", sourceServiceName); err != nil {
-		log.Printf("failed to bind-service %q to application %q: %s", "migrate-app", sourceServiceName, err)
-		c.exitStatus = 1
-		return
+		return errors.Errorf("failed to bind-service %q to application %q: %s", "migrate-app", sourceServiceName, err)
 	}
 	log.Print("Sucessfully bound app to v1 instance")
 
 	if _, err := cliConnection.CliCommandWithoutTerminalOutput("bind-service", "migrate-app", destServiceName); err != nil {
-		log.Printf("failed to bind-service %q to application %q: %s", "migrate-app", destServiceName, err)
-		c.exitStatus = 1
-		return
+		return errors.Errorf("failed to bind-service %q to application %q: %s", "migrate-app", destServiceName, err)
 	}
 	log.Print("Sucessfully bound app to v2 instance")
 
 	if _, err := cliConnection.CliCommandWithoutTerminalOutput("start", "migrate-app"); err != nil {
-		log.Printf("failed to start application %q: %s", "migrate-app", err)
-		c.exitStatus = 1
-		return
+		return errors.Errorf("failed to start application %q: %s", "migrate-app", err)
 	}
 
 	app, err := api.GetAppByName("migrate-app")
 	if err != nil {
-		log.Printf("Error: %s", err)
-		c.exitStatus = 1
-		return
+		return errors.Errorf("Error: %s", err)
 	}
 
 	log.Print("Started to run migration task")
 	cmd := fmt.Sprintf(`./migrate %s %s`, sourceServiceName, destServiceName)
 	task, err := api.CreateTask(app, cmd)
 	if err != nil {
-		log.Printf("Error: %s", err)
-		c.exitStatus = 1
-		return
+		return errors.Errorf("Error: %s", err)
 	}
 
 	finalState, err := api.WaitForTask(task)
 	if err != nil {
-		log.Printf("Error when waiting for task to complete: %s", err)
-		c.exitStatus = 1
+		return errors.Errorf("Error when waiting for task to complete: %s", err)
 	}
 
 	log.Printf("Final migration task state: %s", finalState)
 
 	if finalState == "SUCCEEDED" {
 		log.Print("Migration completed successfully")
+		return nil
 	} else {
 		log.Print("Migration failed")
 		cliConnection.CliCommand("logs", "--recent", "migrate-app")
-		c.exitStatus = 1
+		return errors.New("FAILED")
 	}
 }
 
@@ -192,5 +180,4 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 func main() {
 	mysqlPlugin := &MySQLPlugin{}
 	plugin.Start(mysqlPlugin)
-	os.Exit(mysqlPlugin.exitStatus)
 }
