@@ -7,12 +7,14 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/gobuffalo/packr"
+	"github.com/pkg/errors"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/user"
-	"github.com/pkg/errors"
 )
 
 type MySQLPlugin struct{}
@@ -47,6 +49,9 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 }
 
 func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName, destServiceName string) error {
+	const unixMode = 0700
+	const windowsMode = 0600
+
 	var (
 		user = user.NewReporter(cliConnection)
 		api  = cf.NewApi(cliConnection)
@@ -82,7 +87,11 @@ func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName,
 			return err
 		}
 
-		return dest.Chmod(0700)
+		if runtime.GOOS == "windows" {
+			return dest.Chmod(windowsMode)
+		}
+
+		return dest.Chmod(unixMode)
 	})
 
 	if err != nil {
