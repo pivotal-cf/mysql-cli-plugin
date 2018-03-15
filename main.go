@@ -49,9 +49,6 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 }
 
 func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName, destServiceName string) error {
-	const unixMode = 0700
-	const windowsMode = 0600
-
 	var (
 		user = user.NewReporter(cliConnection)
 		api  = cf.NewApi(cliConnection)
@@ -87,11 +84,11 @@ func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName,
 			return err
 		}
 
-		if runtime.GOOS == "windows" {
-			return dest.Chmod(windowsMode)
+		if runtime.GOOS != "windows" {
+			return dest.Chmod(0700)
 		}
 
-		return dest.Chmod(unixMode)
+		return nil
 	})
 
 	if err != nil {
