@@ -1,6 +1,6 @@
 # mysql-cli-plugin
 
-A Cloud Foundry CLI plugin intended for interaction with *p.mysql* service instances.
+A Cloud Foundry CLI plugin intended for interaction with [p.mysql](https://network.pivotal.io/products/pivotal-mysql/) service instances.
 
 ## Installation
 
