@@ -19,6 +19,10 @@ import (
 
 type MySQLPlugin struct{}
 
+var (
+	version string = "built from source"
+)
+
 //go:generate go install github.com/pivotal-cf/mysql-cli-plugin/vendor/github.com/gobuffalo/packr/...
 //go:generate $GOPATH/bin/packr --compress
 func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
@@ -26,25 +30,37 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		return
 	}
 
-	if len(args) >= 2 && args[1] != "migrate" {
-		log.Printf("Unknown command '%s'", args[1])
+	if len(args) < 2 {
+		log.Printf("Please pass in a command [migrate|version] to mysql-tools")
 		os.Exit(1)
 		return
 	}
 
-	if len(args) != 4 {
-		log.Println("Usage: cf mysql-tools migrate <v1-service-instance> <v2-service-instance>")
+	command := args[1]
+
+	switch command {
+	default:
+		log.Printf("Unknown command '%s'", command)
 		os.Exit(1)
 		return
-	}
+	case "version":
+		fmt.Println(version)
+		os.Exit(0)
+	case "migrate":
+		if len(args) != 4 {
+			log.Println("Usage: cf mysql-tools migrate <v1-service-instance> <v2-service-instance>")
+			os.Exit(1)
+			return
+		}
 
-	sourceServiceName := args[2]
-	destServiceName := args[3]
+		sourceServiceName := args[2]
+		destServiceName := args[3]
 
-	err := c.run(cliConnection, sourceServiceName, destServiceName)
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
+		err := c.run(cliConnection, sourceServiceName, destServiceName)
+		if err != nil {
+			log.Println(err)
+			os.Exit(1)
+		}
 	}
 }
 

@@ -1,11 +1,12 @@
 package main_test
 
 import (
+	"os/exec"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"os/exec"
-	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("MysqlCliPlugin", func() {
@@ -43,5 +44,14 @@ var _ = Describe("MysqlCliPlugin", func() {
 
 		Expect(session.Err).To(gbytes.Say(`Unknown command 'invalid'`))
 
+	})
+
+	It("shows a mysql version", func() {
+		cmd := exec.Command("cf", "mysql-tools", "version")
+		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "60s", "1s").Should(gexec.Exit(0))
+
+		Expect(session).To(gbytes.Say(`\d\.\d\.\d\s\(.*\)`))
 	})
 })
