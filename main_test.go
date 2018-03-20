@@ -27,8 +27,17 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Eventually(session, "5m", "1s").Should(gexec.Exit(0))
 	})
 
-	It("requires exactly 4 arguments", func() {
+	It("requires a command", func() {
 		cmd := exec.Command("cf", "mysql-tools")
+		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
+
+		Expect(session.Err).To(gbytes.Say(`Please pass in a command [migrate|version] to mysql-tools`))
+	})
+
+	It("requires exactly 4 arguments", func() {
+		cmd := exec.Command("cf", "mysql-tools", "migrate")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
@@ -52,6 +61,6 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(0))
 
-		Expect(session).To(gbytes.Say(`\d\.\d\.\d\s\(.*\)`))
+		Expect(session).To(gbytes.Say(`\d\.\d\.\d(-?)(\s|\w+)(\(.*\)|\.?\d*\s\(.*\))`)) // Allows for versions like 0.1.0 (abcde) and  0.1.0-build.23 (b9ff4d2)
 	})
 })
