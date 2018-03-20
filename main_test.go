@@ -33,7 +33,7 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		Expect(session.Err).To(gbytes.Say(`Please pass in a command [migrate|version] to mysql-tools`))
+		Expect(session.Err).To(gbytes.Say(`Please pass in a command \[migrate\|version\] to mysql-tools`))
 	})
 
 	It("requires exactly 4 arguments", func() {
