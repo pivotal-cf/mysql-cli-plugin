@@ -4,6 +4,7 @@ package cffakes
 import (
 	"sync"
 
+	"code.cloudfoundry.org/cli/plugin/models"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 )
 
@@ -32,6 +33,17 @@ type FakeCfCommandRunner struct {
 	}
 	cliCommandWithoutTerminalOutputReturnsOnCall map[int]struct {
 		result1 []string
+		result2 error
+	}
+	GetCurrentSpaceStub        func() (plugin_models.Space, error)
+	getCurrentSpaceMutex       sync.RWMutex
+	getCurrentSpaceArgsForCall []struct{}
+	getCurrentSpaceReturns     struct {
+		result1 plugin_models.Space
+		result2 error
+	}
+	getCurrentSpaceReturnsOnCall map[int]struct {
+		result1 plugin_models.Space
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -140,6 +152,49 @@ func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputReturnsOnCall(i 
 	}{result1, result2}
 }
 
+func (fake *FakeCfCommandRunner) GetCurrentSpace() (plugin_models.Space, error) {
+	fake.getCurrentSpaceMutex.Lock()
+	ret, specificReturn := fake.getCurrentSpaceReturnsOnCall[len(fake.getCurrentSpaceArgsForCall)]
+	fake.getCurrentSpaceArgsForCall = append(fake.getCurrentSpaceArgsForCall, struct{}{})
+	fake.recordInvocation("GetCurrentSpace", []interface{}{})
+	fake.getCurrentSpaceMutex.Unlock()
+	if fake.GetCurrentSpaceStub != nil {
+		return fake.GetCurrentSpaceStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getCurrentSpaceReturns.result1, fake.getCurrentSpaceReturns.result2
+}
+
+func (fake *FakeCfCommandRunner) GetCurrentSpaceCallCount() int {
+	fake.getCurrentSpaceMutex.RLock()
+	defer fake.getCurrentSpaceMutex.RUnlock()
+	return len(fake.getCurrentSpaceArgsForCall)
+}
+
+func (fake *FakeCfCommandRunner) GetCurrentSpaceReturns(result1 plugin_models.Space, result2 error) {
+	fake.GetCurrentSpaceStub = nil
+	fake.getCurrentSpaceReturns = struct {
+		result1 plugin_models.Space
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCfCommandRunner) GetCurrentSpaceReturnsOnCall(i int, result1 plugin_models.Space, result2 error) {
+	fake.GetCurrentSpaceStub = nil
+	if fake.getCurrentSpaceReturnsOnCall == nil {
+		fake.getCurrentSpaceReturnsOnCall = make(map[int]struct {
+			result1 plugin_models.Space
+			result2 error
+		})
+	}
+	fake.getCurrentSpaceReturnsOnCall[i] = struct {
+		result1 plugin_models.Space
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCfCommandRunner) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -147,6 +202,8 @@ func (fake *FakeCfCommandRunner) Invocations() map[string][][]interface{} {
 	defer fake.cliCommandMutex.RUnlock()
 	fake.cliCommandWithoutTerminalOutputMutex.RLock()
 	defer fake.cliCommandWithoutTerminalOutputMutex.RUnlock()
+	fake.getCurrentSpaceMutex.RLock()
+	defer fake.getCurrentSpaceMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
