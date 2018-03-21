@@ -1,0 +1,7 @@
+---
+applications:
+- memory: 512M
+  disk: 256M
+  path: build/libs/spring-music.jar
+  env:
+    JBP_CONFIG_OPEN_JDK_JRE: '{ memory_calculator: { stack_threads: 50 } }'

@@ -1,0 +1,64 @@
+buildscript {
+    ext {
+        springBootVersion = '1.5.9.RELEASE'
+        springCloudConnectorsVersion = '1.2.5.RELEASE'
+    }
+
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven { url "https://repo.spring.io/plugins-release" }
+    }
+
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+apply plugin: 'java'
+
+apply plugin: 'eclipse-wtp'
+apply plugin: 'idea'
+
+apply plugin: 'org.springframework.boot'
+
+version = '1.0'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Spring Boot
+    compile "org.springframework.boot:spring-boot-starter-web"
+    compile "org.springframework.boot:spring-boot-starter-actuator"
+    compile "org.springframework.boot:spring-boot-starter-data-jpa"
+
+    // Spring Cloud Connectors
+    compile "org.springframework.cloud:spring-cloud-core:${springCloudConnectorsVersion}"
+    compile "org.springframework.cloud:spring-cloud-spring-service-connector:${springCloudConnectorsVersion}"
+    compile "org.springframework.cloud:spring-cloud-cloudfoundry-connector:${springCloudConnectorsVersion}"
+
+    // JPA Persistence
+    compile "commons-dbcp:commons-dbcp"
+    runtime "com.h2database:h2"
+    runtime "mysql:mysql-connector-java"
+
+    // Webjars
+    compile "org.webjars:bootstrap:3.1.1"
+    compile "org.webjars:angularjs:1.2.16"
+    compile "org.webjars:angular-ui:0.4.0-2"
+    compile "org.webjars:angular-ui-bootstrap:0.10.0-1"
+    compile "org.webjars:jquery:2.1.0-2"
+
+    // Testing
+    testCompile "junit:junit"
+}
+
+jar {
+    baseName = "spring-music"
+    version = "" // omit the version from the war file name
+}

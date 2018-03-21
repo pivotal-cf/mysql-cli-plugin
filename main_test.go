@@ -3,29 +3,17 @@ package main_test
 import (
 	"os/exec"
 
+	"os"
+
+	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
 
 var _ = Describe("MysqlCliPlugin", func() {
-	It("migrates data given the right number of args", func() {
-		cmd := exec.Command("cf", "mysql-tools", "migrate", "test-v1-donor", "test-v2-recipient")
-		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "5m", "1s").Should(gexec.Exit(0))
-		cmd = exec.Command("cf", "app", "migrate-app")
-		output, _ := cmd.CombinedOutput()
-		Expect(string(output)).To(ContainSubstring("App migrate-app not found"))
-	})
-
-	It("migrates data to a tls database given the right number of args", func() {
-		cmd := exec.Command("cf", "mysql-tools", "migrate", "test-v1-donor", "test-v2-tls-recipient")
-		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "5m", "1s").Should(gexec.Exit(0))
-	})
 
 	It("requires a command", func() {
 		cmd := exec.Command("cf", "mysql-tools")
