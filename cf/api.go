@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"code.cloudfoundry.org/cli/plugin/models"
 	"github.com/pkg/errors"
 )
 
@@ -12,6 +13,7 @@ import (
 type CfCommandRunner interface {
 	CliCommand(...string) ([]string, error)
 	CliCommandWithoutTerminalOutput(args ...string) ([]string, error)
+	GetCurrentSpace() (plugin_models.Space, error)
 }
 
 type Api struct {
@@ -40,7 +42,12 @@ type App struct {
 }
 
 func (a *Api) GetAppByName(name string) (App, error) {
-	output, err := a.cfCommandRunner.CliCommandWithoutTerminalOutput("curl", "/v3/apps?names="+name)
+	space, err := a.cfCommandRunner.GetCurrentSpace()
+	if err != nil {
+		return App{}, fmt.Errorf("failed to lookup current space: %s", err)
+	}
+
+	output, err := a.cfCommandRunner.CliCommandWithoutTerminalOutput("curl", "/v3/apps?names="+name+"&space_guids="+space.Guid)
 	if err != nil {
 		return App{}, fmt.Errorf("failed to retrieve an app by name: %s", err)
 	}

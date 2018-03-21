@@ -3,6 +3,7 @@ package cf_test
 import (
 	"errors"
 
+	"code.cloudfoundry.org/cli/plugin/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
@@ -21,6 +22,13 @@ var _ = Describe("GetAppByName", func() {
 	})
 
 	It("returns an application by its name", func() {
+		fakeCfCommandRunner.GetCurrentSpaceReturns(plugin_models.Space{
+			plugin_models.SpaceFields{
+				Guid: "some-guid",
+				Name: "some-name",
+			},
+		}, nil)
+
 		fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
 			`{"resources": [{`,
 			`"guid": "6aef0cf0-c5d5-4ec1-89ae-73971d24241c",`,
@@ -28,13 +36,30 @@ var _ = Describe("GetAppByName", func() {
 			`}]}`,
 		}, nil)
 
-		app, err := client.GetAppByName("mysql-migrate")
+		app, err := client.GetAppByName("some-app")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(app.Name).To(Equal("mysql-migrate"))
 		Expect(app.Guid).To(Equal("6aef0cf0-c5d5-4ec1-89ae-73971d24241c"))
 
-		args := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
-		Expect(args).To(Equal([]string{"curl", "/v3/apps?names=mysql-migrate"}))
+		Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
+			To(Equal([]string{
+			"curl",
+			"/v3/apps?names=some-app&space_guids=some-guid",
+		}))
+	})
+
+	Context("when there is an error getting the current space", func() {
+		BeforeEach(func() {
+			fakeCfCommandRunner.GetCurrentSpaceReturns(
+				plugin_models.Space{},
+				errors.New("bad space"),
+			)
+		})
+
+		It("returns an error", func() {
+			_, err := client.GetAppByName("mysql-migrate")
+			Expect(err).To(MatchError("failed to lookup current space: bad space"))
+		})
 	})
 
 	Context("when there is an error getting an application by name", func() {
