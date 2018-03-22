@@ -45,7 +45,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		os.Exit(1)
 		return
 	case "version":
-		fmt.Println(version)
+		fmt.Printf("%s (%s)", version, gitSHA)
 		os.Exit(0)
 	case "migrate":
 		if len(args) != 4 {
