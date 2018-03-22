@@ -10,9 +10,9 @@ import (
 	"runtime"
 
 	"code.cloudfoundry.org/cli/plugin"
+	"github.com/blang/semver"
 	"github.com/gobuffalo/packr"
 	"github.com/pkg/errors"
-
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/user"
 )
@@ -20,7 +20,8 @@ import (
 type MySQLPlugin struct{}
 
 var (
-	version string = "built from source"
+	version = "built from source"
+	gitSHA  = "unknown"
 )
 
 //go:generate go install github.com/pivotal-cf/mysql-cli-plugin/vendor/github.com/gobuffalo/packr/...
@@ -174,14 +175,33 @@ func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName,
 	}
 }
 
+func versionFromSemver(in string) plugin.VersionType {
+	var unknownVersion = plugin.VersionType{
+		Major: 0,
+		Minor: 0,
+		Build: 1,
+	}
+
+	if in == "built from source" {
+		return unknownVersion
+	}
+
+	v, err := semver.Parse(in)
+	if err != nil {
+		return unknownVersion
+	}
+
+	return plugin.VersionType{
+		Major: int(v.Major),
+		Minor: int(v.Minor),
+		Build: int(v.Patch),
+	}
+}
+
 func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
 		Name: "MysqlTools",
-		Version: plugin.VersionType{
-			Major: 1,
-			Minor: 0,
-			Build: 0,
-		},
+		Version: versionFromSemver(version),
 		MinCliVersion: plugin.VersionType{
 			Major: 6,
 			Minor: 7,

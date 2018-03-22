@@ -9,7 +9,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("MysqlCliPlugin", func() {
+var _ = Describe("MysqlCLIPlugin", func() {
 	It("migrates data given the right number of args", func() {
 		cmd := exec.Command("cf", "mysql-tools", "migrate", "test-v1-donor", "test-v2-recipient")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -55,7 +55,7 @@ var _ = Describe("MysqlCliPlugin", func() {
 
 	})
 
-	It("shows a mysql version", func() {
+	It("shows plugin version", func() {
 		cmd := exec.Command("cf", "mysql-tools", "version")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
