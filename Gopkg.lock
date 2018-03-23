@@ -23,7 +23,6 @@
     "cf",
     "commandreporter",
     "commandstarter",
-    "config",
     "generator",
     "internal"
   ]
@@ -96,6 +95,12 @@
   ]
   revision = "003f63b7f4cff3fc95357005358af2de0f5fe152"
   version = "v1.3.0"
+
+[[projects]]
+  name = "github.com/pborman/uuid"
+  packages = ["."]
+  revision = "e790cca94e6cc75c7064b1332e63811d4aae1a53"
+  version = "v1.1"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -171,6 +176,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b12dfb415509802b04321595ffd2df4874023fb0eb22f15797b3e0c220a059af"
+  inputs-digest = "72d275bf7c145ff31122327305b76f5280cfaf374e8c8563f15a65b4f3ceb7bf"
   solver-name = "gps-cdcl"
   solver-version = 1

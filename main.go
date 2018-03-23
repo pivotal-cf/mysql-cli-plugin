@@ -8,15 +8,15 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/blang/semver"
 	"github.com/gobuffalo/packr"
-	"github.com/pkg/errors"
+	"github.com/pborman/uuid"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/user"
-	"time"
-	"strconv"
+	"github.com/pkg/errors"
 )
 
 type MySQLPlugin struct{}
@@ -69,9 +69,9 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName, destServiceName string) error {
 	var (
-		user = user.NewReporter(cliConnection)
-		api  = cf.NewApi(cliConnection)
-		appName = "migrate-app-" + strconv.FormatInt(time.Now().UTC().Unix(), 10)
+		user    = user.NewReporter(cliConnection)
+		api     = cf.NewApi(cliConnection)
+		appName = "migrate-app-" + uuid.New()
 	)
 
 	ok, err := user.IsSpaceDeveloper()
@@ -173,7 +173,7 @@ func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName,
 		return nil
 	} else {
 		log.Print("Migration failed. Fetching log output...")
-		time.Sleep(5*time.Second)
+		time.Sleep(5 * time.Second)
 		cliConnection.CliCommand("logs", "--recent", appName)
 		return errors.New("FAILED")
 	}
@@ -204,7 +204,7 @@ func versionFromSemver(in string) plugin.VersionType {
 
 func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
-		Name: "MysqlTools",
+		Name:    "MysqlTools",
 		Version: versionFromSemver(version),
 		MinCliVersion: plugin.VersionType{
 			Major: 6,

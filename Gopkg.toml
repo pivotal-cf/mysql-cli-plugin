@@ -39,3 +39,7 @@ required = [ "golang.org/x/sync/errgroup", "github.com/markbates/grift", "github
   name = "github.com/gobuffalo/packr"
   version = "1.10.4"
 
+
+[[constraint]]
+  name = "github.com/pborman/uuid"
+  version = "1.1.0"
