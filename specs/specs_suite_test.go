@@ -15,21 +15,6 @@ func TestIntegration(t *testing.T) {
 	RunSpecs(t, "Smoke Tests Suite")
 }
 
-var (
-	TestSetup *workflowhelpers.ReproducibleTestSuiteSetup
-	Config    *config.Config
-)
-
 var _ = BeforeSuite(func() {
 	Expect(os.Setenv("CF_COLOR", "false")).To(Succeed())
-	Config = config.LoadConfig()
-
-	TestSetup = workflowhelpers.NewTestSuiteSetup(Config)
-	TestSetup.Setup()
-})
-
-var _ = AfterSuite(func() {
-	if TestSetup != nil {
-		TestSetup.Teardown()
-	}
 })

@@ -22,12 +22,20 @@ var _ = Describe("Acceptance Tests", func() {
 	)
 
 	BeforeEach(func() {
+		test_helpers.CheckForRequiredEnvVars([]string{
+			"APP_DOMAIN",
+			"DONOR_SERVICE_NAME",
+			"DONOR_PLAN_NAME",
+			"RECIPIENT_SERVICE_NAME",
+			"RECIPIENT_PLAN_NAME",
+		})
+
 		appDomain = os.Getenv("APP_DOMAIN")
 
 		sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
-		test_helpers.CreateService(os.Getenv("SERVICE_NAME"), os.Getenv("PLAN_NAME"), sourceInstance)
+		test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
 		destInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_DEST")
-		test_helpers.CreateService(os.Getenv("SERVICE_NAME"), os.Getenv("PLAN_NAME"), destInstance)
+		test_helpers.CreateService(os.Getenv("RECIPIENT_SERVICE_NAME"), os.Getenv("RECIPIENT_PLAN_NAME"), destInstance)
 
 		test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
 		test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+create succeeded`)
