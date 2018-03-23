@@ -76,20 +76,27 @@ var _ = Describe("Acceptance Tests", func() {
 		Eventually(session, "5m", "1s").Should(gexec.Exit(0))
 
 		test_helpers.BindAppToService(appName, destInstance)
+		test_helpers.ExecuteCfCmd("restage", appName)
+
 		readValue = test_helpers.ReadData(true, appURI, albumId)
 		Expect(readValue).To(Equal(writeValue))
 	})
 
-	It("migrates data to a tls database given the right number of args", func() {
-		test_helpers.CreateServiceKey(destInstance, serviceKey)
-		key := test_helpers.GetServiceKey(destInstance, serviceKey)
+	Context("when migrating data to a TLS enabled service-instance", func() {
+		BeforeEach(func() {
+			test_helpers.CreateServiceKey(destInstance, serviceKey)
+			key := test_helpers.GetServiceKey(destInstance, serviceKey)
+			test_helpers.DeleteServiceKey(destInstance, serviceKey)
 
-		test_helpers.ExecuteCfCmd("update-service", destInstance, "-c", fmt.Sprintf(`{ "enable_tls": %q }`, key.Hostname))
-		test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
+			test_helpers.ExecuteCfCmd("update-service", destInstance, "-c", fmt.Sprintf(`{ "enable_tls": %q }`, key.Hostname))
+			test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
+		})
 
-		cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destInstance)
-		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "5m", "1s").Should(gexec.Exit(0))
+		It("migrates the data successfully", func() {
+			cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destInstance)
+			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "5m", "1s").Should(gexec.Exit(0))
+		})
 	})
 })
