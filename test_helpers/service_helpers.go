@@ -56,7 +56,10 @@ func CreateInstanceAndWait(args ...string) string {
 func DeleteService(name string) {
 	if ResourceExists("service", name) {
 		output := ExecuteCfCmd("delete-service", name, "-f")
-		Expect(output).To(ContainSubstring("Delete in progress"))
+		Expect(output).To(SatisfyAny(
+			ContainSubstring("Delete in progress"),
+			ContainSubstring("Deleting service"),
+		))
 	}
 }
 

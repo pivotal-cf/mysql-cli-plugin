@@ -10,7 +10,7 @@ import (
 
 func TestIntegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Smoke Tests Suite")
+	RunSpecs(t, "Acceptance Tests Suite")
 }
 
 var _ = BeforeSuite(func() {
