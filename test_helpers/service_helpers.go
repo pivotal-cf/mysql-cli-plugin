@@ -252,23 +252,37 @@ func ReadData(skipSSLValidation bool, appURI string, id string) string {
 
 	resp, err := httpClient(skipSSLValidation).Get(getUri)
 	Expect(err).ToNot(HaveOccurred())
-	fetchedData, _ := ioutil.ReadAll(resp.Body)
+
+	fetchedData, err := ioutil.ReadAll(resp.Body)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(resp.StatusCode).To(Equal(http.StatusOK), string(fetchedData))
+
 	var outputAlbum album
 	json.Unmarshal([]byte(fetchedData), &outputAlbum)
+
 	return outputAlbum.Title
 }
 
 func WriteData(skipSSLValidation bool, appURI string, value string) string {
 	postUri := fmt.Sprintf("https://%s/albums", appURI)
-	values := map[string]string{"title": value}
-	jsonValue, _ := json.Marshal(values)
-	resp, err := httpClient(skipSSLValidation).Post(postUri, "application/json", bytes.NewBuffer(jsonValue))
 
+	values := map[string]string{"title": value}
+	jsonValue, err := json.Marshal(values)
+	Expect(err).NotTo(HaveOccurred())
+
+	resp, err := httpClient(skipSSLValidation).Post(postUri, "application/json", bytes.NewBuffer(jsonValue))
 	Expect(err).ToNot(HaveOccurred())
-	writtenData, _ := ioutil.ReadAll(resp.Body)
+
+	writtenData, err := ioutil.ReadAll(resp.Body)
+	Expect(err).ToNot(HaveOccurred())
+
+	Expect(resp.StatusCode).To(Equal(http.StatusOK), string(writtenData))
+
+
 	var inputAlbum album
-	json.Unmarshal([]byte(writtenData), &inputAlbum)
+	Expect(json.Unmarshal([]byte(writtenData), &inputAlbum)).To(Succeed())
 	Expect(inputAlbum.Title).Should(Equal(value))
+
 	return inputAlbum.Id
 }
 
@@ -296,7 +310,7 @@ type album struct {
 	Artist      string `json:"artist"`
 	ReleaseYear int    `json:"releaseYear"`
 	Genre       string `json:"genre"`
-	TrackCount  string `json:"trackCount"`
+	TrackCount  int    `json:"trackCount"`
 	AlbumId     string `json:"albumId"`
 }
 
