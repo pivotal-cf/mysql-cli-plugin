@@ -41,7 +41,9 @@ func CreateService(serviceName string, planName string, name string, args ...str
 	}
 	createServiceArgs = append(createServiceArgs, args...)
 	output := ExecuteCfCmd(createServiceArgs...)
-	Expect(output).To(ContainSubstring("Create in progress"))
+	Expect(output).To(SatisfyAny(
+		ContainSubstring("Create in progress"),
+		ContainSubstring("Creating service instance")))
 }
 
 func CreateInstanceAndWait(args ...string) string {
