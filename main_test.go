@@ -9,24 +9,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("MysqlCLIPlugin", func() {
-	It("migrates data given the right number of args", func() {
-		cmd := exec.Command("cf", "mysql-tools", "migrate", "test-v1-donor", "test-v2-recipient")
-		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "5m", "1s").Should(gexec.Exit(0))
-		cmd = exec.Command("cf", "app", "migrate-app")
-		output, _ := cmd.CombinedOutput()
-		Expect(string(output)).To(ContainSubstring("App migrate-app not found"))
-	})
-
-	It("migrates data to a tls database given the right number of args", func() {
-		cmd := exec.Command("cf", "mysql-tools", "migrate", "test-v1-donor", "test-v2-tls-recipient")
-		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "5m", "1s").Should(gexec.Exit(0))
-	})
-
+var _ = Describe("MysqlCliPlugin", func() {
 	It("requires a command", func() {
 		cmd := exec.Command("cf", "mysql-tools")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)

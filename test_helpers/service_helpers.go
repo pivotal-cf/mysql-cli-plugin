@@ -16,7 +16,6 @@ import (
 	pollcf "github.com/pivotal-cf/mysql-cli-plugin/test_helpers/poll_cf/cf"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/config"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 
 	. "github.com/onsi/ginkgo"
@@ -33,16 +32,6 @@ const (
 	curlTimeout              = "10s"
 )
 
-func GetBrokerDeploymentName() string {
-	brokerDeploymentName := os.Getenv("BROKER_DEPLOYMENT_NAME")
-
-	if brokerDeploymentName != "" {
-		return brokerDeploymentName
-	}
-
-	return "dedicated-mysql-broker"
-}
-
 func CreateService(serviceName string, planName string, name string, args ...string) {
 	createServiceArgs := []string{
 		"create-service",
@@ -56,7 +45,7 @@ func CreateService(serviceName string, planName string, name string, args ...str
 }
 
 func CreateInstanceAndWait(args ...string) string {
-	instanceName := generator.PrefixedRandomName("MYSQL", "DED")
+	instanceName := generator.PrefixedRandomName("MYSQL", "MIGRATE")
 	CreateService(os.Getenv("SERVICE_NAME"), os.Getenv("PLAN_NAME"), instanceName, args...)
 	WaitForService(instanceName, "Status: create succeeded")
 	return instanceName
@@ -91,7 +80,7 @@ func WaitForService(name string, success string) {
 		output := string(session.Out.Contents()) + string(session.Err.Contents())
 		Expect(output).ToNot(ContainSubstring("failed"))
 		return output
-	}, cfServiceWaitTimeout, cfServicePollingInterval).Should(ContainSubstring(success))
+	}, cfServiceWaitTimeout, cfServicePollingInterval).Should(MatchRegexp(success))
 	fmt.Fprintln(GinkgoWriter)
 }
 
@@ -125,7 +114,7 @@ type ServiceKey struct {
 }
 
 func GetServiceKey(serviceInstanceName, serviceKeyName string) ServiceKey {
-	createServiceKey(serviceInstanceName, serviceKeyName)
+	CreateServiceKey(serviceInstanceName, serviceKeyName)
 
 	session := cf.Cf("service-key", serviceInstanceName, serviceKeyName).Wait("10s")
 	output := string(session.Out.Contents())
@@ -141,7 +130,7 @@ func GetServiceKey(serviceInstanceName, serviceKeyName string) ServiceKey {
 	return serviceKey
 }
 
-func createServiceKey(instanceName, keyName string) {
+func CreateServiceKey(instanceName, keyName string) {
 	output := ExecuteCfCmd("create-service-key", instanceName, keyName)
 
 	Expect(output).To(ContainSubstring("Creating service key"))
@@ -193,7 +182,7 @@ func BindAppToService(appName string, instance string) {
 
 	Eventually(func() string {
 		return string(cf.Cf("service", instance).Wait(cfCommandTimeout).Out.Contents())
-	}, cfServiceWaitTimeout, curlTimeout).Should(ContainSubstring("Bound apps: %s", appName))
+	}, cfServiceWaitTimeout, curlTimeout).Should(MatchRegexp(`[Bb]ound apps:\s+%s`, appName))
 }
 
 func BindAppToServiceWithUsername(appName, instance, username string) {
@@ -215,9 +204,9 @@ func UnbindAppFromService(appName string, instance string) {
 		Say("FAILED"),
 		Say("Server error")))
 
-	EventuallyWithOffset(1, func() *Buffer {
-		return cf.Cf("service", instance).Wait(cfCommandTimeout).Out
-	}, cfServiceWaitTimeout, curlTimeout).ShouldNot(Say("Bound apps: %s", appName))
+	EventuallyWithOffset(1, func() string {
+		return string(cf.Cf("service", instance).Wait(cfCommandTimeout).Out.Contents())
+	}, cfServiceWaitTimeout, curlTimeout).ShouldNot(MatchRegexp(`[Bb]ound apps:\s+%s`, appName))
 }
 
 func CreateAndBindServiceToApp(serviceName, planName, appName, appPath, instanceName string) {
@@ -244,19 +233,19 @@ func DeleteAppAndService(appName, instance string) {
 	DeleteInstanceAndWait(instance)
 }
 
-func CheckAppInfo(cfg *config.Config, appURI string, instance string) {
+func CheckAppInfo(skipSSLValidation bool, appURI string, instance string) {
 	appInfoUri := fmt.Sprintf("https://%s/appinfo", appURI)
-	resp, err := httpClient(cfg.GetSkipSSLValidation()).Get(appInfoUri)
+	resp, err := httpClient(skipSSLValidation).Get(appInfoUri)
 	Expect(err).ToNot(HaveOccurred())
 	appConfigurationInfo, _ := ioutil.ReadAll(resp.Body)
 
 	Expect(string(appConfigurationInfo)).Should(SatisfyAll(ContainSubstring("mysql"), ContainSubstring(instance)))
 }
 
-func ReadData(cfg *config.Config, appURI string, id string) string {
+func ReadData(skipSSLValidation bool, appURI string, id string) string {
 	getUri := fmt.Sprintf("https://%s/albums/%s", appURI, id)
 
-	resp, err := httpClient(cfg.GetSkipSSLValidation()).Get(getUri)
+	resp, err := httpClient(skipSSLValidation).Get(getUri)
 	Expect(err).ToNot(HaveOccurred())
 	fetchedData, _ := ioutil.ReadAll(resp.Body)
 	var outputAlbum album
@@ -264,11 +253,11 @@ func ReadData(cfg *config.Config, appURI string, id string) string {
 	return outputAlbum.Title
 }
 
-func WriteData(cfg *config.Config, appURI string, value string) string {
+func WriteData(skipSSLValidation bool, appURI string, value string) string {
 	postUri := fmt.Sprintf("https://%s/albums", appURI)
 	values := map[string]string{"title": value}
 	jsonValue, _ := json.Marshal(values)
-	resp, err := httpClient(cfg.GetSkipSSLValidation()).Post(postUri, "application/json", bytes.NewBuffer(jsonValue))
+	resp, err := httpClient(skipSSLValidation).Post(postUri, "application/json", bytes.NewBuffer(jsonValue))
 
 	Expect(err).ToNot(HaveOccurred())
 	writtenData, _ := ioutil.ReadAll(resp.Body)

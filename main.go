@@ -15,6 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/user"
+	"time"
+	"strconv"
 )
 
 type MySQLPlugin struct{}
@@ -69,6 +71,7 @@ func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName,
 	var (
 		user = user.NewReporter(cliConnection)
 		api  = cf.NewApi(cliConnection)
+		appName = "migrate-app-" + strconv.FormatInt(time.Now().UTC().Unix(), 10)
 	)
 
 	ok, err := user.IsSpaceDeveloper()
@@ -115,7 +118,7 @@ func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName,
 	log.Print("Started to push app")
 
 	_, err = cliConnection.CliCommandWithoutTerminalOutput("push",
-		"migrate-app",
+		appName,
 		"-b", "binary_buildpack",
 		"-u", "none",
 		"-c", "sleep infinity",
@@ -127,26 +130,26 @@ func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName,
 		return errors.Errorf("failed to push application: %s", err)
 	}
 	defer func() {
-		cliConnection.CliCommandWithoutTerminalOutput("delete", "migrate-app", "-f")
+		cliConnection.CliCommandWithoutTerminalOutput("delete", appName, "-f")
 		log.Print("Cleaning up...")
 	}()
 	log.Print("Sucessfully pushed app")
 
-	if _, err := cliConnection.CliCommandWithoutTerminalOutput("bind-service", "migrate-app", sourceServiceName); err != nil {
-		return errors.Errorf("failed to bind-service %q to application %q: %s", "migrate-app", sourceServiceName, err)
+	if _, err := cliConnection.CliCommandWithoutTerminalOutput("bind-service", appName, sourceServiceName); err != nil {
+		return errors.Errorf("failed to bind-service %q to application %q: %s", appName, sourceServiceName, err)
 	}
 	log.Print("Sucessfully bound app to v1 instance")
 
-	if _, err := cliConnection.CliCommandWithoutTerminalOutput("bind-service", "migrate-app", destServiceName); err != nil {
-		return errors.Errorf("failed to bind-service %q to application %q: %s", "migrate-app", destServiceName, err)
+	if _, err := cliConnection.CliCommandWithoutTerminalOutput("bind-service", appName, destServiceName); err != nil {
+		return errors.Errorf("failed to bind-service %q to application %q: %s", appName, destServiceName, err)
 	}
 	log.Print("Sucessfully bound app to v2 instance")
 
-	if _, err := cliConnection.CliCommandWithoutTerminalOutput("start", "migrate-app"); err != nil {
-		return errors.Errorf("failed to start application %q: %s", "migrate-app", err)
+	if _, err := cliConnection.CliCommandWithoutTerminalOutput("start", appName); err != nil {
+		return errors.Errorf("failed to start application %q: %s", appName, err)
 	}
 
-	app, err := api.GetAppByName("migrate-app")
+	app, err := api.GetAppByName(appName)
 	if err != nil {
 		return errors.Errorf("Error: %s", err)
 	}
@@ -169,8 +172,9 @@ func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName,
 		log.Print("Migration completed successfully")
 		return nil
 	} else {
-		log.Print("Migration failed")
-		cliConnection.CliCommand("logs", "--recent", "migrate-app")
+		log.Print("Migration failed. Fetching log output...")
+		time.Sleep(5*time.Second)
+		cliConnection.CliCommand("logs", "--recent", appName)
 		return errors.New("FAILED")
 	}
 }
