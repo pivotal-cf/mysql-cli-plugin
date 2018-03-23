@@ -1,8 +1,8 @@
 package specs
 
 import (
-	"os"
 	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
@@ -84,7 +84,7 @@ var _ = Describe("Acceptance Tests", func() {
 		test_helpers.CreateServiceKey(destInstance, serviceKey)
 		key := test_helpers.GetServiceKey(destInstance, serviceKey)
 
-		test_helpers.ExecuteCfCmd("update-service", destInstance, "-c", fmt.Sprintf(`{ "enable_tls": [%q] }`, key.Hostname))
+		test_helpers.ExecuteCfCmd("update-service", destInstance, "-c", fmt.Sprintf(`{ "enable_tls": %q }`, key.Hostname))
 		test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
 
 		cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destInstance)
