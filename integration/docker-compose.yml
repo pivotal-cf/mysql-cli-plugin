@@ -1,0 +1,50 @@
+version: '3'
+services:
+  donor_service:
+    image: percona:5.7.21
+    ports:
+    - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: donor-password
+
+  recipient_service:
+    image: percona:5.7.21
+    ports:
+    - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: recipient-password
+
+  cf_app:
+    image: cloudfoundry/cflinuxfs2
+    container_name: migrate-app
+    command: sleep infinity
+    volumes:
+    - ../app:/home/vcap/app
+    environment:
+      VCAP_SERVICES: |
+        {
+         "p-mysql": [
+          {
+           "name": "donor_service",
+           "credentials": {
+            "hostname": "donor_service",
+            "name": "donor_db",
+            "password": "donor-password",
+            "port": 3306,
+            "username": "root"
+           }
+          }
+         ],
+         "p.mysql": [
+          {
+           "name": "recipient_service",
+           "credentials": {
+            "hostname": "recipient_service",
+            "name": "recipient_db",
+            "password": "recipient-password",
+            "port": 3306,
+            "username": "root"
+           }
+          }
+         ]
+        }
