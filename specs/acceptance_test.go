@@ -22,14 +22,6 @@ var _ = Describe("Acceptance Tests", func() {
 	)
 
 	BeforeEach(func() {
-		test_helpers.CheckForRequiredEnvVars([]string{
-			"APP_DOMAIN",
-			"DONOR_SERVICE_NAME",
-			"DONOR_PLAN_NAME",
-			"RECIPIENT_SERVICE_NAME",
-			"RECIPIENT_PLAN_NAME",
-		})
-
 		appDomain = os.Getenv("APP_DOMAIN")
 
 		sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")

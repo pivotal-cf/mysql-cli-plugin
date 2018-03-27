@@ -23,8 +23,11 @@
     "cf",
     "commandreporter",
     "commandstarter",
+    "config",
     "generator",
-    "internal"
+    "internal",
+    "workflowhelpers",
+    "workflowhelpers/internal"
   ]
   revision = "1a8c223f1cc4110cc866f7298ff622b83e274173"
 
@@ -176,6 +179,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "72d275bf7c145ff31122327305b76f5280cfaf374e8c8563f15a65b4f3ceb7bf"
+  inputs-digest = "79ed04958978132fc84f03e65636248b5bba0538a9c9fa48024a4a8bf10e8ec9"
   solver-name = "gps-cdcl"
   solver-version = 1
