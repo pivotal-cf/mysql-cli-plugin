@@ -88,7 +88,7 @@ var _ = Describe("Acceptance Tests", func() {
 			key := test_helpers.GetServiceKey(destInstance, serviceKey)
 			test_helpers.DeleteServiceKey(destInstance, serviceKey)
 
-			test_helpers.ExecuteCfCmd("update-service", destInstance, "-c", fmt.Sprintf(`{ "enable_tls": %q }`, key.Hostname))
+			test_helpers.ExecuteCfCmd("update-service", destInstance, "-c", fmt.Sprintf(`{ "enable_tls": [%q] }`, key.Hostname))
 			test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
 		})
 
