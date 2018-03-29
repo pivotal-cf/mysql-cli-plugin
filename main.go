@@ -15,7 +15,6 @@ import (
 	"github.com/gobuffalo/packr"
 	"github.com/pborman/uuid"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
-	"github.com/pivotal-cf/mysql-cli-plugin/user"
 	"github.com/pkg/errors"
 )
 
@@ -69,19 +68,9 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName, destServiceName string) error {
 	var (
-		user    = user.NewReporter(cliConnection)
 		api     = cf.NewApi(cliConnection)
 		appName = "migrate-app-" + uuid.New()
 	)
-
-	ok, err := user.IsSpaceDeveloper()
-	if err != nil {
-		return errors.Errorf("Error getting user information: %v", err)
-	}
-
-	if !ok {
-		return errors.New("You must have the 'Space Developer' privilege to use the 'cf mysql migrate' command")
-	}
 
 	box := packr.NewBox("./app")
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
