@@ -20,6 +20,7 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
 
 func TestIntegration(t *testing.T) {
@@ -33,6 +34,14 @@ var (
 )
 
 var _ = BeforeSuite(func() {
+	test_helpers.CheckForRequiredEnvVars([]string{
+		"APP_DOMAIN",
+		"DONOR_SERVICE_NAME",
+		"DONOR_PLAN_NAME",
+		"RECIPIENT_SERVICE_NAME",
+		"RECIPIENT_PLAN_NAME",
+	})
+
 	Config = config.LoadConfig()
 
 	TestSetup = workflowhelpers.NewTestSuiteSetup(Config)

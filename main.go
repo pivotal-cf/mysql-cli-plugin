@@ -30,7 +30,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-type MySQLPlugin struct{}
+type MySQLPlugin struct{
+	Replace bool
+}
 
 var (
 	version = "built from source"
@@ -45,7 +47,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 
 	if len(args) < 2 {
-		log.Printf("Please pass in a command [migrate|version] to mysql-tools")
+		log.Println("Please pass in a command [migrate|replace|version] to mysql-tools")
 		os.Exit(1)
 		return
 	}
@@ -60,9 +62,12 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	case "version":
 		fmt.Printf("%s (%s)", version, gitSHA)
 		os.Exit(0)
+	case "replace":
+		c.Replace = true
+		fallthrough
 	case "migrate":
 		if len(args) != 4 {
-			log.Println("Usage: cf mysql-tools migrate <v1-service-instance> <v2-service-instance>")
+			log.Printf("Usage: cf mysql-tools %s <v1-service-instance> <v2-service-instance>", command)
 			os.Exit(1)
 			return
 		}
@@ -171,13 +176,28 @@ func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName,
 
 	if finalState == "SUCCEEDED" {
 		log.Print("Migration completed successfully")
-		return nil
 	} else {
 		log.Print("Migration failed. Fetching log output...")
 		time.Sleep(5 * time.Second)
 		cliConnection.CliCommand("logs", "--recent", appName)
 		return errors.New("FAILED")
 	}
+
+	if c.Replace {
+		renamedSourceServiceName := fmt.Sprintf("%s-old", sourceServiceName)
+
+		log.Printf("Renaming source service from %s to %s", sourceServiceName, renamedSourceServiceName)
+		if _, err := cliConnection.CliCommandWithoutTerminalOutput("rename-service", sourceServiceName, renamedSourceServiceName); err != nil {
+			return errors.Errorf("Error renaming source service from %s to %s: %s", sourceServiceName, renamedSourceServiceName, err)
+		}
+
+		log.Printf("Renaming destination service from %s to %s", destServiceName, sourceServiceName)
+		if _, err := cliConnection.CliCommandWithoutTerminalOutput("rename-service", destServiceName, sourceServiceName); err != nil {
+			return errors.Errorf("Error renaming destination service from %s to %s: %s", destServiceName, sourceServiceName, err)
+		}
+	}
+
+	return nil
 }
 
 func versionFromSemver(in string) plugin.VersionType {
@@ -217,7 +237,10 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 				Name:     "mysql-tools",
 				HelpText: "Plugin to migrate mysql instances",
 				UsageDetails: plugin.Usage{
-					Usage: "mysql-tools\n   cf mysql-tools migrate <v1-service-instance> <v2-service-instance>",
+					Usage: `mysql-tools
+    cf mysql-tools migrate <v1-service-instance> <v2-service-instance>
+    cf mysql-tools replace <v1-service-instance> <v2-service-instance>
+`,
 				},
 			},
 		},
