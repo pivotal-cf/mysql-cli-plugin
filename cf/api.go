@@ -19,6 +19,7 @@ import (
 
 	"code.cloudfoundry.org/cli/plugin/models"
 	"github.com/pkg/errors"
+	"time"
 )
 
 //go:generate counterfeiter . CfCommandRunner
@@ -130,6 +131,8 @@ func (a *Api) WaitForTask(task Task) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
+		time.Sleep(time.Second)
 	}
 	return t.State, nil
 }
