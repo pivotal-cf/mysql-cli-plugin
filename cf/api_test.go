@@ -18,6 +18,7 @@ import (
 	"code.cloudfoundry.org/cli/plugin/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf/cffakes"
 )
@@ -112,14 +113,17 @@ var _ = Describe("GetTaskByGUID", func() {
 	var (
 		client              *cf.Api
 		fakeCfCommandRunner *cffakes.FakeCfCommandRunner
+		buffer *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
 		fakeCfCommandRunner = new(cffakes.FakeCfCommandRunner)
 		client = cf.NewApi(fakeCfCommandRunner)
+		buffer = gbytes.NewBuffer()
+		client.Log.SetOutput(buffer)
 	})
 
-	It("returns an task by its guid", func() {
+	It("Returns a task by its guid", func() {
 		fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
 			`{`,
 			`"guid": "6aef0cf0-c5d5-4ec1-89ae-73971d24241c",`,
@@ -136,24 +140,56 @@ var _ = Describe("GetTaskByGUID", func() {
 		Expect(args).To(Equal([]string{"curl", "/v3/tasks/6aef0cf0-c5d5-4ec1-89ae-73971d24241c"}))
 	})
 
-	Context("when there is an error getting a task by guid", func() {
-		It("returns an error", func() {
+	Context("When there is an error getting a task by guid", func() {
+		It("Returns an error after encountering more than MaxAttempts errors", func() {
+			// fake out sleep to save time?
+
 			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(
 				nil, errors.New("some-error"))
 
 			_, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
-			Expect(err).To(MatchError("failed to retrieve a task by guid: some-error"))
+
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(client.MaxAttempts))
+			Expect(err).To(MatchError("failed to get task by GUID"))
+			Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by guid: some-error`))
+			Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to retrieve task by guid: some-error`))
+			Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to retrieve task by guid: some-error`))
+		})
+
+		It("Returns a task by its guid if we eventually succeed within MaxAttempts tries", func() {
+			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(
+				0, nil, errors.New("some-error"))
+			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(
+				1,
+				[]string{
+					`{`,
+					`"guid": "6aef0cf0-c5d5-4ec1-89ae-73971d24241c",`,
+					`"state": "RUNNING"`,
+					`}`,
+				},
+				nil)
+
+			task, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
+
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(2))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(task.State).To(Equal("RUNNING"))
+			Expect(task.Guid).To(Equal("6aef0cf0-c5d5-4ec1-89ae-73971d24241c"))
+			Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by guid: some-error`))
 		})
 	})
 
-	Context("when invalid json is returned", func() {
-		It("returns an error with the contents", func() {
+	Context("When invalid json is returned", func() {
+		It("Returns an error with the contents", func() {
 			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
 				`something bad happened`,
 			}, nil)
 
 			_, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
-			Expect(err).To(MatchError("failed to parse the following api response: something bad happened"))
+			Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to parse the following api response: something bad happened`))
+			Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to parse the following api response: something bad happened`))
+			Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to parse the following api response: something bad happened`))
+			Expect(err).To(MatchError("failed to get task by GUID"))
 		})
 	})
 })
@@ -243,11 +279,14 @@ var _ = Describe("WaitForTask", func() {
 	var (
 		client              *cf.Api
 		fakeCfCommandRunner *cffakes.FakeCfCommandRunner
+		buffer *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
 		fakeCfCommandRunner = new(cffakes.FakeCfCommandRunner)
 		client = cf.NewApi(fakeCfCommandRunner)
+		buffer = gbytes.NewBuffer()
+		client.Log.SetOutput(buffer)
 	})
 
 	Context("when the task succeeds", func() {
@@ -270,7 +309,10 @@ var _ = Describe("WaitForTask", func() {
 			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(nil, errors.New("some-error"))
 
 			_, err := client.WaitForTask(task)
-			Expect(err).To(MatchError("failed to retrieve a task by guid: some-error"))
+			Expect(err).To(MatchError("failed to get task by GUID"))
+			Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by guid: some-error`))
+			Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to retrieve task by guid: some-error`))
+			Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to retrieve task by guid: some-error`))
 		})
 	})
 
@@ -299,6 +341,8 @@ var _ = Describe("WaitForTask", func() {
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)).To(Equal(
 				[]string{"curl", "/v3/tasks/some-guid"},
 			))
+
+			Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to look up task \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
 		})
 	})
 })

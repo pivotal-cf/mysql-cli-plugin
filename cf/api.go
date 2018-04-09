@@ -20,6 +20,8 @@ import (
 	"code.cloudfoundry.org/cli/plugin/models"
 	"github.com/pkg/errors"
 	"time"
+	"log"
+	"os"
 )
 
 //go:generate counterfeiter . CfCommandRunner
@@ -31,11 +33,15 @@ type CfCommandRunner interface {
 
 type Api struct {
 	cfCommandRunner CfCommandRunner
+	MaxAttempts     int
+	Log *log.Logger
 }
 
 func NewApi(cfCommandRunner CfCommandRunner) *Api {
 	return &Api{
 		cfCommandRunner: cfCommandRunner,
+		MaxAttempts:     3,
+		Log: log.New(os.Stderr, "", log.LstdFlags),
 	}
 }
 
@@ -82,18 +88,41 @@ func (a *Api) GetAppByName(name string) (App, error) {
 }
 
 func (a *Api) GetTaskByGUID(guid string) (Task, error) {
-	output, err := a.cfCommandRunner.CliCommandWithoutTerminalOutput("curl", "/v3/tasks/"+guid)
-	if err != nil {
-		return Task{}, fmt.Errorf("failed to retrieve a task by guid: %s", err)
+	maxAttempts := a.MaxAttempts
+
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+
+		if attempt > 0 {
+			time.Sleep(time.Second << uint(attempt))
+		}
+
+		output, err := a.cfCommandRunner.CliCommandWithoutTerminalOutput("curl", "/v3/tasks/"+guid)
+
+		if err != nil {
+			a.Log.Printf("Attempt %d/%d: failed to retrieve task by guid: %s",
+				attempt + 1, maxAttempts, err)
+			continue
+		}
+
+		taskInfo := Task{}
+		jsonRaw := strings.Join(output, "\n")
+		if err := json.Unmarshal([]byte(jsonRaw), &taskInfo); err != nil {
+			a.Log.Printf("Attempt %d/%d: failed to parse the following api response: %s",
+				attempt + 1, maxAttempts, jsonRaw)
+			continue
+		}
+
+		if len(taskInfo.Errors) != 0 {
+			err := taskInfo.Errors[0]
+			a.Log.Printf("Attempt %d/%d: failed to look up task (error code %d: %s - %s)",
+				attempt + 1, maxAttempts, err.Code, err.Title, err.Detail)
+			continue
+		}
+
+		return taskInfo, nil
 	}
 
-	taskInfo := Task{}
-	jsonRaw := strings.Join(output, "\n")
-	if err := json.Unmarshal([]byte(jsonRaw), &taskInfo); err != nil {
-		return Task{}, fmt.Errorf("failed to parse the following api response: %s", jsonRaw)
-	}
-
-	return taskInfo, nil
+	return Task{}, errors.New("failed to get task by GUID")
 }
 
 func (a *Api) CreateTask(app App, command string) (Task, error) {
