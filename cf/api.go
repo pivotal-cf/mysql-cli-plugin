@@ -15,13 +15,13 @@ package cf
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"strings"
+	"time"
 
 	"code.cloudfoundry.org/cli/plugin/models"
 	"github.com/pkg/errors"
-	"time"
-	"log"
-	"os"
 )
 
 //go:generate counterfeiter . CfCommandRunner
@@ -31,17 +31,21 @@ type CfCommandRunner interface {
 	GetCurrentSpace() (plugin_models.Space, error)
 }
 
+type SleepFunc func(time.Duration)
+
 type Api struct {
 	cfCommandRunner CfCommandRunner
 	MaxAttempts     int
-	Log *log.Logger
+	Log             *log.Logger
+	Sleep           SleepFunc
 }
 
 func NewApi(cfCommandRunner CfCommandRunner) *Api {
 	return &Api{
 		cfCommandRunner: cfCommandRunner,
 		MaxAttempts:     3,
-		Log: log.New(os.Stderr, "", log.LstdFlags),
+		Log:             log.New(os.Stderr, "", log.LstdFlags),
+		Sleep:           time.Sleep,
 	}
 }
 
@@ -93,33 +97,32 @@ func (a *Api) GetTaskByGUID(guid string) (Task, error) {
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 
 		if attempt > 0 {
-			time.Sleep(time.Second << uint(attempt))
+			a.Sleep(time.Second << uint(attempt))
 		}
 
 		output, err := a.cfCommandRunner.CliCommandWithoutTerminalOutput("curl", "/v3/tasks/"+guid)
-
 		if err != nil {
 			a.Log.Printf("Attempt %d/%d: failed to retrieve task by guid: %s",
-				attempt + 1, maxAttempts, err)
+				attempt+1, maxAttempts, err)
 			continue
 		}
 
-		taskInfo := Task{}
+		task := Task{}
 		jsonRaw := strings.Join(output, "\n")
-		if err := json.Unmarshal([]byte(jsonRaw), &taskInfo); err != nil {
+		if err := json.Unmarshal([]byte(jsonRaw), &task); err != nil {
 			a.Log.Printf("Attempt %d/%d: failed to parse the following api response: %s",
-				attempt + 1, maxAttempts, jsonRaw)
+				attempt+1, maxAttempts, jsonRaw)
 			continue
 		}
 
-		if len(taskInfo.Errors) != 0 {
-			err := taskInfo.Errors[0]
+		if len(task.Errors) != 0 {
+			err := task.Errors[0]
 			a.Log.Printf("Attempt %d/%d: failed to look up task (error code %d: %s - %s)",
-				attempt + 1, maxAttempts, err.Code, err.Title, err.Detail)
+				attempt+1, maxAttempts, err.Code, err.Title, err.Detail)
 			continue
 		}
 
-		return taskInfo, nil
+		return task, nil
 	}
 
 	return Task{}, errors.New("failed to get task by GUID")
@@ -153,15 +156,17 @@ func (a *Api) CreateTask(app App, command string) (Task, error) {
 }
 
 func (a *Api) WaitForTask(task Task) (string, error) {
-	var t Task
-	var err error
+	var (
+		t   = task
+		err error
+	)
+
 	for t.State != "SUCCEEDED" && t.State != "FAILED" {
-		t, err = a.GetTaskByGUID(task.Guid)
+		a.Sleep(time.Second)
+		t, err = a.GetTaskByGUID(t.Guid)
 		if err != nil {
 			return "", err
 		}
-
-		time.Sleep(time.Second)
 	}
 	return t.State, nil
 }

@@ -14,6 +14,7 @@ package cf_test
 
 import (
 	"errors"
+	"time"
 
 	"code.cloudfoundry.org/cli/plugin/models"
 	. "github.com/onsi/ginkgo"
@@ -22,6 +23,24 @@ import (
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf/cffakes"
 )
+
+type FakeClock struct {
+	sleepCount    int
+	sleepCallArgs []time.Duration
+}
+
+func (c *FakeClock) Sleep(d time.Duration) {
+	c.sleepCallArgs = append(c.sleepCallArgs, d)
+	c.sleepCount++
+}
+
+func (c *FakeClock) SleepCallCount() int {
+	return c.sleepCount
+}
+
+func (c *FakeClock) SleepCallArgs(i int) time.Duration {
+	return c.sleepCallArgs[i]
+}
 
 var _ = Describe("GetAppByName", func() {
 	var (
@@ -56,9 +75,9 @@ var _ = Describe("GetAppByName", func() {
 
 		Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 			To(Equal([]string{
-			"curl",
-			"/v3/apps?names=some-app&space_guids=some-guid",
-		}))
+				"curl",
+				"/v3/apps?names=some-app&space_guids=some-guid",
+			}))
 	})
 
 	Context("when there is an error getting the current space", func() {
@@ -113,7 +132,8 @@ var _ = Describe("GetTaskByGUID", func() {
 	var (
 		client              *cf.Api
 		fakeCfCommandRunner *cffakes.FakeCfCommandRunner
-		buffer *gbytes.Buffer
+		buffer              *gbytes.Buffer
+		fakeClock           *FakeClock
 	)
 
 	BeforeEach(func() {
@@ -121,6 +141,8 @@ var _ = Describe("GetTaskByGUID", func() {
 		client = cf.NewApi(fakeCfCommandRunner)
 		buffer = gbytes.NewBuffer()
 		client.Log.SetOutput(buffer)
+		fakeClock = &FakeClock{}
+		client.Sleep = fakeClock.Sleep
 	})
 
 	It("Returns a task by its guid", func() {
@@ -138,6 +160,7 @@ var _ = Describe("GetTaskByGUID", func() {
 
 		args := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
 		Expect(args).To(Equal([]string{"curl", "/v3/tasks/6aef0cf0-c5d5-4ec1-89ae-73971d24241c"}))
+		Expect(fakeClock.SleepCallCount()).To(BeZero())
 	})
 
 	Context("When there is an error getting a task by guid", func() {
@@ -154,6 +177,9 @@ var _ = Describe("GetTaskByGUID", func() {
 			Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by guid: some-error`))
 			Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to retrieve task by guid: some-error`))
 			Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to retrieve task by guid: some-error`))
+			Expect(fakeClock.SleepCallCount()).To(Equal(2))
+			Expect(fakeClock.SleepCallArgs(0)).Should(Equal(2 * time.Second))
+			Expect(fakeClock.SleepCallArgs(1)).Should(Equal(4 * time.Second))
 		})
 
 		It("Returns a task by its guid if we eventually succeed within MaxAttempts tries", func() {
@@ -176,6 +202,8 @@ var _ = Describe("GetTaskByGUID", func() {
 			Expect(task.State).To(Equal("RUNNING"))
 			Expect(task.Guid).To(Equal("6aef0cf0-c5d5-4ec1-89ae-73971d24241c"))
 			Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by guid: some-error`))
+			Expect(fakeClock.SleepCallCount()).To(Equal(1))
+			Expect(fakeClock.SleepCallArgs(0)).To(Equal(2 * time.Second))
 		})
 	})
 
@@ -279,7 +307,8 @@ var _ = Describe("WaitForTask", func() {
 	var (
 		client              *cf.Api
 		fakeCfCommandRunner *cffakes.FakeCfCommandRunner
-		buffer *gbytes.Buffer
+		buffer              *gbytes.Buffer
+		fakeClock           *FakeClock
 	)
 
 	BeforeEach(func() {
@@ -287,6 +316,8 @@ var _ = Describe("WaitForTask", func() {
 		client = cf.NewApi(fakeCfCommandRunner)
 		buffer = gbytes.NewBuffer()
 		client.Log.SetOutput(buffer)
+		fakeClock = &FakeClock{}
+		client.Sleep = fakeClock.Sleep
 	})
 
 	Context("when the task succeeds", func() {
@@ -343,6 +374,7 @@ var _ = Describe("WaitForTask", func() {
 			))
 
 			Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to look up task \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
+			Expect(fakeClock.SleepCallCount()).To(Equal(3))
 		})
 	})
 })
