@@ -139,17 +139,17 @@ func (c *MySQLPlugin) run(cliConnection plugin.CliConnection, sourceServiceName,
 		cliConnection.CliCommandWithoutTerminalOutput("delete", appName, "-f")
 		log.Print("Cleaning up...")
 	}()
-	log.Print("Sucessfully pushed app")
+	log.Print("Successfully pushed app")
 
 	if _, err := cliConnection.CliCommandWithoutTerminalOutput("bind-service", appName, sourceServiceName); err != nil {
 		return errors.Errorf("failed to bind-service %q to application %q: %s", appName, sourceServiceName, err)
 	}
-	log.Print("Sucessfully bound app to v1 instance")
+	log.Print("Successfully bound app to v1 instance")
 
 	if _, err := cliConnection.CliCommandWithoutTerminalOutput("bind-service", appName, destServiceName); err != nil {
 		return errors.Errorf("failed to bind-service %q to application %q: %s", appName, destServiceName, err)
 	}
-	log.Print("Sucessfully bound app to v2 instance")
+	log.Print("Successfully bound app to v2 instance")
 
 	if _, err := cliConnection.CliCommandWithoutTerminalOutput("start", appName); err != nil {
 		return errors.Errorf("failed to start application %q: %s", appName, err)
