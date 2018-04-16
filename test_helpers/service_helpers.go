@@ -44,6 +44,18 @@ const (
 	curlTimeout              = "10s"
 )
 
+type Entity struct {
+	AppGUID string `json:"app_guid"`
+}
+
+type Resource struct {
+	Entity Entity `json:"entity"`
+}
+
+type BindingResult struct {
+	Resources []Resource `json:"resources"`
+}
+
 func CreateService(serviceName string, planName string, name string, args ...string) {
 	createServiceArgs := []string{
 		"create-service",
@@ -102,7 +114,15 @@ func WaitForService(name string, success string) {
 }
 
 func InstanceUUID(name string) string {
-	output := ExecuteCfCmd("service", name, "--guid")
+	return resourceGUID("service", name)
+}
+
+func AppUUID(name string) string {
+	return resourceGUID("app", name)
+}
+
+func resourceGUID(resourceType string, name string) string {
+	output := ExecuteCfCmd(resourceType, name, "--guid")
 	return strings.TrimSpace(output)
 }
 
@@ -191,15 +211,30 @@ func AssertAppIsDeleted(appName string) {
 	}, cfServiceWaitTimeout, curlTimeout).Should(ContainSubstring(success))
 }
 
+func BoundAppGUIDs(instanceGUID string) []string {
+	bindingResponse := cf.Cf("curl", fmt.Sprintf("/v2/service_instances/%s/service_bindings", instanceGUID)).Wait(cfCommandTimeout).Out.Contents()
+	var binding BindingResult
+	err := json.Unmarshal(bindingResponse, &binding)
+	Expect(err).NotTo(HaveOccurred())
+
+	appGUIDs := make([]string, 0)
+	for _, resource := range binding.Resources {
+		appGUIDs = append(appGUIDs, resource.Entity.AppGUID)
+	}
+
+	return appGUIDs
+}
+
 func BindAppToService(appName string, instance string) {
 	output := cf.Cf("bind-service", appName, instance).Wait(cfCommandTimeout).Out.Contents()
 	Expect(string(output)).To(ContainSubstring("Binding service %s to app %s", instance, appName))
 	Expect(string(output)).ToNot(SatisfyAny(ContainSubstring("FAILED"),
 		ContainSubstring("Server error")))
 
-	Eventually(func() string {
-		return string(cf.Cf("service", instance).Wait(cfCommandTimeout).Out.Contents())
-	}, cfServiceWaitTimeout, curlTimeout).Should(MatchRegexp(`[Bb]ound apps:\s+%s`, appName))
+	instanceGUID := InstanceUUID(instance)
+	appGUID := AppUUID(appName)
+
+	Eventually(BoundAppGUIDs(instanceGUID), cfServiceWaitTimeout, curlTimeout).Should(ContainElement(appGUID))
 }
 
 func BindAppToServiceWithUsername(appName, instance, username string) {
@@ -209,9 +244,10 @@ func BindAppToServiceWithUsername(appName, instance, username string) {
 	Expect(string(output)).ToNot(SatisfyAny(ContainSubstring("FAILED"),
 		ContainSubstring("Server error")))
 
-	Eventually(func() string {
-		return string(cf.Cf("service", instance).Wait(cfCommandTimeout).Out.Contents())
-	}, cfServiceWaitTimeout, curlTimeout).Should(ContainSubstring("Bound apps: %s", appName))
+	instanceGUID := InstanceUUID(instance)
+	appGUID := AppUUID(appName)
+
+	Eventually(BoundAppGUIDs(instanceGUID), cfServiceWaitTimeout, curlTimeout).Should(ContainElement(appGUID))
 }
 
 func UnbindAppFromService(appName string, instance string) {
@@ -221,9 +257,10 @@ func UnbindAppFromService(appName string, instance string) {
 		Say("FAILED"),
 		Say("Server error")))
 
-	EventuallyWithOffset(1, func() string {
-		return string(cf.Cf("service", instance).Wait(cfCommandTimeout).Out.Contents())
-	}, cfServiceWaitTimeout, curlTimeout).ShouldNot(MatchRegexp(`[Bb]ound apps:\s+%s`, appName))
+	instanceGUID := InstanceUUID(instance)
+	appGUID := AppUUID(appName)
+
+	Eventually(BoundAppGUIDs(instanceGUID), cfServiceWaitTimeout, curlTimeout).ShouldNot(ContainElement(appGUID))
 }
 
 func CreateAndBindServiceToApp(serviceName, planName, appName, appPath, instanceName string) {
