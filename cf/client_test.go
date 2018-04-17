@@ -14,6 +14,7 @@ package cf_test
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"code.cloudfoundry.org/cli/plugin/models"
@@ -164,6 +165,34 @@ var _ = Describe("Client", func() {
 					err := client.CreateServiceInstance("plan-type", "service-instance-name")
 					Expect(err).To(MatchError("failed to create service instance 'service-instance-name': description"))
 					Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(4))
+				})
+			})
+
+			Context("when RECIPIENT_PRODUCT_NAME is set", func() {
+				var (
+					originalProductName string
+				)
+				BeforeEach(func() {
+					originalProductName = os.Getenv("RECIPIENT_PRODUCT_NAME")
+					os.Setenv("RECIPIENT_PRODUCT_NAME", "some-fake-product")
+				})
+
+				It("Uses the product name from RECIPIENT_PRODUCT_NAME when creating the service instance", func() {
+					err := client.CreateServiceInstance("plan-type", "service-instance-name")
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
+						To(Equal([]string{
+						"create-service",
+						"some-fake-product",
+						"plan-type",
+						"service-instance-name",
+					}))
+					Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+				})
+
+				AfterEach(func() {
+					os.Setenv("RECIPIENT_PRODUCT_NAME", originalProductName)
 				})
 			})
 		})

@@ -76,9 +76,14 @@ func (c *Client) CreateServiceInstance(planType, instanceName string) error {
 		return fmt.Errorf("service instance '%s' already exists", instanceName)
 	}
 
+	productName := os.Getenv("RECIPIENT_PRODUCT_NAME")
+	if productName == "" {
+		productName = "p.mysql"
+	}
+
 	if _, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
 		"create-service",
-		"p.mysql",
+		productName,
 		planType,
 		instanceName,
 	); err != nil {
