@@ -38,7 +38,6 @@ var _ = BeforeSuite(func() {
 		"APP_DOMAIN",
 		"DONOR_SERVICE_NAME",
 		"DONOR_PLAN_NAME",
-		"RECIPIENT_SERVICE_NAME",
 		"RECIPIENT_PLAN_NAME",
 	})
 

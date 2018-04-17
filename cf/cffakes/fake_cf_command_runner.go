@@ -46,6 +46,19 @@ type FakeCfCommandRunner struct {
 		result1 plugin_models.Space
 		result2 error
 	}
+	GetServiceStub        func(string) (plugin_models.GetService_Model, error)
+	getServiceMutex       sync.RWMutex
+	getServiceArgsForCall []struct {
+		arg1 string
+	}
+	getServiceReturns struct {
+		result1 plugin_models.GetService_Model
+		result2 error
+	}
+	getServiceReturnsOnCall map[int]struct {
+		result1 plugin_models.GetService_Model
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -195,6 +208,57 @@ func (fake *FakeCfCommandRunner) GetCurrentSpaceReturnsOnCall(i int, result1 plu
 	}{result1, result2}
 }
 
+func (fake *FakeCfCommandRunner) GetService(arg1 string) (plugin_models.GetService_Model, error) {
+	fake.getServiceMutex.Lock()
+	ret, specificReturn := fake.getServiceReturnsOnCall[len(fake.getServiceArgsForCall)]
+	fake.getServiceArgsForCall = append(fake.getServiceArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("GetService", []interface{}{arg1})
+	fake.getServiceMutex.Unlock()
+	if fake.GetServiceStub != nil {
+		return fake.GetServiceStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getServiceReturns.result1, fake.getServiceReturns.result2
+}
+
+func (fake *FakeCfCommandRunner) GetServiceCallCount() int {
+	fake.getServiceMutex.RLock()
+	defer fake.getServiceMutex.RUnlock()
+	return len(fake.getServiceArgsForCall)
+}
+
+func (fake *FakeCfCommandRunner) GetServiceArgsForCall(i int) string {
+	fake.getServiceMutex.RLock()
+	defer fake.getServiceMutex.RUnlock()
+	return fake.getServiceArgsForCall[i].arg1
+}
+
+func (fake *FakeCfCommandRunner) GetServiceReturns(result1 plugin_models.GetService_Model, result2 error) {
+	fake.GetServiceStub = nil
+	fake.getServiceReturns = struct {
+		result1 plugin_models.GetService_Model
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCfCommandRunner) GetServiceReturnsOnCall(i int, result1 plugin_models.GetService_Model, result2 error) {
+	fake.GetServiceStub = nil
+	if fake.getServiceReturnsOnCall == nil {
+		fake.getServiceReturnsOnCall = make(map[int]struct {
+			result1 plugin_models.GetService_Model
+			result2 error
+		})
+	}
+	fake.getServiceReturnsOnCall[i] = struct {
+		result1 plugin_models.GetService_Model
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCfCommandRunner) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -204,6 +268,8 @@ func (fake *FakeCfCommandRunner) Invocations() map[string][][]interface{} {
 	defer fake.cliCommandWithoutTerminalOutputMutex.RUnlock()
 	fake.getCurrentSpaceMutex.RLock()
 	defer fake.getCurrentSpaceMutex.RUnlock()
+	fake.getServiceMutex.RLock()
+	defer fake.getServiceMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
