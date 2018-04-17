@@ -32,7 +32,8 @@ var (
 
 //go:generate counterfeiter . CFClient
 type CFClient interface {
-	CreateServiceInstance(destPlan, recipientInstanceName string) error
+	CreateServiceInstance(destPlan, instanceName string) error
+	DeleteServiceInstance(instanceName string) error
 	BindService(appName, serviceName string) error
 	DeleteApp(appName string) error
 	DumpLogs(appName string)
@@ -158,7 +159,19 @@ func Migrate(client CFClient, unpacker *unpack.Unpacker, args []string) error {
 		return err
 	}
 
-	return m.MigrateData()
+	if err := m.MigrateData(); err != nil {
+
+		client.DeleteApp(m.AppName)
+		client.DeleteServiceInstance(recipientInstanceName)
+
+		return fmt.Errorf("Error migrating data: %v. Attempting to clean up app %s and service %s",
+			err,
+			m.AppName,
+			recipientInstanceName,
+		)
+	}
+
+	return nil
 }
 
 func versionFromSemver(in string) plugin.VersionType {

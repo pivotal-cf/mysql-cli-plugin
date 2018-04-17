@@ -48,6 +48,7 @@ func NewMigrator(client client, unpacker unpacker, donorInstanceName, recipientI
 }
 
 type Migrator struct {
+	AppName               string
 	client                client
 	donorInstanceName     string
 	recipientInstanceName string
@@ -71,38 +72,38 @@ func (m *Migrator) MigrateData() error {
 	}
 
 	log.Print("Started to push app")
-	var appName = "migrate-app-" + uuid.New()
-	if err = m.client.PushApp(tmpDir, appName); err != nil {
+	m.AppName = "migrate-app-" + uuid.New()
+	if err = m.client.PushApp(tmpDir, m.AppName); err != nil {
 		return errors.Errorf("failed to push application: %s", err)
 	}
 	defer func() {
-		m.client.DeleteApp(appName)
+		m.client.DeleteApp(m.AppName)
 		log.Print("Cleaning up...")
 	}()
 	log.Print("Successfully pushed app")
 
-	if err = m.client.BindService(appName, m.donorInstanceName); err != nil {
-		return errors.Errorf("failed to bind-service %q to application %q: %s", appName, m.donorInstanceName, err)
+	if err = m.client.BindService(m.AppName, m.donorInstanceName); err != nil {
+		return errors.Errorf("failed to bind-service %q to application %q: %s", m.AppName, m.donorInstanceName, err)
 	}
 	log.Print("Successfully bound app to v1 instance")
 
-	if err = m.client.BindService(appName, m.recipientInstanceName); err != nil {
-		return errors.Errorf("failed to bind-service %q to application %q: %s", appName, m.recipientInstanceName, err)
+	if err = m.client.BindService(m.AppName, m.recipientInstanceName); err != nil {
+		return errors.Errorf("failed to bind-service %q to application %q: %s", m.AppName, m.recipientInstanceName, err)
 	}
 	log.Print("Successfully bound app to v2 instance")
 
 	log.Print("Starting migration app")
-	if err = m.client.StartApp(appName); err != nil {
-		return errors.Errorf("failed to start application %q: %s", appName, err)
+	if err = m.client.StartApp(m.AppName); err != nil {
+		return errors.Errorf("failed to start application %q: %s", m.AppName, err)
 	}
 
 	log.Print("Started to run migration task")
 	command := fmt.Sprintf("./migrate %s %s", m.donorInstanceName, m.recipientInstanceName)
-	if err = m.client.RunTask(appName, command); err != nil {
+	if err = m.client.RunTask(m.AppName, command); err != nil {
 		log.Printf("Migration failed: %s", err)
 		log.Print("Fetching log output...")
 		time.Sleep(5 * time.Second)
-		m.client.DumpLogs(appName)
+		m.client.DumpLogs(m.AppName)
 		return err
 	}
 

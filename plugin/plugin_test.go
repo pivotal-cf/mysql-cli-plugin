@@ -50,11 +50,13 @@ var _ = Describe("Plugin Commands", func() {
 			Expect(err).To(MatchError("some-cf-error"))
 		})
 
-		It("returns an error if migrating data fails", func() {
+		It("returns an error and attempts to delete the new service instance if migrating data fails", func() {
 			fakeClient.PushAppReturns(errors.New("some-cf-error"))
 			args := []string{"mysql-tools", "migrate", "some-donor", "--create", "some-plan"}
 			err := plugin.Migrate(fakeClient, unpacker, args)
-			Expect(err).To(MatchError("failed to push application: some-cf-error"))
+			Expect(err).To(MatchError(MatchRegexp("Error migrating data: failed to push application: some-cf-error. Attempting to clean up app .* and service some-donor-new")))
+			Expect(fakeClient.DeleteAppCallCount()).To(Equal(1))
+			Expect(fakeClient.DeleteServiceInstanceCallCount()).To(Equal(1))
 		})
 	})
 

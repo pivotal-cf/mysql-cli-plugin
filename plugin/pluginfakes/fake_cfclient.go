@@ -8,16 +8,27 @@ import (
 )
 
 type FakeCFClient struct {
-	CreateServiceInstanceStub        func(destPlan, recipientInstanceName string) error
+	CreateServiceInstanceStub        func(destPlan, instanceName string) error
 	createServiceInstanceMutex       sync.RWMutex
 	createServiceInstanceArgsForCall []struct {
-		destPlan              string
-		recipientInstanceName string
+		destPlan     string
+		instanceName string
 	}
 	createServiceInstanceReturns struct {
 		result1 error
 	}
 	createServiceInstanceReturnsOnCall map[int]struct {
+		result1 error
+	}
+	DeleteServiceInstanceStub        func(instanceName string) error
+	deleteServiceInstanceMutex       sync.RWMutex
+	deleteServiceInstanceArgsForCall []struct {
+		instanceName string
+	}
+	deleteServiceInstanceReturns struct {
+		result1 error
+	}
+	deleteServiceInstanceReturnsOnCall map[int]struct {
 		result1 error
 	}
 	BindServiceStub        func(appName, serviceName string) error
@@ -110,17 +121,17 @@ type FakeCFClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCFClient) CreateServiceInstance(destPlan string, recipientInstanceName string) error {
+func (fake *FakeCFClient) CreateServiceInstance(destPlan string, instanceName string) error {
 	fake.createServiceInstanceMutex.Lock()
 	ret, specificReturn := fake.createServiceInstanceReturnsOnCall[len(fake.createServiceInstanceArgsForCall)]
 	fake.createServiceInstanceArgsForCall = append(fake.createServiceInstanceArgsForCall, struct {
-		destPlan              string
-		recipientInstanceName string
-	}{destPlan, recipientInstanceName})
-	fake.recordInvocation("CreateServiceInstance", []interface{}{destPlan, recipientInstanceName})
+		destPlan     string
+		instanceName string
+	}{destPlan, instanceName})
+	fake.recordInvocation("CreateServiceInstance", []interface{}{destPlan, instanceName})
 	fake.createServiceInstanceMutex.Unlock()
 	if fake.CreateServiceInstanceStub != nil {
-		return fake.CreateServiceInstanceStub(destPlan, recipientInstanceName)
+		return fake.CreateServiceInstanceStub(destPlan, instanceName)
 	}
 	if specificReturn {
 		return ret.result1
@@ -137,7 +148,7 @@ func (fake *FakeCFClient) CreateServiceInstanceCallCount() int {
 func (fake *FakeCFClient) CreateServiceInstanceArgsForCall(i int) (string, string) {
 	fake.createServiceInstanceMutex.RLock()
 	defer fake.createServiceInstanceMutex.RUnlock()
-	return fake.createServiceInstanceArgsForCall[i].destPlan, fake.createServiceInstanceArgsForCall[i].recipientInstanceName
+	return fake.createServiceInstanceArgsForCall[i].destPlan, fake.createServiceInstanceArgsForCall[i].instanceName
 }
 
 func (fake *FakeCFClient) CreateServiceInstanceReturns(result1 error) {
@@ -155,6 +166,54 @@ func (fake *FakeCFClient) CreateServiceInstanceReturnsOnCall(i int, result1 erro
 		})
 	}
 	fake.createServiceInstanceReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeCFClient) DeleteServiceInstance(instanceName string) error {
+	fake.deleteServiceInstanceMutex.Lock()
+	ret, specificReturn := fake.deleteServiceInstanceReturnsOnCall[len(fake.deleteServiceInstanceArgsForCall)]
+	fake.deleteServiceInstanceArgsForCall = append(fake.deleteServiceInstanceArgsForCall, struct {
+		instanceName string
+	}{instanceName})
+	fake.recordInvocation("DeleteServiceInstance", []interface{}{instanceName})
+	fake.deleteServiceInstanceMutex.Unlock()
+	if fake.DeleteServiceInstanceStub != nil {
+		return fake.DeleteServiceInstanceStub(instanceName)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.deleteServiceInstanceReturns.result1
+}
+
+func (fake *FakeCFClient) DeleteServiceInstanceCallCount() int {
+	fake.deleteServiceInstanceMutex.RLock()
+	defer fake.deleteServiceInstanceMutex.RUnlock()
+	return len(fake.deleteServiceInstanceArgsForCall)
+}
+
+func (fake *FakeCFClient) DeleteServiceInstanceArgsForCall(i int) string {
+	fake.deleteServiceInstanceMutex.RLock()
+	defer fake.deleteServiceInstanceMutex.RUnlock()
+	return fake.deleteServiceInstanceArgsForCall[i].instanceName
+}
+
+func (fake *FakeCFClient) DeleteServiceInstanceReturns(result1 error) {
+	fake.DeleteServiceInstanceStub = nil
+	fake.deleteServiceInstanceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeCFClient) DeleteServiceInstanceReturnsOnCall(i int, result1 error) {
+	fake.DeleteServiceInstanceStub = nil
+	if fake.deleteServiceInstanceReturnsOnCall == nil {
+		fake.deleteServiceInstanceReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteServiceInstanceReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -528,6 +587,8 @@ func (fake *FakeCFClient) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.createServiceInstanceMutex.RLock()
 	defer fake.createServiceInstanceMutex.RUnlock()
+	fake.deleteServiceInstanceMutex.RLock()
+	defer fake.deleteServiceInstanceMutex.RUnlock()
 	fake.bindServiceMutex.RLock()
 	defer fake.bindServiceMutex.RUnlock()
 	fake.deleteAppMutex.RLock()

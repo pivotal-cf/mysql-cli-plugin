@@ -93,6 +93,16 @@ func (c *Client) CreateServiceInstance(planType, instanceName string) error {
 	return c.waitForInstanceCreation(instanceName)
 }
 
+func (c *Client) DeleteServiceInstance(instanceName string) error {
+	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
+		"delete-service",
+		instanceName,
+		"-f",
+	)
+
+	return err
+}
+
 func (c *Client) ServiceExists(serviceName string) bool {
 	_, err := c.cfCommandRunner.GetService(serviceName)
 	return err == nil

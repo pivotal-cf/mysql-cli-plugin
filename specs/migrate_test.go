@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	. "github.com/onsi/ginkgo"
@@ -140,6 +141,46 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 				Eventually(session, "5m", "1s").Should(gexec.Exit(0))
 			})
+		})
+	})
+
+	Context("When migration fails", func() {
+		var (
+			sourceInstanceRenamed string
+		)
+		BeforeEach(func() {
+			sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
+			sourceInstanceRenamed = sourceInstance + "-renamed"
+			test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
+			destInstance = sourceInstance + "-new"
+
+			test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
+		})
+
+		AfterEach(func() {
+			test_helpers.DeleteService(sourceInstanceRenamed)
+			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
+			test_helpers.WaitForService(sourceInstanceRenamed, fmt.Sprintf("Service instance %s not found", sourceInstanceRenamed))
+		})
+
+		It("Deletes the recipient service instance after migration failure", func() {
+			var (
+				session *gexec.Session
+				err     error
+			)
+
+			By("Starting the migration", func() {
+				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", destPlan)
+				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			By("Renaming the donor instance while recipient instance is being created", func() {
+				time.Sleep(10 * time.Second)
+				test_helpers.ExecuteCfCmd("rename-service", sourceInstance, sourceInstanceRenamed)
+			})
+
+			Eventually(session, "5m", "1s").Should(gexec.Exit(1))
 		})
 	})
 })

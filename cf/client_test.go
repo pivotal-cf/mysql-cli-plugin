@@ -225,6 +225,30 @@ var _ = Describe("Client", func() {
 				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(0))
 			})
 		})
+
+	})
+
+	Context("DeleteServiceInstance", func() {
+		Context("When the specified instance exists", func() {
+			It("Runs the delete-service command", func() {
+				fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{}, nil)
+
+				err := client.DeleteServiceInstance("service-instance-name")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+			})
+		})
+
+		Context("When the specified instance doesn't exist", func() {
+			It("Succeeds anyway", func() {
+				fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("invalid instance"))
+
+				err := client.DeleteServiceInstance("invalid-service-instance-name")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+			})
+		})
+
 	})
 
 	Context("CreateTask", func() {
