@@ -13,6 +13,7 @@
 package main_test
 
 import (
+	"os"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
@@ -69,6 +70,10 @@ var _ = Describe("MysqlCliPlugin", func() {
 	})
 
 	It("shows plugin version", func() {
+		if _, ok := os.LookupEnv("BEING_RUN_ON_CI"); !ok {
+			Skip("Version check disabled since BEING_RUN_ON_CI is not set")
+		}
+
 		cmd := exec.Command("cf", "mysql-tools", "version")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
