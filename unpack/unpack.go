@@ -16,6 +16,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/gobuffalo/packr"
 	"github.com/pkg/errors"
@@ -57,8 +58,11 @@ func (u *Unpacker) Unpack(destDir string) error {
 			return err
 		}
 
-		// todo: works on Windows?
-		return dest.Chmod(0700)
+		if runtime.GOOS != "windows" {
+			return dest.Chmod(0700)
+		}
+
+		return nil
 	})
 
 	if err != nil {
