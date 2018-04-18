@@ -13,16 +13,14 @@ import (
 
 var _ = Describe("Plugin Commands", func() {
 	var (
-		fakeBox  packr.Box
 		fakeClient *pluginfakes.FakeCFClient
 		unpacker   *unpack.Unpacker
 	)
 
 	BeforeEach(func() {
-		fakeBox = packr.NewBox("../unpack/fixtures")
 		fakeClient = new(pluginfakes.FakeCFClient)
-		unpacker = &unpack.Unpacker{Box: fakeBox}
-
+		unpacker = unpack.NewUnpacker()
+		unpacker.Box = packr.NewBox("../unpack/fixtures")
 	})
 
 	Context("Migrate", func() {

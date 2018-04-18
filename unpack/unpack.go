@@ -14,7 +14,6 @@ package unpack
 
 import (
 	"io"
-	"os"
 	"path/filepath"
 	"runtime"
 
@@ -22,47 +21,52 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate counterfeiter . Box
-type Box interface {
-	Walk(walkFunc packr.WalkFunc) error
-}
-
 //go:generate go install github.com/pivotal-cf/mysql-cli-plugin/vendor/github.com/gobuffalo/packr/...
 //go:generate $GOPATH/bin/packr --compress
 var (
 	defaultBox = packr.NewBox("../app")
 )
 
+//go:generate counterfeiter . Box
+type Box interface {
+	Walk(walkFunc packr.WalkFunc) error
+}
+
 type Unpacker struct {
-	Box Box
+	Box        Box
+	Filesystem Filesystem
 }
 
 func NewUnpacker() *Unpacker {
 	return &Unpacker{
-		defaultBox,
+		Box:        defaultBox,
+		Filesystem: LocalFilesystem{},
 	}
 }
 
 func (u *Unpacker) Unpack(destDir string) error {
 	err := u.Box.Walk(func(name string, file packr.File) error {
-		if err := os.MkdirAll(filepath.Dir(filepath.Join(destDir, name)), 0700); err != nil {
+		if err := u.Filesystem.MkdirAll(filepath.Dir(filepath.Join(destDir, name)), 0700); err != nil {
 			return err
 		}
 
-		dest, err := os.Create(filepath.Join(destDir, name))
+		dest, err := u.Filesystem.Create(filepath.Join(destDir, name))
 		if err != nil {
 			return err
 		}
+		defer dest.Close()
 
 		if _, err := io.Copy(dest, file); err != nil {
 			return err
 		}
 
 		if runtime.GOOS != "windows" {
-			return dest.Chmod(0700)
+			if err := dest.Chmod(0700); err != nil {
+				return err
+			}
 		}
 
-		return nil
+		return dest.Close()
 	})
 
 	if err != nil {
