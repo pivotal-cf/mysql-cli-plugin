@@ -55,10 +55,6 @@ type Migrator struct {
 	unpacker              unpacker
 }
 
-func (m *Migrator) CreateServiceInstance(planType string) error {
-	return errors.New("not implemented") // todo
-}
-
 func (m *Migrator) MigrateData() error {
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
 	if err != nil {
