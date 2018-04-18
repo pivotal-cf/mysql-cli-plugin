@@ -32,7 +32,9 @@ var (
 
 //go:generate counterfeiter . CFClient
 type CFClient interface {
-	CreateServiceInstance(destPlan, instanceName string) error
+	CreateServiceInstance(planType, instanceName string) error
+	GetHostnames(instanceName string) ([]string, error)
+	UpdateServiceConfig(instanceName string, jsonParams string) error
 	DeleteServiceInstance(instanceName string) error
 	BindService(appName, serviceName string) error
 	DeleteApp(appName string) error

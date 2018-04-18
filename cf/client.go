@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/cli/plugin/models"
+	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -90,7 +91,75 @@ func (c *Client) CreateServiceInstance(planType, instanceName string) error {
 		return err
 	}
 
-	return c.waitForInstanceCreation(instanceName)
+	return c.waitForOperationCompletion("create service instance", instanceName)
+}
+
+func (c *Client) GetHostnames(instanceName string) ([]string, error) {
+	serviceKeyName := "MIGRATE-" + uuid.New()
+	if err := c.createServiceKey(instanceName, serviceKeyName); err != nil {
+		return nil, errors.Wrapf(err, "Cannot get the hostnames for %s", instanceName)
+	}
+	defer func() {
+		c.deleteServiceKey(instanceName, serviceKeyName)
+	}()
+
+	jsonRaw, err := c.serviceKey(instanceName, serviceKeyName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Cannot get the hostnames for %s", instanceName)
+	}
+
+	var serviceKey struct {
+		Hostname string `json:"hostname"`
+		Hostnames []string `json:"hostnames"`
+	}
+
+	if err = json.Unmarshal([]byte(jsonRaw), &serviceKey); err != nil {
+		return nil, fmt.Errorf("Cannot get the hostnames for %s: invalid response: %s", instanceName, jsonRaw)
+	}
+
+	if len(serviceKey.Hostnames) != 0 {
+		return serviceKey.Hostnames, nil
+	}
+
+	return []string{serviceKey.Hostname}, nil
+}
+
+func (c *Client) createServiceKey(instanceName, serviceKeyName string) error {
+	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput( "create-service-key", instanceName,  serviceKeyName)
+	return err
+}
+
+func (c *Client) serviceKey(instanceName, serviceKeyName string) (string, error) {
+	output, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput("service-key", instanceName, serviceKeyName)
+
+	if err != nil {
+		return "", err
+	}
+
+	// skip non-json message in service-key output
+	if len(output) > 2 {
+		output = output[2:]
+	}
+
+	return strings.Join(output, "\n"), nil
+}
+
+func (c *Client) deleteServiceKey(instanceName, serviceKeyName string) error {
+	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput( "delete-service-key", instanceName,  serviceKeyName)
+	return err
+}
+
+func (c *Client) UpdateServiceConfig(instanceName string, jsonParams string) error {
+	if _, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
+		"update-service",
+		instanceName,
+		"-c",
+		jsonParams,
+	); err != nil {
+		return err
+	}
+
+	return c.waitForOperationCompletion("update service config", instanceName)
 }
 
 func (c *Client) DeleteServiceInstance(instanceName string) error {
@@ -301,7 +370,7 @@ func (c *Client) RenameService(oldName, newName string) error {
 	)
 }
 
-func (c *Client) waitForInstanceCreation(instanceName string) error {
+func (c *Client) waitForOperationCompletion(operationName, instanceName string) error {
 	attempt := 0
 
 	for {
@@ -324,8 +393,8 @@ func (c *Client) waitForInstanceCreation(instanceName string) error {
 		default:
 			return nil
 		case "failed":
-			return fmt.Errorf("failed to create service instance '%s': %s",
-				instanceName, service.LastOperation.Description)
+			return fmt.Errorf("failed to %s '%s': %s",
+				operationName, instanceName, service.LastOperation.Description)
 		case "in progress":
 			continue
 		}

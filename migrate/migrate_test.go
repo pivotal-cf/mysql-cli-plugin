@@ -21,6 +21,89 @@ import (
 	. "github.com/pivotal-cf/mysql-cli-plugin/migrate"
 )
 
+var _ = Describe("CreateAndConfigureServiceInstance", func() {
+	var (
+		planType      string
+		donorName     string
+		recipientName string
+		fakeClient    *migratefakes.FakeClient
+		fakeUnpacker  *migratefakes.FakeUnpacker
+		migrator      *Migrator
+	)
+
+	BeforeEach(func() {
+		planType = "plan-type"
+		donorName = "some-donor-instance"
+		recipientName = "some-recipient-instance"
+		fakeClient = new(migratefakes.FakeClient)
+		fakeUnpacker = new(migratefakes.FakeUnpacker)
+		migrator = NewMigrator(fakeClient, fakeUnpacker, donorName, recipientName)
+	})
+
+	It("Creates a new service instance and updates it to enable TLS", func() {
+		err := migrator.CreateAndConfigureServiceInstance(planType)
+
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating a service instance", func() {
+			Expect(fakeClient.CreateServiceInstanceCallCount()).To(Equal(1))
+		})
+
+		By("Obtaining its hostname", func() {
+			Expect(fakeClient.GetHostnamesCallCount()).To(Equal(1))
+		})
+
+		By("Updating the service to enable TLS on its hostname", func() {
+			Expect(fakeClient.UpdateServiceConfigCallCount()).To(Equal(1))
+		})
+	})
+
+	Context("When we cannot create a new service instance", func() {
+		BeforeEach(func() {
+			fakeClient.CreateServiceInstanceReturns(errors.New("create service failed"))
+		})
+
+		It("Fails", func() {
+			err := migrator.CreateAndConfigureServiceInstance(planType)
+
+			Expect(err).To(MatchError("Error creating service instance: create service failed"))
+			Expect(fakeClient.CreateServiceInstanceCallCount()).To(Equal(1))
+		})
+	})
+
+	Context("When we cannot obtain the new service instance's hostname", func() {
+		BeforeEach(func() {
+			fakeClient.GetHostnamesReturns(nil, errors.New("get hostname failed"))
+		})
+
+		It("Fails, after attempting to delete the newly created service instance", func() {
+			err := migrator.CreateAndConfigureServiceInstance(planType)
+
+			Expect(err).To(MatchError("Error obtaining hostname for new service instance: get hostname failed"))
+			Expect(fakeClient.CreateServiceInstanceCallCount()).To(Equal(1))
+			Expect(fakeClient.GetHostnamesCallCount()).To(Equal(1))
+			Expect(fakeClient.DeleteServiceInstanceCallCount()).To(Equal(1))
+			Expect(fakeClient.UpdateServiceConfigCallCount()).To(Equal(0))
+
+		})
+	})
+	Context("When we cannot update a new service instance", func() {
+		BeforeEach(func() {
+			fakeClient.UpdateServiceConfigReturns(errors.New("update service failed"))
+		})
+
+		It("does not fail", func() {
+			err := migrator.CreateAndConfigureServiceInstance(planType)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fakeClient.CreateServiceInstanceCallCount()).To(Equal(1))
+			Expect(fakeClient.GetHostnamesCallCount()).To(Equal(1))
+			Expect(fakeClient.DeleteServiceInstanceCallCount()).To(Equal(0))
+			Expect(fakeClient.UpdateServiceConfigCallCount()).To(Equal(1))
+		})
+	})
+})
+
 var _ = Describe("MigrateData", func() {
 	var (
 		donorName     string

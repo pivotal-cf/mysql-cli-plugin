@@ -25,8 +25,12 @@ import (
 
 //go:generate counterfeiter . client
 type client interface {
+	CreateServiceInstance(planType, instanceName string) error
+	GetHostnames(instanceName string) ([]string, error)
+	UpdateServiceConfig(instanceName string, jsonParams string) error
 	BindService(appName, serviceName string) error
 	DeleteApp(appName string) error
+	DeleteServiceInstance(instanceName string) error
 	DumpLogs(appName string)
 	PushApp(path, appName string) error
 	RenameService(oldName, newName string) error
@@ -53,6 +57,23 @@ type Migrator struct {
 	donorInstanceName     string
 	recipientInstanceName string
 	unpacker              unpacker
+}
+
+func (m *Migrator) CreateAndConfigureServiceInstance(planType string) error {
+	if err := m.client.CreateServiceInstance(planType, m.recipientInstanceName); err != nil {
+		return errors.Wrap(err, "Error creating service instance")
+	}
+
+	instanceIP, err := m.client.GetHostnames(m.recipientInstanceName)
+	if err != nil {
+		m.client.DeleteServiceInstance(m.recipientInstanceName)
+		return errors.Wrap(err, "Error obtaining hostname for new service instance")
+	}
+
+	m.client.UpdateServiceConfig(m.recipientInstanceName,
+		fmt.Sprintf(`{"enable_tls": ["%s"]}`, instanceIP))
+
+	return nil
 }
 
 func (m *Migrator) MigrateData() error {

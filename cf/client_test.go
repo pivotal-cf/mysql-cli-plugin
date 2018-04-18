@@ -72,12 +72,12 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal(
-					[]string{
-						"bind-service",
-						"some-app",
-						"some-service",
-					},
-				))
+				[]string{
+					"bind-service",
+					"some-app",
+					"some-service",
+				},
+			))
 		})
 
 		It("returns an error when the binding request fails", func() {
@@ -206,11 +206,11 @@ var _ = Describe("Client", func() {
 				Expect(err).To(MatchError("Invalid service plan"))
 				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 					To(Equal([]string{
-						"create-service",
-						"p.mysql",
-						"invalid-plan-type",
-						"service-instance-name",
-					}))
+					"create-service",
+					"p.mysql",
+					"invalid-plan-type",
+					"service-instance-name",
+				}))
 				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 			})
 		})
@@ -226,6 +226,248 @@ var _ = Describe("Client", func() {
 			})
 		})
 
+	})
+
+	Context("GetHostnames", func() {
+		BeforeEach(func() {
+			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+				[]string{
+					`Getting key some-service-key for service instance test-tls as admin...`,
+					``,
+					`{`,
+					` "hostname": "some-host-name",`,
+					` "jdbcUrl": "jdbc:mysql://some-host-name:3306/service_instance_db?user=8efbb5299eae4b8698fdfaca0e07e0d1\u0026password=1jms9jmd7i0twuk7\u0026useSSL=true\u0026requireSSL=true",`,
+					` "name": "service_instance_db",`,
+					` "password": "1jms9jmd7i0twuk7",`,
+					` "port": 3306,`,
+					` "uri": "mysql://8efbb5299eae4b8698fdfaca0e07e0d1:1jms9jmd7i0twuk7@some-host-name:3306/service_instance_db?reconnect=true",`,
+					` "username": "8efbb5299eae4b8698fdfaca0e07e0d1"`,
+					`}`,
+				}, nil,
+			)
+		})
+
+		It("returns the hostname for a single service instance", func() {
+			hostnames, err := client.GetHostnames("some-instance")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(hostnames).To(ConsistOf(`some-host-name`))
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
+				"create-service-key",
+				"some-instance",
+			}))
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)[0:2]).To(Equal([]string{
+				"service-key",
+				"some-instance",
+			}))
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)[0:2]).To(Equal([]string{
+				"delete-service-key",
+				"some-instance",
+			}))
+		})
+
+		It("returns all the hostnames for a leader/follower service instance", func() {
+			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+				[]string{
+					`Getting key some-service-key for service instance test-tls as admin...`,
+					``,
+					`{`,
+					` "hostname": "some-host-name",`,
+					` "hostnames": [`,
+					`  "some-host-name",`,
+					`  "some-other-host-name"`,
+					` ],`,
+					` "jdbcUrl": "jdbc:mysql://some-host-name:3306/service_instance_db?user=8efbb5299eae4b8698fdfaca0e07e0d1\u0026password=1jms9jmd7i0twuk7\u0026useSSL=true\u0026requireSSL=true",`,
+					` "name": "service_instance_db",`,
+					` "password": "1jms9jmd7i0twuk7",`,
+					` "port": 3306,`,
+					` "uri": "mysql://8efbb5299eae4b8698fdfaca0e07e0d1:1jms9jmd7i0twuk7@some-host-name:3306/service_instance_db?reconnect=true",`,
+					` "username": "8efbb5299eae4b8698fdfaca0e07e0d1"`,
+					`}`,
+				}, nil,
+			)
+
+			hostnames, err := client.GetHostnames("some-instance")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(hostnames).To(ConsistOf(`some-host-name`, `some-other-host-name`))
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
+				"create-service-key",
+				"some-instance",
+			}))
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)[0:2]).To(Equal([]string{
+				"service-key",
+				"some-instance",
+			}))
+			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)[0:2]).To(Equal([]string{
+				"delete-service-key",
+				"some-instance",
+			}))
+		})
+
+		Context("When the service key fails to be created", func() {
+			It("fails", func() {
+				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(nil, errors.New("cannot create service key"))
+
+				_, err := client.GetHostnames("some-instance")
+
+				Expect(err).To(MatchError("Cannot get the hostnames for some-instance: cannot create service key"))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
+					"create-service-key",
+					"some-instance",
+				}))
+			})
+		})
+
+		Context("When the new service key cannot be read", func() {
+			It("fails when the cli command returns invalid json", func() {
+				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1, []string{"not json"}, nil)
+				_, err := client.GetHostnames("some-instance")
+
+				Expect(err).To(MatchError("Cannot get the hostnames for some-instance: invalid response: not json"))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
+					"create-service-key",
+					"some-instance",
+				}))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)[0:2]).To(Equal([]string{
+					"service-key",
+					"some-instance",
+				}))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)[0:2]).To(Equal([]string{
+					"delete-service-key",
+					"some-instance",
+				}))
+
+			})
+
+			It("fails when the cli command fails", func() {
+				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1, nil, errors.New("cannot read service key"))
+
+				_, err := client.GetHostnames("some-instance")
+
+				Expect(err).To(MatchError("Cannot get the hostnames for some-instance: cannot read service key"))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
+					"create-service-key",
+					"some-instance",
+				}))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)[0:2]).To(Equal([]string{
+					"service-key",
+					"some-instance",
+				}))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)[0:2]).To(Equal([]string{
+					"delete-service-key",
+					"some-instance",
+				}))
+
+			})
+		})
+
+		Context("When the service key fails to be deleted", func() {
+			It("succeeds anyway", func() {
+				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(2, nil, errors.New("cannot delete service key"))
+
+				hostnames, err := client.GetHostnames("some-instance")
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(hostnames).To(ConsistOf(`some-host-name`))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
+					"create-service-key",
+					"some-instance",
+				}))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)[0:2]).To(Equal([]string{
+					"service-key",
+					"some-instance",
+				}))
+				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)[0:2]).To(Equal([]string{
+					"delete-service-key",
+					"some-instance",
+				}))
+			})
+		})
+	})
+
+	Context("UpdateServiceConfig", func() {
+		var (
+			inProgressUpdate plugin_models.GetService_Model
+			completedUpdate  plugin_models.GetService_Model
+		)
+
+		BeforeEach(func() {
+			inProgressUpdate = plugin_models.GetService_Model{
+				LastOperation: plugin_models.GetService_LastOperation{
+					Type:  "update",
+					State: "in progress",
+				},
+			}
+			completedUpdate = plugin_models.GetService_Model{
+				LastOperation: plugin_models.GetService_LastOperation{
+					Type:  "update",
+					State: "succeeded",
+				},
+			}
+
+			fakeCfCommandRunner.GetServiceReturnsOnCall(0, plugin_models.GetService_Model{}, errors.New("not-exist"))
+			fakeCfCommandRunner.GetServiceReturnsOnCall(1, inProgressUpdate, nil)
+			fakeCfCommandRunner.GetServiceReturnsOnCall(2, inProgressUpdate, nil)
+			fakeCfCommandRunner.GetServiceReturnsOnCall(3, completedUpdate, nil)
+		})
+
+		It("Waits until the service has been successfully updated", func() {
+			err := client.UpdateServiceConfig("service-instance-name", `{"config-key":"config-value"}`)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(4))
+		})
+
+		Context("when the service polling fails continuously", func() {
+			BeforeEach(func() {
+				fakeCfCommandRunner.GetServiceReturnsOnCall(3, plugin_models.GetService_Model{}, errors.New("boom!"))
+				fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("boom!"))
+			})
+
+			It("keeps trying until a timeout is reached", func() {
+				err := client.UpdateServiceConfig("service-instance-name", `{"config-key":"config-value"}`)
+				Expect(err).To(MatchError("failed to look up status of service instance 'service-instance-name'"))
+				Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(6))
+			})
+		})
+
+		Context("when the service polling fails intermittently", func() {
+			BeforeEach(func() {
+				fakeCfCommandRunner.GetServiceReturnsOnCall(3, plugin_models.GetService_Model{}, errors.New("boom!"))
+				fakeCfCommandRunner.GetServiceReturnsOnCall(4, completedUpdate, nil)
+			})
+
+			It("keeps trying until a definitive answer is reached", func() {
+				err := client.UpdateServiceConfig("service-instance-name", `{"config-key":"config-value"}`)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(5))
+			})
+		})
+
+		Context("when the service fails to update successfully", func() {
+			BeforeEach(func() {
+				failedService := plugin_models.GetService_Model{
+					LastOperation: plugin_models.GetService_LastOperation{
+						Type:        "update",
+						State:       "failed",
+						Description: "description",
+					},
+				}
+				fakeCfCommandRunner.GetServiceReturnsOnCall(3, failedService, nil)
+			})
+
+			It("returns an error", func() {
+				err := client.UpdateServiceConfig("service-instance-name", `{"config-key":"config-value"}`)
+				Expect(err).To(MatchError("failed to update service config 'service-instance-name': description"))
+				Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(4))
+			})
+		})
 	})
 
 	Context("DeleteServiceInstance", func() {
@@ -375,9 +617,9 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{
-					"curl",
-					"/v3/apps?names=some-app&space_guids=some-guid",
-				}))
+				"curl",
+				"/v3/apps?names=some-app&space_guids=some-guid",
+			}))
 		})
 
 		Context("when there is an error getting the current space", func() {
@@ -513,17 +755,17 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal(
-					[]string{
-						"push",
-						"some-app-name",
-						"-b", "binary_buildpack",
-						"-u", "none",
-						"-c", "sleep infinity",
-						"-p", "some-path",
-						"--no-route",
-						"--no-start",
-					},
-				))
+				[]string{
+					"push",
+					"some-app-name",
+					"-b", "binary_buildpack",
+					"-u", "none",
+					"-c", "sleep infinity",
+					"-p", "some-path",
+					"--no-route",
+					"--no-start",
+				},
+			))
 		})
 
 		It("returns an error when pushing an app fails", func() {
@@ -546,8 +788,8 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{
-					"rename-service", "some-service-name", "some-new-service-name",
-				}))
+				"rename-service", "some-service-name", "some-new-service-name",
+			}))
 		})
 
 		It("returns an error when renaming a service fails", func() {
@@ -603,17 +845,17 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)).
 				To(
-					Equal([]string{
-						"curl", "-X", "POST", "-d",
-						`{"command":"some-command"}`,
-						"/v3/apps/be5077ed-abba-bea7-deb7-50f7ba110000/tasks",
-					}))
+				Equal([]string{
+					"curl", "-X", "POST", "-d",
+					`{"command":"some-command"}`,
+					"/v3/apps/be5077ed-abba-bea7-deb7-50f7ba110000/tasks",
+				}))
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)).
 				To(Equal([]string{
-					"curl",
-					"/v3/tasks/be5077ed-abba-bea7-deb7-50f7ba110000",
-				}))
+				"curl",
+				"/v3/tasks/be5077ed-abba-bea7-deb7-50f7ba110000",
+			}))
 		})
 
 		It("returns an error when looking up an app guid fails", func() {
