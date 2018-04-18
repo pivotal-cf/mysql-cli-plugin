@@ -46,6 +46,15 @@ type CFClient interface {
 	StartApp(appName string) error
 }
 
+//go:generate counterfeiter . migrator
+type migrator interface {
+	CheckServiceExists(donorInstanceName string) error
+	CreateAndConfigureServiceInstance(planType, serviceName string) error
+	MigrateData(donorInstanceName, recipientInstanceName string) error
+	RenameServiceInstances(donorInstanceName, recipientInstanceName string) error
+	CleanupOnError(recipientInstanceName string) error
+}
+
 type MySQLPlugin struct {
 	err error
 }
@@ -66,8 +75,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 
 	command := args[1]
-	client := cf.NewClient(cliConnection)
-	unpacker := unpack.NewUnpacker()
+	migrator := migrate.NewMigrator(cf.NewClient(cliConnection), unpack.NewUnpacker())
 
 	switch command {
 	default:
@@ -76,9 +84,9 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		fmt.Printf("%s (%s)", version, gitSHA)
 		os.Exit(0)
 	case "replace":
-		c.err = Replace(client, unpacker, args)
+		c.err = Replace(migrator, args)
 	case "migrate":
-		c.err = Migrate(client, unpacker, args)
+		c.err = Migrate(migrator, args)
 	}
 }
 
@@ -106,7 +114,7 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 	}
 }
 
-func Replace(client CFClient, unpacker *unpack.Unpacker, args []string) error {
+func Replace(migrator migrator, args []string) error {
 	if len(args) != 4 {
 		return errors.New("Usage: cf mysql-tools replace <v1-service-instance> <v2-service-instance>")
 	}
@@ -114,29 +122,22 @@ func Replace(client CFClient, unpacker *unpack.Unpacker, args []string) error {
 	donorInstanceName := args[2]
 	recipientInstanceName := args[3]
 
-	m := migrate.NewMigrator(
-		client,
-		unpacker,
-		donorInstanceName,
-		recipientInstanceName,
-	)
-
-	if !client.ServiceExists(donorInstanceName) {
-		return fmt.Errorf("Service instance %s not found", donorInstanceName)
-	}
-
-	if !client.ServiceExists(recipientInstanceName) {
-		return fmt.Errorf("Service instance %s not found", recipientInstanceName)
-	}
-
-	if err := m.MigrateData(); err != nil {
+	if err := migrator.CheckServiceExists(donorInstanceName); err != nil {
 		return err
 	}
 
-	return m.RenameServiceInstances()
+	if err := migrator.CheckServiceExists(recipientInstanceName); err != nil {
+		return err
+	}
+
+	if err := migrator.MigrateData(donorInstanceName, recipientInstanceName); err != nil {
+		return err
+	}
+
+	return migrator.RenameServiceInstances(donorInstanceName, recipientInstanceName)
 }
 
-func Migrate(client CFClient, unpacker *unpack.Unpacker, args []string) error {
+func Migrate(migrator migrator, args []string) error {
 	if len(args) != 5 || args[3] != "--create" {
 		return errors.New("Usage: cf mysql-tools migrate <v1-service-instance> --create <v2-plan>")
 	}
@@ -145,30 +146,21 @@ func Migrate(client CFClient, unpacker *unpack.Unpacker, args []string) error {
 	recipientInstanceName := donorInstanceName + "-new"
 	destPlan := args[4]
 
-	m := migrate.NewMigrator(
-		client,
-		unpacker,
-		donorInstanceName,
-		recipientInstanceName,
-	)
-
-	if !client.ServiceExists(donorInstanceName) {
-		return fmt.Errorf("Service instance %s not found", donorInstanceName)
-	}
-
-	log.Printf("Creating new service instance %q for service p.mysql using plan %s", recipientInstanceName, destPlan)
-	if err := client.CreateServiceInstance(destPlan, recipientInstanceName); err != nil {
+	if err := migrator.CheckServiceExists(donorInstanceName); err != nil {
 		return err
 	}
 
-	if err := m.MigrateData(); err != nil {
+	log.Printf("Creating new service instance %q for service p.mysql using plan %s", recipientInstanceName, destPlan)
+	if err := migrator.CreateAndConfigureServiceInstance(destPlan, recipientInstanceName); err != nil {
+		return err
+	}
 
-		client.DeleteApp(m.AppName)
-		client.DeleteServiceInstance(recipientInstanceName)
+	if err := migrator.MigrateData(donorInstanceName, recipientInstanceName); err != nil {
 
-		return fmt.Errorf("Error migrating data: %v. Attempting to clean up app %s and service %s",
+		migrator.CleanupOnError(recipientInstanceName)
+
+		return fmt.Errorf("Error migrating data: %v. Attempting to clean up service %s",
 			err,
-			m.AppName,
 			recipientInstanceName,
 		)
 	}

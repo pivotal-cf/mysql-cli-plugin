@@ -6,6 +6,17 @@ import (
 )
 
 type FakeClient struct {
+	ServiceExistsStub        func(serviceName string) bool
+	serviceExistsMutex       sync.RWMutex
+	serviceExistsArgsForCall []struct {
+		serviceName string
+	}
+	serviceExistsReturns struct {
+		result1 bool
+	}
+	serviceExistsReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	CreateServiceInstanceStub        func(planType, instanceName string) error
 	createServiceInstanceMutex       sync.RWMutex
 	createServiceInstanceArgsForCall []struct {
@@ -131,6 +142,54 @@ type FakeClient struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeClient) ServiceExists(serviceName string) bool {
+	fake.serviceExistsMutex.Lock()
+	ret, specificReturn := fake.serviceExistsReturnsOnCall[len(fake.serviceExistsArgsForCall)]
+	fake.serviceExistsArgsForCall = append(fake.serviceExistsArgsForCall, struct {
+		serviceName string
+	}{serviceName})
+	fake.recordInvocation("ServiceExists", []interface{}{serviceName})
+	fake.serviceExistsMutex.Unlock()
+	if fake.ServiceExistsStub != nil {
+		return fake.ServiceExistsStub(serviceName)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.serviceExistsReturns.result1
+}
+
+func (fake *FakeClient) ServiceExistsCallCount() int {
+	fake.serviceExistsMutex.RLock()
+	defer fake.serviceExistsMutex.RUnlock()
+	return len(fake.serviceExistsArgsForCall)
+}
+
+func (fake *FakeClient) ServiceExistsArgsForCall(i int) string {
+	fake.serviceExistsMutex.RLock()
+	defer fake.serviceExistsMutex.RUnlock()
+	return fake.serviceExistsArgsForCall[i].serviceName
+}
+
+func (fake *FakeClient) ServiceExistsReturns(result1 bool) {
+	fake.ServiceExistsStub = nil
+	fake.serviceExistsReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeClient) ServiceExistsReturnsOnCall(i int, result1 bool) {
+	fake.ServiceExistsStub = nil
+	if fake.serviceExistsReturnsOnCall == nil {
+		fake.serviceExistsReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.serviceExistsReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
 }
 
 func (fake *FakeClient) CreateServiceInstance(planType string, instanceName string) error {
@@ -649,6 +708,8 @@ func (fake *FakeClient) StartAppReturnsOnCall(i int, result1 error) {
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.serviceExistsMutex.RLock()
+	defer fake.serviceExistsMutex.RUnlock()
 	fake.createServiceInstanceMutex.RLock()
 	defer fake.createServiceInstanceMutex.RUnlock()
 	fake.getHostnamesMutex.RLock()

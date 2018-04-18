@@ -25,6 +25,7 @@ import (
 
 //go:generate counterfeiter . client
 type client interface {
+	ServiceExists(serviceName string) bool
 	CreateServiceInstance(planType, instanceName string) error
 	GetHostnames(instanceName string) ([]string, error)
 	UpdateServiceConfig(instanceName string, jsonParams string) error
@@ -42,43 +43,48 @@ type unpacker interface {
 	Unpack(destDir string) error
 }
 
-func NewMigrator(client client, unpacker unpacker, donorInstanceName, recipientInstanceName string) *Migrator {
+func NewMigrator(client client, unpacker unpacker) *Migrator {
 	return &Migrator{
-		client:                client,
-		donorInstanceName:     donorInstanceName,
-		recipientInstanceName: recipientInstanceName,
-		unpacker:              unpacker,
+		client:   client,
+		unpacker: unpacker,
 	}
 }
 
 type Migrator struct {
-	AppName               string
-	client                client
-	donorInstanceName     string
-	recipientInstanceName string
-	unpacker              unpacker
+	appName  string
+	client   client
+	unpacker unpacker
 }
 
-func (m *Migrator) CreateAndConfigureServiceInstance(planType string) error {
-	if err := m.client.CreateServiceInstance(planType, m.recipientInstanceName); err != nil {
-		return errors.Wrap(err, "Error creating service instance")
+func (m *Migrator) CheckServiceExists(donorInstanceName string) error {
+	if ! m.client.ServiceExists(donorInstanceName) {
+		return fmt.Errorf("Service instance %s not found", donorInstanceName)
 	}
-
-	instanceIP, err := m.client.GetHostnames(m.recipientInstanceName)
-	if err != nil {
-		m.client.DeleteServiceInstance(m.recipientInstanceName)
-		return errors.Wrap(err, "Error obtaining hostname for new service instance")
-	}
-
-	m.client.UpdateServiceConfig(m.recipientInstanceName,
-		fmt.Sprintf(`{"enable_tls": ["%s"]}`, instanceIP))
 
 	return nil
 }
 
-func (m *Migrator) MigrateData() error {
-	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
+func (m *Migrator) CreateAndConfigureServiceInstance(planType, serviceName string) error {
+	if err := m.client.CreateServiceInstance(planType, serviceName); err != nil {
+		return errors.Wrap(err, "Error creating service instance")
+	}
+
+	instanceIP, err := m.client.GetHostnames(serviceName)
 	if err != nil {
+		m.client.DeleteServiceInstance(serviceName)
+		return errors.Wrap(err, "Error obtaining hostname for new service instance")
+	}
+
+	err = m.client.UpdateServiceConfig(serviceName,
+		fmt.Sprintf(`{"enable_tls": ["%s"]}`, instanceIP))
+	return nil
+}
+
+func (m *Migrator) MigrateData(donorInstanceName, recipientInstanceName string) error {
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
+
+	if err != nil {
+
 		return errors.Errorf("Error creating temp directory: %s", err)
 	}
 	defer os.RemoveAll(tmpDir)
@@ -89,38 +95,38 @@ func (m *Migrator) MigrateData() error {
 	}
 
 	log.Print("Started to push app")
-	m.AppName = "migrate-app-" + uuid.New()
-	if err = m.client.PushApp(tmpDir, m.AppName); err != nil {
+	m.appName = "migrate-app-" + uuid.New()
+	if err = m.client.PushApp(tmpDir, m.appName); err != nil {
 		return errors.Errorf("failed to push application: %s", err)
 	}
 	defer func() {
-		m.client.DeleteApp(m.AppName)
+		m.client.DeleteApp(m.appName)
 		log.Print("Cleaning up...")
 	}()
 	log.Print("Successfully pushed app")
 
-	if err = m.client.BindService(m.AppName, m.donorInstanceName); err != nil {
-		return errors.Errorf("failed to bind-service %q to application %q: %s", m.AppName, m.donorInstanceName, err)
+	if err = m.client.BindService(m.appName, donorInstanceName); err != nil {
+		return errors.Errorf("failed to bind-service %q to application %q: %s", m.appName, donorInstanceName, err)
 	}
 	log.Print("Successfully bound app to v1 instance")
 
-	if err = m.client.BindService(m.AppName, m.recipientInstanceName); err != nil {
-		return errors.Errorf("failed to bind-service %q to application %q: %s", m.AppName, m.recipientInstanceName, err)
+	if err = m.client.BindService(m.appName, recipientInstanceName); err != nil {
+		return errors.Errorf("failed to bind-service %q to application %q: %s", m.appName, recipientInstanceName, err)
 	}
 	log.Print("Successfully bound app to v2 instance")
 
 	log.Print("Starting migration app")
-	if err = m.client.StartApp(m.AppName); err != nil {
-		return errors.Errorf("failed to start application %q: %s", m.AppName, err)
+	if err = m.client.StartApp(m.appName); err != nil {
+		return errors.Errorf("failed to start application %q: %s", m.appName, err)
 	}
 
 	log.Print("Started to run migration task")
-	command := fmt.Sprintf("./migrate %s %s", m.donorInstanceName, m.recipientInstanceName)
-	if err = m.client.RunTask(m.AppName, command); err != nil {
+	command := fmt.Sprintf("./migrate %s %s", donorInstanceName, recipientInstanceName)
+	if err = m.client.RunTask(m.appName, command); err != nil {
 		log.Printf("Migration failed: %s", err)
 		log.Print("Fetching log output...")
 		time.Sleep(5 * time.Second)
-		m.client.DumpLogs(m.AppName)
+		m.client.DumpLogs(m.appName)
 		return err
 	}
 
@@ -129,15 +135,19 @@ func (m *Migrator) MigrateData() error {
 	return nil
 }
 
-func (m *Migrator) RenameServiceInstances() error {
-	newDonorInstanceName := m.donorInstanceName + "-old"
-	if err := m.client.RenameService(m.donorInstanceName, newDonorInstanceName); err != nil {
-		return fmt.Errorf("Error renaming service instance %s: %s", m.donorInstanceName, err)
+func (m *Migrator) RenameServiceInstances(donorInstanceName, recipientInstanceName string) error {
+	newDonorInstanceName := donorInstanceName + "-old"
+	if err := m.client.RenameService(donorInstanceName, newDonorInstanceName); err != nil {
+		return fmt.Errorf("Error renaming service instance %s: %s", donorInstanceName, err)
 	}
 
-	if err := m.client.RenameService(m.recipientInstanceName, m.donorInstanceName); err != nil {
-		return fmt.Errorf("Error renaming service instance %s: %s", m.recipientInstanceName, err)
+	if err := m.client.RenameService(recipientInstanceName, donorInstanceName); err != nil {
+		return fmt.Errorf("Error renaming service instance %s: %s", recipientInstanceName, err)
 	}
 
 	return nil
+}
+
+func (m *Migrator) CleanupOnError(recipientServiceInstance string) error {
+	return m.client.DeleteServiceInstance(recipientServiceInstance)
 }

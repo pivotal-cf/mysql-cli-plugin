@@ -21,6 +21,38 @@ import (
 	. "github.com/pivotal-cf/mysql-cli-plugin/migrate"
 )
 
+var _ = Describe("CheckServiceExists", func() {
+	var (
+		donorInstanceName string
+		fakeClient        *migratefakes.FakeClient
+		migrator          *Migrator
+	)
+
+	BeforeEach(func() {
+		donorInstanceName = "some-donor-instance"
+		fakeClient = new(migratefakes.FakeClient)
+		migrator = NewMigrator(fakeClient, nil)
+	})
+
+	It("Confirms we have an existing donor service instance", func() {
+		fakeClient.ServiceExistsReturns(true)
+		err := migrator.CheckServiceExists(donorInstanceName)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fakeClient.ServiceExistsCallCount()).To(Equal(1))
+	})
+
+	Context("When the donor service instance doesn't exist", func() {
+		It("fails", func() {
+			fakeClient.ServiceExistsReturns(false)
+			err := migrator.CheckServiceExists(donorInstanceName)
+
+			Expect(err).To(MatchError("Service instance some-donor-instance not found"))
+			Expect(fakeClient.ServiceExistsCallCount()).To(Equal(1))
+		})
+	})
+})
+
 var _ = Describe("CreateAndConfigureServiceInstance", func() {
 	var (
 		planType      string
@@ -37,11 +69,11 @@ var _ = Describe("CreateAndConfigureServiceInstance", func() {
 		recipientName = "some-recipient-instance"
 		fakeClient = new(migratefakes.FakeClient)
 		fakeUnpacker = new(migratefakes.FakeUnpacker)
-		migrator = NewMigrator(fakeClient, fakeUnpacker, donorName, recipientName)
+		migrator = NewMigrator(fakeClient, fakeUnpacker)
 	})
 
 	It("Creates a new service instance and updates it to enable TLS", func() {
-		err := migrator.CreateAndConfigureServiceInstance(planType)
+		err := migrator.CreateAndConfigureServiceInstance(planType, recipientName)
 
 		Expect(err).NotTo(HaveOccurred())
 
@@ -64,7 +96,7 @@ var _ = Describe("CreateAndConfigureServiceInstance", func() {
 		})
 
 		It("Fails", func() {
-			err := migrator.CreateAndConfigureServiceInstance(planType)
+			err := migrator.CreateAndConfigureServiceInstance(planType, recipientName)
 
 			Expect(err).To(MatchError("Error creating service instance: create service failed"))
 			Expect(fakeClient.CreateServiceInstanceCallCount()).To(Equal(1))
@@ -77,7 +109,7 @@ var _ = Describe("CreateAndConfigureServiceInstance", func() {
 		})
 
 		It("Fails, after attempting to delete the newly created service instance", func() {
-			err := migrator.CreateAndConfigureServiceInstance(planType)
+			err := migrator.CreateAndConfigureServiceInstance(planType, recipientName)
 
 			Expect(err).To(MatchError("Error obtaining hostname for new service instance: get hostname failed"))
 			Expect(fakeClient.CreateServiceInstanceCallCount()).To(Equal(1))
@@ -93,7 +125,7 @@ var _ = Describe("CreateAndConfigureServiceInstance", func() {
 		})
 
 		It("does not fail", func() {
-			err := migrator.CreateAndConfigureServiceInstance(planType)
+			err := migrator.CreateAndConfigureServiceInstance(planType, recipientName)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeClient.CreateServiceInstanceCallCount()).To(Equal(1))
@@ -118,7 +150,7 @@ var _ = Describe("MigrateData", func() {
 		recipientName = "some-recipient-instance"
 		fakeClient = new(migratefakes.FakeClient)
 		fakeUnpacker = new(migratefakes.FakeUnpacker)
-		migrator = NewMigrator(fakeClient, fakeUnpacker, donorName, recipientName)
+		migrator = NewMigrator(fakeClient, fakeUnpacker)
 	})
 
 	Context("Given valid parameters", func() {
@@ -130,7 +162,7 @@ var _ = Describe("MigrateData", func() {
 		})
 
 		It("Migrates data from the donor instance to the recipient instance", func() {
-			err := migrator.MigrateData()
+			err := migrator.MigrateData(donorName, recipientName)
 
 			By("Unpacking the migration app", func() {
 				Expect(fakeUnpacker.UnpackCallCount()).To(Equal(1))
@@ -175,25 +207,46 @@ var _ = Describe("RenameServiceInstances", func() {
 		recipientName = "some-recipient-instance"
 		fakeClient = new(migratefakes.FakeClient)
 		fakeUnpacker = new(migratefakes.FakeUnpacker)
-		migrator = NewMigrator(fakeClient, fakeUnpacker, donorName, recipientName)
+		migrator = NewMigrator(fakeClient, fakeUnpacker)
 	})
 
 	Context("If a service instance with the donor name appended with '-old' already exists", func() {
 		It("Fails", func() {
 			fakeClient.RenameServiceReturns(errors.New("The service instance name is taken: some-donor-instance-old"))
 
-			err := migrator.RenameServiceInstances()
+			err := migrator.RenameServiceInstances(donorName, recipientName)
 
 			Expect(err).To(MatchError("Error renaming service instance some-donor-instance: The service instance name is taken: some-donor-instance-old"))
 		})
 	})
 
 	It("Renames the recipient service instance to match the donor service instance's name, and appends '-old' to the donor service instance's name", func() {
-		err := migrator.RenameServiceInstances()
+		err := migrator.RenameServiceInstances(donorName, recipientName)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fakeClient.RenameServiceCallCount()).To(Equal(2))
 
 	})
 
+})
+
+var _ = Describe("CleanupOnError", func() {
+	var (
+		recipientServiceInstance string
+		fakeClient               *migratefakes.FakeClient
+		migrator                 *Migrator
+	)
+
+	BeforeEach(func() {
+		recipientServiceInstance = "some-recipient-instance"
+		fakeClient = new(migratefakes.FakeClient)
+		migrator = NewMigrator(fakeClient, nil)
+	})
+
+	It("deletes the service instance", func() {
+		err := migrator.CleanupOnError(recipientServiceInstance)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fakeClient.DeleteServiceInstanceCallCount()).To(Equal(1))
+	})
 })
