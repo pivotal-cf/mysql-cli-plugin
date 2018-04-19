@@ -73,6 +73,11 @@ var _ = Describe("CreateAndConfigureServiceInstance", func() {
 	})
 
 	It("Creates a new service instance and updates it to enable TLS", func() {
+		hostnames := []string{
+			"some-leader-hostname",
+			"some-follower-hostname",
+		}
+		fakeClient.GetHostnamesReturns(hostnames, nil)
 		err := migrator.CreateAndConfigureServiceInstance(planType, recipientName)
 
 		Expect(err).NotTo(HaveOccurred())
@@ -83,10 +88,16 @@ var _ = Describe("CreateAndConfigureServiceInstance", func() {
 
 		By("Obtaining its hostname", func() {
 			Expect(fakeClient.GetHostnamesCallCount()).To(Equal(1))
+			Expect(fakeClient.GetHostnamesArgsForCall(0)).To(Equal(recipientName))
 		})
 
 		By("Updating the service to enable TLS on its hostname", func() {
 			Expect(fakeClient.UpdateServiceConfigCallCount()).To(Equal(1))
+			updatedServiceName, updatedJSONParams := fakeClient.UpdateServiceConfigArgsForCall(0)
+			Expect(updatedServiceName).To(Equal(recipientName))
+			Expect(updatedJSONParams).To(Equal(
+				`{"enable_tls": ["some-leader-hostname","some-follower-hostname"]}`,
+			))
 		})
 	})
 
