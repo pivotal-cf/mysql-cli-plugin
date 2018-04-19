@@ -112,6 +112,16 @@ var _ = Describe("Migrate Integration Tests", func() {
 				readValue = test_helpers.ReadData(true, appURI, albumID)
 				Expect(readValue).To(Equal(writeValue))
 			})
+
+			By("Verifying TLS was enabled on the recipient instance", func() {
+				test_helpers.CreateServiceKey(destInstance, "tls-check")
+				serviceKey := test_helpers.GetServiceKey(destInstance, "tls-check")
+				test_helpers.DeleteServiceKey(destInstance, "tls-check")
+
+				Expect(serviceKey.TLS.Cert.CA).
+					NotTo(BeEmpty(),
+						"Expected recipient service instance to be TLS enabled, but it was not")
+			})
 		})
 
 		It("fails on invalid service plan", func() {
@@ -120,41 +130,6 @@ var _ = Describe("Migrate Integration Tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1m", "1s").Should(gexec.Exit(1))
 			Expect(string(session.Err.Contents())).To(ContainSubstring("Could not find plan with name fake-service-plan"))
-		})
-	})
-
-	Context("when migrating data to a TLS enabled service-instance", func() {
-		BeforeEach(func() {
-			appDomain = os.Getenv("APP_DOMAIN")
-
-			sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
-			test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
-			destInstance = sourceInstance + "-new"
-
-			test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
-		})
-
-		AfterEach(func() {
-			if appName != "" {
-				test_helpers.DeleteApp(appName)
-			}
-
-			test_helpers.DeleteServiceKey(destInstance, serviceKey)
-			test_helpers.DeleteService(destInstance)
-			test_helpers.DeleteService(sourceInstance)
-			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
-			test_helpers.WaitForService(sourceInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
-		})
-
-		It("migrates the data successfully over a secure channel", func() {
-			cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", destPlan)
-			cmd.Env = append(os.Environ(),
-				"RECIPIENT_PRODUCT_NAME="+os.Getenv("REQUIRE_TLS_PRODUCT_NAME"),
-			)
-			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-
-			Eventually(session, "5m", "1s").Should(gexec.Exit(0))
 		})
 	})
 

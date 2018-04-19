@@ -100,7 +100,7 @@ func (c *Client) GetHostnames(instanceName string) ([]string, error) {
 		return nil, errors.Wrapf(err, "Cannot get the hostnames for %s", instanceName)
 	}
 	defer func() {
-		c.deleteServiceKey(instanceName, serviceKeyName)
+		_ = c.deleteServiceKey(instanceName, serviceKeyName)
 	}()
 
 	jsonRaw, err := c.serviceKey(instanceName, serviceKeyName)
