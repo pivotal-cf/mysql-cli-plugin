@@ -124,7 +124,29 @@ var _ = Describe("Migrate Integration Tests", func() {
 	})
 
 	Context("when migrating data to a TLS enabled service-instance", func() {
-		It("migrates the data successfully", func() {
+		BeforeEach(func() {
+			appDomain = os.Getenv("APP_DOMAIN")
+
+			sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
+			test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
+			destInstance = sourceInstance + "-new"
+
+			test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
+		})
+
+		AfterEach(func() {
+			if appName != "" {
+				test_helpers.DeleteApp(appName)
+			}
+
+			test_helpers.DeleteServiceKey(destInstance, serviceKey)
+			test_helpers.DeleteService(destInstance)
+			test_helpers.DeleteService(sourceInstance)
+			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
+			test_helpers.WaitForService(sourceInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
+		})
+
+		It("migrates the data successfully over a secure channel", func() {
 			cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", destPlan)
 			cmd.Env = append(os.Environ(),
 				"RECIPIENT_PRODUCT_NAME="+os.Getenv("REQUIRE_TLS_PRODUCT_NAME"),
