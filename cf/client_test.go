@@ -725,6 +725,53 @@ var _ = Describe("Client", func() {
 			Expect(fakeClock.SleepCallCount()).To(BeZero())
 		})
 
+		Context("when our o-auth token expires", func() {
+			BeforeEach(func() {
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
+					`{
+                      "errors": [
+                        {
+                         "detail": "Invalid Auth Token",
+                         "title": "CF-InvalidAuthToken",
+      					 "code": 1000
+    				    }
+                      ]
+					}`,
+				}, nil)
+
+			})
+
+			It("still returns a task by its guid", func() {
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1, []string{
+					`{`,
+					`"guid": "some-guid",`,
+					`"state": "some-state"`,
+					`}`,
+				}, nil)
+
+				task, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to look up task \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
+				Expect(buffer).NotTo(gbytes.Say(`Attempt 2/3:`))
+
+				Expect(task.Guid).To(Equal(`some-guid`))
+				Expect(task.State).To(Equal(`some-state`))
+
+				Expect(fakeCFPluginAPI.AccessTokenCallCount()).To(Equal(1))
+			})
+
+			It("logs a failed attempt to refresh the access token", func() {
+				fakeCFPluginAPI.AccessTokenReturns("", errors.New("something"))
+
+				_, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
+				Expect(err).To(HaveOccurred())
+
+				Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to look up task \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
+				Expect(buffer).To(gbytes.Say(`failed to refresh the access token: something`))
+			})
+		})
+
 		Context("When there is an error getting a task by guid", func() {
 			It("Returns an error after encountering more than MaxAttempts errors", func() {
 				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
@@ -766,19 +813,19 @@ var _ = Describe("Client", func() {
 				Expect(fakeClock.SleepCallArgs(0)).To(Equal(2 * time.Second))
 			})
 		})
+	})
 
-		Context("When invalid json is returned", func() {
-			It("Returns an error with the contents", func() {
-				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
-					`something bad happened`,
-				}, nil)
+	Context("When invalid json is returned", func() {
+		It("Returns an error with the contents", func() {
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
+				`something bad happened`,
+			}, nil)
 
-				_, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
-				Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to parse the following api response: something bad happened`))
-				Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to parse the following api response: something bad happened`))
-				Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to parse the following api response: something bad happened`))
-				Expect(err).To(MatchError("failed to get task by GUID"))
-			})
+			_, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
+			Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to parse the following api response: something bad happened`))
+			Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to parse the following api response: something bad happened`))
+			Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to parse the following api response: something bad happened`))
+			Expect(err).To(MatchError("failed to get task by GUID"))
 		})
 	})
 

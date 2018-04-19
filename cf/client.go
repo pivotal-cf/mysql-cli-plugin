@@ -31,11 +31,7 @@ type CFPluginAPI interface {
 	CliCommandWithoutTerminalOutput(args ...string) ([]string, error)
 	GetCurrentSpace() (plugin_models.Space, error)
 	GetService(string) (plugin_models.GetService_Model, error)
-}
-
-//go:generate counterfeiter . Unpacker
-type Unpacker interface {
-	Unpack(destDir string) error
+	AccessToken() (string, error)
 }
 
 type SleepFunc func(time.Duration)
@@ -57,7 +53,6 @@ type App struct {
 
 type Client struct {
 	pluginAPI   CFPluginAPI
-	unpacker    Unpacker
 	MaxAttempts int
 	Log         *log.Logger
 	Sleep       SleepFunc
@@ -243,6 +238,8 @@ func (c *Client) StartApp(appName string) error {
 	)
 }
 
+// cf run-task migration-app "./migrate source dest"
+
 func (c *Client) RunTask(appName, command string) error {
 	app, err := c.GetAppByName(appName)
 	if err != nil {
@@ -294,6 +291,11 @@ func (c *Client) GetTaskByGUID(guid string) (Task, error) {
 			err := task.Errors[0]
 			c.Log.Printf("Attempt %d/%d: failed to look up task (error code %d: %s - %s)",
 				attempt+1, maxAttempts, err.Code, err.Title, err.Detail)
+			if err.Title == "CF-InvalidAuthToken" {
+				if _, err := c.pluginAPI.AccessToken(); err != nil {
+					c.Log.Printf("failed to refresh the access token: %s", err)
+				}
+			}
 			continue
 		}
 
