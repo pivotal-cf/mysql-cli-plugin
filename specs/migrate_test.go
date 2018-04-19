@@ -121,24 +121,18 @@ var _ = Describe("Migrate Integration Tests", func() {
 			Eventually(session, "1m", "1s").Should(gexec.Exit(1))
 			Expect(string(session.Err.Contents())).To(ContainSubstring("Could not find plan with name fake-service-plan"))
 		})
+	})
 
-		XContext("when migrating data to a TLS enabled service-instance", func() {
-			BeforeEach(func() {
-				test_helpers.CreateServiceKey(destInstance, serviceKey)
-				key := test_helpers.GetServiceKey(destInstance, serviceKey)
-				test_helpers.DeleteServiceKey(destInstance, serviceKey)
+	Context("when migrating data to a TLS enabled service-instance", func() {
+		It("migrates the data successfully", func() {
+			cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", destPlan)
+			cmd.Env = append(os.Environ(),
+				"RECIPIENT_PRODUCT_NAME="+os.Getenv("REQUIRE_TLS_PRODUCT_NAME"),
+			)
+			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
 
-				test_helpers.ExecuteCfCmd("update-service", destInstance, "-c", fmt.Sprintf(`{ "enable_tls": [%q] }`, key.Hostname))
-				test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
-			})
-
-			It("migrates the data successfully", func() {
-				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", destPlan)
-				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).NotTo(HaveOccurred())
-
-				Eventually(session, "5m", "1s").Should(gexec.Exit(0))
-			})
+			Eventually(session, "5m", "1s").Should(gexec.Exit(0))
 		})
 	})
 

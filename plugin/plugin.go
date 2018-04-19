@@ -134,7 +134,12 @@ func Migrate(migrator migrator, args []string) error {
 		return err
 	}
 
-	log.Printf("Creating new service instance %q for service p.mysql using plan %s", recipientInstanceName, destPlan)
+	productName := os.Getenv("RECIPIENT_PRODUCT_NAME")
+	if productName == "" {
+		productName = "p.mysql"
+	}
+
+	log.Printf("Creating new service instance %q for service %s using plan %s", recipientInstanceName, productName, destPlan)
 	if err := migrator.CreateAndConfigureServiceInstance(destPlan, recipientInstanceName); err != nil {
 		return err
 	}

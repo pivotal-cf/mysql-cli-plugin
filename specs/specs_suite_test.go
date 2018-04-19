@@ -39,6 +39,7 @@ var _ = BeforeSuite(func() {
 		"DONOR_SERVICE_NAME",
 		"DONOR_PLAN_NAME",
 		"RECIPIENT_PLAN_NAME",
+		"REQUIRE_TLS_PRODUCT_NAME",
 	})
 
 	Config = config.LoadConfig()
