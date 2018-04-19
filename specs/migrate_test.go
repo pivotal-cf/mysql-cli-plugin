@@ -106,8 +106,6 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 
 			By("Binding the app to the newly created destination instance and reading back data", func() {
-				test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+create succeeded`)
-
 				test_helpers.BindAppToService(appName, destInstance)
 				test_helpers.ExecuteCfCmd("restage", appName)
 
