@@ -72,12 +72,12 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal(
-				[]string{
-					"bind-service",
-					"some-app",
-					"some-service",
-				},
-			))
+					[]string{
+						"bind-service",
+						"some-app",
+						"some-service",
+					},
+				))
 		})
 
 		It("returns an error when the binding request fails", func() {
@@ -183,11 +183,11 @@ var _ = Describe("Client", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 						To(Equal([]string{
-						"create-service",
-						"some-fake-product",
-						"plan-type",
-						"service-instance-name",
-					}))
+							"create-service",
+							"some-fake-product",
+							"plan-type",
+							"service-instance-name",
+						}))
 					Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 				})
 
@@ -206,11 +206,11 @@ var _ = Describe("Client", func() {
 				Expect(err).To(MatchError("Invalid service plan"))
 				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 					To(Equal([]string{
-					"create-service",
-					"p.mysql",
-					"invalid-plan-type",
-					"service-instance-name",
-				}))
+						"create-service",
+						"p.mysql",
+						"invalid-plan-type",
+						"service-instance-name",
+					}))
 				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 			})
 		})
@@ -253,18 +253,25 @@ var _ = Describe("Client", func() {
 
 			Expect(hostnames).To(ConsistOf(`some-host-name`))
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
-				"create-service-key",
-				"some-instance",
-			}))
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)[0:2]).To(Equal([]string{
-				"service-key",
-				"some-instance",
-			}))
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)[0:2]).To(Equal([]string{
-				"delete-service-key",
-				"some-instance",
-			}))
+
+			createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+			Expect(createServiceArgs).To(HaveLen(3))
+			Expect(createServiceArgs[0]).To(Equal("create-service-key"))
+			Expect(createServiceArgs[1]).To(Equal("some-instance"))
+			Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
+
+			serviceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)
+			Expect(serviceKeyArgs).To(HaveLen(3))
+			Expect(serviceKeyArgs[0]).To(Equal("service-key"))
+			Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
+			Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
+
+			deleteServiceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)
+			Expect(deleteServiceKeyArgs).To(HaveLen(4))
+			Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
+			Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
+			Expect(deleteServiceKeyArgs[2]).To(Equal("some-instance"))
+			Expect(deleteServiceKeyArgs[3]).To(HavePrefix("MIGRATE-"))
 		})
 
 		It("returns all the hostnames for a leader/follower service instance", func() {
@@ -293,18 +300,25 @@ var _ = Describe("Client", func() {
 
 			Expect(hostnames).To(ConsistOf(`some-host-name`, `some-other-host-name`))
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
-				"create-service-key",
-				"some-instance",
-			}))
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)[0:2]).To(Equal([]string{
-				"service-key",
-				"some-instance",
-			}))
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)[0:2]).To(Equal([]string{
-				"delete-service-key",
-				"some-instance",
-			}))
+
+			createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+			Expect(createServiceArgs).To(HaveLen(3))
+			Expect(createServiceArgs[0]).To(Equal("create-service-key"))
+			Expect(createServiceArgs[1]).To(Equal("some-instance"))
+			Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
+
+			serviceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)
+			Expect(serviceKeyArgs).To(HaveLen(3))
+			Expect(serviceKeyArgs[0]).To(Equal("service-key"))
+			Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
+			Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
+
+			deleteServiceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)
+			Expect(deleteServiceKeyArgs).To(HaveLen(4))
+			Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
+			Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
+			Expect(deleteServiceKeyArgs[2]).To(Equal("some-instance"))
+			Expect(deleteServiceKeyArgs[3]).To(HavePrefix("MIGRATE-"))
 		})
 
 		Context("When the service key fails to be created", func() {
@@ -315,10 +329,12 @@ var _ = Describe("Client", func() {
 
 				Expect(err).To(MatchError("Cannot get the hostnames for some-instance: cannot create service key"))
 				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
-					"create-service-key",
-					"some-instance",
-				}))
+
+				createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+				Expect(createServiceArgs).To(HaveLen(3))
+				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
+				Expect(createServiceArgs[1]).To(Equal("some-instance"))
+				Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
 			})
 		})
 
@@ -329,19 +345,25 @@ var _ = Describe("Client", func() {
 
 				Expect(err).To(MatchError("Cannot get the hostnames for some-instance: invalid response: not json"))
 				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
-					"create-service-key",
-					"some-instance",
-				}))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)[0:2]).To(Equal([]string{
-					"service-key",
-					"some-instance",
-				}))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)[0:2]).To(Equal([]string{
-					"delete-service-key",
-					"some-instance",
-				}))
 
+				createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+				Expect(createServiceArgs).To(HaveLen(3))
+				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
+				Expect(createServiceArgs[1]).To(Equal("some-instance"))
+				Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
+
+				serviceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)
+				Expect(serviceKeyArgs).To(HaveLen(3))
+				Expect(serviceKeyArgs[0]).To(Equal("service-key"))
+				Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
+				Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
+
+				deleteServiceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)
+				Expect(deleteServiceKeyArgs).To(HaveLen(4))
+				Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
+				Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
+				Expect(deleteServiceKeyArgs[2]).To(Equal("some-instance"))
+				Expect(deleteServiceKeyArgs[3]).To(HavePrefix("MIGRATE-"))
 			})
 
 			It("fails when the cli command fails", func() {
@@ -351,18 +373,25 @@ var _ = Describe("Client", func() {
 
 				Expect(err).To(MatchError("Cannot get the hostnames for some-instance: cannot read service key"))
 				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
-					"create-service-key",
-					"some-instance",
-				}))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)[0:2]).To(Equal([]string{
-					"service-key",
-					"some-instance",
-				}))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)[0:2]).To(Equal([]string{
-					"delete-service-key",
-					"some-instance",
-				}))
+
+				createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+				Expect(createServiceArgs).To(HaveLen(3))
+				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
+				Expect(createServiceArgs[1]).To(Equal("some-instance"))
+				Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
+
+				serviceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)
+				Expect(serviceKeyArgs).To(HaveLen(3))
+				Expect(serviceKeyArgs[0]).To(Equal("service-key"))
+				Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
+				Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
+
+				deleteServiceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)
+				Expect(deleteServiceKeyArgs).To(HaveLen(4))
+				Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
+				Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
+				Expect(deleteServiceKeyArgs[2]).To(Equal("some-instance"))
+				Expect(deleteServiceKeyArgs[3]).To(HavePrefix("MIGRATE-"))
 
 			})
 		})
@@ -376,18 +405,25 @@ var _ = Describe("Client", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(hostnames).To(ConsistOf(`some-host-name`))
 				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)[0:2]).To(Equal([]string{
-					"create-service-key",
-					"some-instance",
-				}))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)[0:2]).To(Equal([]string{
-					"service-key",
-					"some-instance",
-				}))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)[0:2]).To(Equal([]string{
-					"delete-service-key",
-					"some-instance",
-				}))
+
+				createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+				Expect(createServiceArgs).To(HaveLen(3))
+				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
+				Expect(createServiceArgs[1]).To(Equal("some-instance"))
+				Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
+
+				serviceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)
+				Expect(serviceKeyArgs).To(HaveLen(3))
+				Expect(serviceKeyArgs[0]).To(Equal("service-key"))
+				Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
+				Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
+
+				deleteServiceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)
+				Expect(deleteServiceKeyArgs).To(HaveLen(4))
+				Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
+				Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
+				Expect(deleteServiceKeyArgs[2]).To(Equal("some-instance"))
+				Expect(deleteServiceKeyArgs[3]).To(HavePrefix("MIGRATE-"))
 			})
 		})
 	})
@@ -617,9 +653,9 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{
-				"curl",
-				"/v3/apps?names=some-app&space_guids=some-guid",
-			}))
+					"curl",
+					"/v3/apps?names=some-app&space_guids=some-guid",
+				}))
 		})
 
 		Context("when there is an error getting the current space", func() {
@@ -755,17 +791,17 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal(
-				[]string{
-					"push",
-					"some-app-name",
-					"-b", "binary_buildpack",
-					"-u", "none",
-					"-c", "sleep infinity",
-					"-p", "some-path",
-					"--no-route",
-					"--no-start",
-				},
-			))
+					[]string{
+						"push",
+						"some-app-name",
+						"-b", "binary_buildpack",
+						"-u", "none",
+						"-c", "sleep infinity",
+						"-p", "some-path",
+						"--no-route",
+						"--no-start",
+					},
+				))
 		})
 
 		It("returns an error when pushing an app fails", func() {
@@ -788,8 +824,8 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{
-				"rename-service", "some-service-name", "some-new-service-name",
-			}))
+					"rename-service", "some-service-name", "some-new-service-name",
+				}))
 		})
 
 		It("returns an error when renaming a service fails", func() {
@@ -845,17 +881,17 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)).
 				To(
-				Equal([]string{
-					"curl", "-X", "POST", "-d",
-					`{"command":"some-command"}`,
-					"/v3/apps/be5077ed-abba-bea7-deb7-50f7ba110000/tasks",
-				}))
+					Equal([]string{
+						"curl", "-X", "POST", "-d",
+						`{"command":"some-command"}`,
+						"/v3/apps/be5077ed-abba-bea7-deb7-50f7ba110000/tasks",
+					}))
 
 			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)).
 				To(Equal([]string{
-				"curl",
-				"/v3/tasks/be5077ed-abba-bea7-deb7-50f7ba110000",
-			}))
+					"curl",
+					"/v3/tasks/be5077ed-abba-bea7-deb7-50f7ba110000",
+				}))
 		})
 
 		It("returns an error when looking up an app guid fails", func() {

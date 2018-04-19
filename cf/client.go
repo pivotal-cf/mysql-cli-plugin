@@ -109,7 +109,7 @@ func (c *Client) GetHostnames(instanceName string) ([]string, error) {
 	}
 
 	var serviceKey struct {
-		Hostname string `json:"hostname"`
+		Hostname  string   `json:"hostname"`
 		Hostnames []string `json:"hostnames"`
 	}
 
@@ -125,7 +125,7 @@ func (c *Client) GetHostnames(instanceName string) ([]string, error) {
 }
 
 func (c *Client) createServiceKey(instanceName, serviceKeyName string) error {
-	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput( "create-service-key", instanceName,  serviceKeyName)
+	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput("create-service-key", instanceName, serviceKeyName)
 	return err
 }
 
@@ -145,7 +145,7 @@ func (c *Client) serviceKey(instanceName, serviceKeyName string) (string, error)
 }
 
 func (c *Client) deleteServiceKey(instanceName, serviceKeyName string) error {
-	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput( "delete-service-key", instanceName,  serviceKeyName)
+	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput("delete-service-key", "-f", instanceName, serviceKeyName)
 	return err
 }
 
