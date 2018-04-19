@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate counterfeiter . CfCommandRunner
-type CfCommandRunner interface {
+//go:generate counterfeiter . CFPluginAPI
+type CFPluginAPI interface {
 	CliCommand(...string) ([]string, error)
 	CliCommandWithoutTerminalOutput(args ...string) ([]string, error)
 	GetCurrentSpace() (plugin_models.Space, error)
@@ -56,24 +56,24 @@ type App struct {
 }
 
 type Client struct {
-	cfCommandRunner CfCommandRunner
-	unpacker        Unpacker
-	MaxAttempts     int
-	Log             *log.Logger
-	Sleep           SleepFunc
+	pluginAPI   CFPluginAPI
+	unpacker    Unpacker
+	MaxAttempts int
+	Log         *log.Logger
+	Sleep       SleepFunc
 }
 
-func NewClient(cfCommandRunner CfCommandRunner) *Client {
+func NewClient(pluginAPI CFPluginAPI) *Client {
 	return &Client{
-		cfCommandRunner: cfCommandRunner,
-		MaxAttempts:     3,
-		Log:             log.New(os.Stderr, "", log.LstdFlags),
-		Sleep:           time.Sleep,
+		pluginAPI:   pluginAPI,
+		MaxAttempts: 3,
+		Log:         log.New(os.Stderr, "", log.LstdFlags),
+		Sleep:       time.Sleep,
 	}
 }
 
 func (c *Client) CreateServiceInstance(planType, instanceName string) error {
-	if _, err := c.cfCommandRunner.GetService(instanceName); err == nil {
+	if _, err := c.pluginAPI.GetService(instanceName); err == nil {
 		return fmt.Errorf("service instance '%s' already exists", instanceName)
 	}
 
@@ -82,7 +82,7 @@ func (c *Client) CreateServiceInstance(planType, instanceName string) error {
 		productName = "p.mysql"
 	}
 
-	if _, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
+	if _, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"create-service",
 		productName,
 		planType,
@@ -125,12 +125,12 @@ func (c *Client) GetHostnames(instanceName string) ([]string, error) {
 }
 
 func (c *Client) createServiceKey(instanceName, serviceKeyName string) error {
-	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput("create-service-key", instanceName, serviceKeyName)
+	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput("create-service-key", instanceName, serviceKeyName)
 	return err
 }
 
 func (c *Client) serviceKey(instanceName, serviceKeyName string) (string, error) {
-	output, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput("service-key", instanceName, serviceKeyName)
+	output, err := c.pluginAPI.CliCommandWithoutTerminalOutput("service-key", instanceName, serviceKeyName)
 
 	if err != nil {
 		return "", err
@@ -145,12 +145,12 @@ func (c *Client) serviceKey(instanceName, serviceKeyName string) (string, error)
 }
 
 func (c *Client) deleteServiceKey(instanceName, serviceKeyName string) error {
-	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput("delete-service-key", "-f", instanceName, serviceKeyName)
+	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput("delete-service-key", "-f", instanceName, serviceKeyName)
 	return err
 }
 
 func (c *Client) UpdateServiceConfig(instanceName string, jsonParams string) error {
-	if _, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
+	if _, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"update-service",
 		instanceName,
 		"-c",
@@ -163,7 +163,7 @@ func (c *Client) UpdateServiceConfig(instanceName string, jsonParams string) err
 }
 
 func (c *Client) DeleteServiceInstance(instanceName string) error {
-	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
+	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"delete-service",
 		instanceName,
 		"-f",
@@ -173,12 +173,12 @@ func (c *Client) DeleteServiceInstance(instanceName string) error {
 }
 
 func (c *Client) ServiceExists(serviceName string) bool {
-	_, err := c.cfCommandRunner.GetService(serviceName)
+	_, err := c.pluginAPI.GetService(serviceName)
 	return err == nil
 }
 
 func (c *Client) PushApp(path, appName string) error {
-	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
+	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"push",
 		appName,
 		"-b", "binary_buildpack",
@@ -193,7 +193,7 @@ func (c *Client) PushApp(path, appName string) error {
 }
 
 func (c *Client) BindService(appName, serviceName string) error {
-	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
+	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"bind-service", appName, serviceName,
 	)
 
@@ -205,12 +205,12 @@ func (c *Client) BindService(appName, serviceName string) error {
 }
 
 func (c *Client) GetAppByName(name string) (App, error) {
-	space, err := c.cfCommandRunner.GetCurrentSpace()
+	space, err := c.pluginAPI.GetCurrentSpace()
 	if err != nil {
 		return App{}, fmt.Errorf("failed to lookup current space: %s", err)
 	}
 
-	output, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput("curl", "/v3/apps?names="+name+"&space_guids="+space.Guid)
+	output, err := c.pluginAPI.CliCommandWithoutTerminalOutput("curl", "/v3/apps?names="+name+"&space_guids="+space.Guid)
 	if err != nil {
 		return App{}, fmt.Errorf("failed to retrieve an app by name: %s", err)
 	}
@@ -232,7 +232,7 @@ func (c *Client) GetAppByName(name string) (App, error) {
 }
 
 func (c *Client) StartApp(appName string) error {
-	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
+	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"start", appName,
 	)
 
@@ -275,7 +275,7 @@ func (c *Client) GetTaskByGUID(guid string) (Task, error) {
 			c.Sleep(time.Second << uint(attempt))
 		}
 
-		output, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput("curl", "/v3/tasks/"+guid)
+		output, err := c.pluginAPI.CliCommandWithoutTerminalOutput("curl", "/v3/tasks/"+guid)
 		if err != nil {
 			c.Log.Printf("Attempt %d/%d: failed to retrieve task by guid: %s",
 				attempt+1, maxAttempts, err)
@@ -311,7 +311,7 @@ func (c *Client) CreateTask(app App, command string) (Task, error) {
 		"/v3/apps/" + app.Guid + "/tasks",
 	}
 
-	output, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(cfArgs...)
+	output, err := c.pluginAPI.CliCommandWithoutTerminalOutput(cfArgs...)
 	if err != nil {
 		return Task{}, fmt.Errorf("failed to create a task: %s", err)
 	}
@@ -347,7 +347,7 @@ func (c *Client) waitForTask(task Task) (string, error) {
 }
 
 func (c *Client) DeleteApp(appName string) error {
-	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
+	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"delete", "-f", appName,
 	)
 
@@ -359,7 +359,7 @@ func (c *Client) DeleteApp(appName string) error {
 }
 
 func (c *Client) RenameService(oldName, newName string) error {
-	_, err := c.cfCommandRunner.CliCommandWithoutTerminalOutput(
+	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"rename-service", oldName, newName,
 	)
 
@@ -374,7 +374,7 @@ func (c *Client) waitForOperationCompletion(operationName, instanceName string) 
 	attempt := 0
 
 	for {
-		service, err := c.cfCommandRunner.GetService(instanceName)
+		service, err := c.pluginAPI.GetService(instanceName)
 
 		if err != nil {
 			attempt++
@@ -402,5 +402,5 @@ func (c *Client) waitForOperationCompletion(operationName, instanceName string) 
 }
 
 func (c *Client) DumpLogs(appName string) {
-	c.cfCommandRunner.CliCommand("logs", "--recent", appName)
+	c.pluginAPI.CliCommand("logs", "--recent", appName)
 }

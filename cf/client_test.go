@@ -45,17 +45,17 @@ func (c *FakeClock) SleepCallArgs(i int) time.Duration {
 
 var _ = Describe("Client", func() {
 	var (
-		client              *cf.Client
-		fakeCfCommandRunner *cffakes.FakeCfCommandRunner
-		fakeClock           *FakeClock
-		fakeUnpacker        *cffakes.FakeUnpacker
-		buffer              *gbytes.Buffer
+		client          *cf.Client
+		fakeCFPluginAPI *cffakes.FakeCFPluginAPI
+		fakeClock       *FakeClock
+		fakeUnpacker    *cffakes.FakeUnpacker
+		buffer          *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
-		fakeCfCommandRunner = new(cffakes.FakeCfCommandRunner)
+		fakeCFPluginAPI = new(cffakes.FakeCFPluginAPI)
 		fakeUnpacker = new(cffakes.FakeUnpacker)
-		client = cf.NewClient(fakeCfCommandRunner)
+		client = cf.NewClient(fakeCFPluginAPI)
 		fakeClock = &FakeClock{}
 		client.Sleep = fakeClock.Sleep
 		buffer = gbytes.NewBuffer()
@@ -67,10 +67,10 @@ var _ = Describe("Client", func() {
 			Expect(client.BindService("some-app", "some-service")).
 				To(Succeed())
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).
 				To(Equal(1))
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal(
 					[]string{
 						"bind-service",
@@ -81,7 +81,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("returns an error when the binding request fails", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
 				nil, errors.New("some-error"),
 			)
 
@@ -111,41 +111,41 @@ var _ = Describe("Client", func() {
 					},
 				}
 
-				fakeCfCommandRunner.GetServiceReturnsOnCall(0, plugin_models.GetService_Model{}, errors.New("not-exist"))
-				fakeCfCommandRunner.GetServiceReturnsOnCall(1, inProgressService, nil)
-				fakeCfCommandRunner.GetServiceReturnsOnCall(2, inProgressService, nil)
-				fakeCfCommandRunner.GetServiceReturnsOnCall(3, completedService, nil)
+				fakeCFPluginAPI.GetServiceReturnsOnCall(0, plugin_models.GetService_Model{}, errors.New("not-exist"))
+				fakeCFPluginAPI.GetServiceReturnsOnCall(1, inProgressService, nil)
+				fakeCFPluginAPI.GetServiceReturnsOnCall(2, inProgressService, nil)
+				fakeCFPluginAPI.GetServiceReturnsOnCall(3, completedService, nil)
 			})
 
 			It("We wait until the service instance has been successfully created", func() {
 				err := client.CreateServiceInstance("plan-type", "service-instance-name")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(4))
+				Expect(fakeCFPluginAPI.GetServiceCallCount()).To(Equal(4))
 			})
 
 			Context("when the service polling fails continuously", func() {
 				BeforeEach(func() {
-					fakeCfCommandRunner.GetServiceReturnsOnCall(3, plugin_models.GetService_Model{}, errors.New("boom!"))
-					fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("boom!"))
+					fakeCFPluginAPI.GetServiceReturnsOnCall(3, plugin_models.GetService_Model{}, errors.New("boom!"))
+					fakeCFPluginAPI.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("boom!"))
 				})
 
 				It("keeps trying until a timeout is reached", func() {
 					err := client.CreateServiceInstance("plan-type", "service-instance-name")
 					Expect(err).To(MatchError("failed to look up status of service instance 'service-instance-name'"))
-					Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(6))
+					Expect(fakeCFPluginAPI.GetServiceCallCount()).To(Equal(6))
 				})
 			})
 
 			Context("when the service polling fails intermittently", func() {
 				BeforeEach(func() {
-					fakeCfCommandRunner.GetServiceReturnsOnCall(3, plugin_models.GetService_Model{}, errors.New("boom!"))
-					fakeCfCommandRunner.GetServiceReturnsOnCall(4, completedService, nil)
+					fakeCFPluginAPI.GetServiceReturnsOnCall(3, plugin_models.GetService_Model{}, errors.New("boom!"))
+					fakeCFPluginAPI.GetServiceReturnsOnCall(4, completedService, nil)
 				})
 
 				It("keeps trying until a definitive answer is reached", func() {
 					err := client.CreateServiceInstance("plan-type", "service-instance-name")
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(5))
+					Expect(fakeCFPluginAPI.GetServiceCallCount()).To(Equal(5))
 				})
 			})
 
@@ -158,13 +158,13 @@ var _ = Describe("Client", func() {
 							Description: "description",
 						},
 					}
-					fakeCfCommandRunner.GetServiceReturnsOnCall(3, failedService, nil)
+					fakeCFPluginAPI.GetServiceReturnsOnCall(3, failedService, nil)
 				})
 
 				It("returns an error", func() {
 					err := client.CreateServiceInstance("plan-type", "service-instance-name")
 					Expect(err).To(MatchError("failed to create service instance 'service-instance-name': description"))
-					Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(4))
+					Expect(fakeCFPluginAPI.GetServiceCallCount()).To(Equal(4))
 				})
 			})
 
@@ -181,14 +181,14 @@ var _ = Describe("Client", func() {
 					err := client.CreateServiceInstance("plan-type", "service-instance-name")
 
 					Expect(err).NotTo(HaveOccurred())
-					Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
+					Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 						To(Equal([]string{
 							"create-service",
 							"some-fake-product",
 							"plan-type",
 							"service-instance-name",
 						}))
-					Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+					Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 				})
 
 				AfterEach(func() {
@@ -199,30 +199,30 @@ var _ = Describe("Client", func() {
 
 		Context("When an invalid plan type is specified", func() {
 			It("returns an error", func() {
-				fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("does not exist"))
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{}, errors.New("Invalid service plan"))
+				fakeCFPluginAPI.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("does not exist"))
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{}, errors.New("Invalid service plan"))
 
 				err := client.CreateServiceInstance("invalid-plan-type", "service-instance-name")
 				Expect(err).To(MatchError("Invalid service plan"))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 					To(Equal([]string{
 						"create-service",
 						"p.mysql",
 						"invalid-plan-type",
 						"service-instance-name",
 					}))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 			})
 		})
 
 		Context("When a pre-existing service name is requested", func() {
 			It("Fails", func() {
-				fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{Guid: "some-guid"}, nil)
+				fakeCFPluginAPI.GetServiceReturns(plugin_models.GetService_Model{Guid: "some-guid"}, nil)
 
 				err := client.CreateServiceInstance("plan-type", "preexisting-service-instance-name")
 				Expect(err).To(MatchError("service instance 'preexisting-service-instance-name' already exists"))
-				Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(1))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(0))
+				Expect(fakeCFPluginAPI.GetServiceCallCount()).To(Equal(1))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(0))
 			})
 		})
 
@@ -230,7 +230,7 @@ var _ = Describe("Client", func() {
 
 	Context("GetHostnames", func() {
 		BeforeEach(func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1,
 				[]string{
 					`Getting key some-service-key for service instance test-tls as admin...`,
 					``,
@@ -252,21 +252,21 @@ var _ = Describe("Client", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(hostnames).To(ConsistOf(`some-host-name`))
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
 
-			createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+			createServiceArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
 			Expect(createServiceArgs).To(HaveLen(3))
 			Expect(createServiceArgs[0]).To(Equal("create-service-key"))
 			Expect(createServiceArgs[1]).To(Equal("some-instance"))
 			Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
 
-			serviceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)
+			serviceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(1)
 			Expect(serviceKeyArgs).To(HaveLen(3))
 			Expect(serviceKeyArgs[0]).To(Equal("service-key"))
 			Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
 			Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
 
-			deleteServiceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)
+			deleteServiceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(2)
 			Expect(deleteServiceKeyArgs).To(HaveLen(4))
 			Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
 			Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
@@ -275,7 +275,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("returns all the hostnames for a leader/follower service instance", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1,
 				[]string{
 					`Getting key some-service-key for service instance test-tls as admin...`,
 					``,
@@ -299,21 +299,21 @@ var _ = Describe("Client", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(hostnames).To(ConsistOf(`some-host-name`, `some-other-host-name`))
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
 
-			createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+			createServiceArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
 			Expect(createServiceArgs).To(HaveLen(3))
 			Expect(createServiceArgs[0]).To(Equal("create-service-key"))
 			Expect(createServiceArgs[1]).To(Equal("some-instance"))
 			Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
 
-			serviceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)
+			serviceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(1)
 			Expect(serviceKeyArgs).To(HaveLen(3))
 			Expect(serviceKeyArgs[0]).To(Equal("service-key"))
 			Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
 			Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
 
-			deleteServiceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)
+			deleteServiceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(2)
 			Expect(deleteServiceKeyArgs).To(HaveLen(4))
 			Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
 			Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
@@ -323,14 +323,14 @@ var _ = Describe("Client", func() {
 
 		Context("When the service key fails to be created", func() {
 			It("fails", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(nil, errors.New("cannot create service key"))
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(nil, errors.New("cannot create service key"))
 
 				_, err := client.GetHostnames("some-instance")
 
 				Expect(err).To(MatchError("Cannot get the hostnames for some-instance: cannot create service key"))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 
-				createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+				createServiceArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
 				Expect(createServiceArgs).To(HaveLen(3))
 				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
 				Expect(createServiceArgs[1]).To(Equal("some-instance"))
@@ -340,25 +340,25 @@ var _ = Describe("Client", func() {
 
 		Context("When the new service key cannot be read", func() {
 			It("fails when the cli command returns invalid json", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1, []string{"not json"}, nil)
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1, []string{"not json"}, nil)
 				_, err := client.GetHostnames("some-instance")
 
 				Expect(err).To(MatchError("Cannot get the hostnames for some-instance: invalid response: not json"))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
 
-				createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+				createServiceArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
 				Expect(createServiceArgs).To(HaveLen(3))
 				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
 				Expect(createServiceArgs[1]).To(Equal("some-instance"))
 				Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
 
-				serviceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)
+				serviceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(1)
 				Expect(serviceKeyArgs).To(HaveLen(3))
 				Expect(serviceKeyArgs[0]).To(Equal("service-key"))
 				Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
 				Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
 
-				deleteServiceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)
+				deleteServiceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(2)
 				Expect(deleteServiceKeyArgs).To(HaveLen(4))
 				Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
 				Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
@@ -367,26 +367,26 @@ var _ = Describe("Client", func() {
 			})
 
 			It("fails when the cli command fails", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1, nil, errors.New("cannot read service key"))
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1, nil, errors.New("cannot read service key"))
 
 				_, err := client.GetHostnames("some-instance")
 
 				Expect(err).To(MatchError("Cannot get the hostnames for some-instance: cannot read service key"))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
 
-				createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+				createServiceArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
 				Expect(createServiceArgs).To(HaveLen(3))
 				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
 				Expect(createServiceArgs[1]).To(Equal("some-instance"))
 				Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
 
-				serviceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)
+				serviceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(1)
 				Expect(serviceKeyArgs).To(HaveLen(3))
 				Expect(serviceKeyArgs[0]).To(Equal("service-key"))
 				Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
 				Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
 
-				deleteServiceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)
+				deleteServiceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(2)
 				Expect(deleteServiceKeyArgs).To(HaveLen(4))
 				Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
 				Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
@@ -398,27 +398,27 @@ var _ = Describe("Client", func() {
 
 		Context("When the service key fails to be deleted", func() {
 			It("succeeds anyway", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(2, nil, errors.New("cannot delete service key"))
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(2, nil, errors.New("cannot delete service key"))
 
 				hostnames, err := client.GetHostnames("some-instance")
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(hostnames).To(ConsistOf(`some-host-name`))
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
 
-				createServiceArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+				createServiceArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
 				Expect(createServiceArgs).To(HaveLen(3))
 				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
 				Expect(createServiceArgs[1]).To(Equal("some-instance"))
 				Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
 
-				serviceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)
+				serviceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(1)
 				Expect(serviceKeyArgs).To(HaveLen(3))
 				Expect(serviceKeyArgs[0]).To(Equal("service-key"))
 				Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
 				Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
 
-				deleteServiceKeyArgs := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)
+				deleteServiceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(2)
 				Expect(deleteServiceKeyArgs).To(HaveLen(4))
 				Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
 				Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
@@ -448,41 +448,41 @@ var _ = Describe("Client", func() {
 				},
 			}
 
-			fakeCfCommandRunner.GetServiceReturnsOnCall(0, plugin_models.GetService_Model{}, errors.New("not-exist"))
-			fakeCfCommandRunner.GetServiceReturnsOnCall(1, inProgressUpdate, nil)
-			fakeCfCommandRunner.GetServiceReturnsOnCall(2, inProgressUpdate, nil)
-			fakeCfCommandRunner.GetServiceReturnsOnCall(3, completedUpdate, nil)
+			fakeCFPluginAPI.GetServiceReturnsOnCall(0, plugin_models.GetService_Model{}, errors.New("not-exist"))
+			fakeCFPluginAPI.GetServiceReturnsOnCall(1, inProgressUpdate, nil)
+			fakeCFPluginAPI.GetServiceReturnsOnCall(2, inProgressUpdate, nil)
+			fakeCFPluginAPI.GetServiceReturnsOnCall(3, completedUpdate, nil)
 		})
 
 		It("Waits until the service has been successfully updated", func() {
 			err := client.UpdateServiceConfig("service-instance-name", `{"config-key":"config-value"}`)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(4))
+			Expect(fakeCFPluginAPI.GetServiceCallCount()).To(Equal(4))
 		})
 
 		Context("when the service polling fails continuously", func() {
 			BeforeEach(func() {
-				fakeCfCommandRunner.GetServiceReturnsOnCall(3, plugin_models.GetService_Model{}, errors.New("boom!"))
-				fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("boom!"))
+				fakeCFPluginAPI.GetServiceReturnsOnCall(3, plugin_models.GetService_Model{}, errors.New("boom!"))
+				fakeCFPluginAPI.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("boom!"))
 			})
 
 			It("keeps trying until a timeout is reached", func() {
 				err := client.UpdateServiceConfig("service-instance-name", `{"config-key":"config-value"}`)
 				Expect(err).To(MatchError("failed to look up status of service instance 'service-instance-name'"))
-				Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(6))
+				Expect(fakeCFPluginAPI.GetServiceCallCount()).To(Equal(6))
 			})
 		})
 
 		Context("when the service polling fails intermittently", func() {
 			BeforeEach(func() {
-				fakeCfCommandRunner.GetServiceReturnsOnCall(3, plugin_models.GetService_Model{}, errors.New("boom!"))
-				fakeCfCommandRunner.GetServiceReturnsOnCall(4, completedUpdate, nil)
+				fakeCFPluginAPI.GetServiceReturnsOnCall(3, plugin_models.GetService_Model{}, errors.New("boom!"))
+				fakeCFPluginAPI.GetServiceReturnsOnCall(4, completedUpdate, nil)
 			})
 
 			It("keeps trying until a definitive answer is reached", func() {
 				err := client.UpdateServiceConfig("service-instance-name", `{"config-key":"config-value"}`)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(5))
+				Expect(fakeCFPluginAPI.GetServiceCallCount()).To(Equal(5))
 			})
 		})
 
@@ -495,13 +495,13 @@ var _ = Describe("Client", func() {
 						Description: "description",
 					},
 				}
-				fakeCfCommandRunner.GetServiceReturnsOnCall(3, failedService, nil)
+				fakeCFPluginAPI.GetServiceReturnsOnCall(3, failedService, nil)
 			})
 
 			It("returns an error", func() {
 				err := client.UpdateServiceConfig("service-instance-name", `{"config-key":"config-value"}`)
 				Expect(err).To(MatchError("failed to update service config 'service-instance-name': description"))
-				Expect(fakeCfCommandRunner.GetServiceCallCount()).To(Equal(4))
+				Expect(fakeCFPluginAPI.GetServiceCallCount()).To(Equal(4))
 			})
 		})
 	})
@@ -509,21 +509,21 @@ var _ = Describe("Client", func() {
 	Context("DeleteServiceInstance", func() {
 		Context("When the specified instance exists", func() {
 			It("Runs the delete-service command", func() {
-				fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{}, nil)
+				fakeCFPluginAPI.GetServiceReturns(plugin_models.GetService_Model{}, nil)
 
 				err := client.DeleteServiceInstance("service-instance-name")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 			})
 		})
 
 		Context("When the specified instance doesn't exist", func() {
 			It("Succeeds anyway", func() {
-				fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("invalid instance"))
+				fakeCFPluginAPI.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("invalid instance"))
 
 				err := client.DeleteServiceInstance("invalid-service-instance-name")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 			})
 		})
 
@@ -531,7 +531,7 @@ var _ = Describe("Client", func() {
 
 	Context("CreateTask", func() {
 		It("creates a task", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
 				`{`,
 				`"guid": "abc-123",`,
 				`"state": "RUNNING"`,
@@ -545,7 +545,7 @@ var _ = Describe("Client", func() {
 			Expect(task.State).To(Equal("RUNNING"))
 			Expect(task.Guid).To(Equal("abc-123"))
 
-			args := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+			args := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
 			Expect(args).To(Equal([]string{
 				"curl", "-X", "POST", "-d",
 				`{"command":"some-command"}`,
@@ -554,7 +554,7 @@ var _ = Describe("Client", func() {
 
 		Context("when there is an error creating the task", func() {
 			It("returns an error", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
 					nil, errors.New("some-error"))
 
 				_, err := client.CreateTask(cf.App{
@@ -566,7 +566,7 @@ var _ = Describe("Client", func() {
 
 		Context("when invalid json is returned", func() {
 			It("returns an error with the contents", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
 					`something bad happened`,
 				}, nil)
 
@@ -579,7 +579,7 @@ var _ = Describe("Client", func() {
 
 		Context("when the returned task has errors", func() {
 			It("returns the errors", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
 					`{`,
 					`"guid": "abc-123",`,
 					`"state": "RUNNING",`,
@@ -605,15 +605,15 @@ var _ = Describe("Client", func() {
 			Expect(client.DeleteApp("some-app")).
 				To(Succeed())
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).
 				To(Equal(1))
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{"delete", "-f", "some-app"}))
 		})
 
 		It("returns an error when deleting the application fails", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
 				nil, errors.New("some-error"),
 			)
 
@@ -625,21 +625,21 @@ var _ = Describe("Client", func() {
 	Context("DumpLogs", func() {
 		It("dumps logs for an app", func() {
 			client.DumpLogs("some-app")
-			Expect(fakeCfCommandRunner.CliCommandArgsForCall(0)).
+			Expect(fakeCFPluginAPI.CliCommandArgsForCall(0)).
 				To(Equal([]string{"logs", "--recent", "some-app"}))
 		})
 	})
 
 	Context("GetAppByName", func() {
 		It("returns an application by its name", func() {
-			fakeCfCommandRunner.GetCurrentSpaceReturns(plugin_models.Space{
+			fakeCFPluginAPI.GetCurrentSpaceReturns(plugin_models.Space{
 				plugin_models.SpaceFields{
 					Guid: "some-guid",
 					Name: "some-name",
 				},
 			}, nil)
 
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
 				`{"resources": [{`,
 				`"guid": "6aef0cf0-c5d5-4ec1-89ae-73971d24241c",`,
 				`"name": "mysql-migrate"`,
@@ -651,7 +651,7 @@ var _ = Describe("Client", func() {
 			Expect(app.Name).To(Equal("mysql-migrate"))
 			Expect(app.Guid).To(Equal("6aef0cf0-c5d5-4ec1-89ae-73971d24241c"))
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{
 					"curl",
 					"/v3/apps?names=some-app&space_guids=some-guid",
@@ -660,7 +660,7 @@ var _ = Describe("Client", func() {
 
 		Context("when there is an error getting the current space", func() {
 			BeforeEach(func() {
-				fakeCfCommandRunner.GetCurrentSpaceReturns(
+				fakeCFPluginAPI.GetCurrentSpaceReturns(
 					plugin_models.Space{},
 					errors.New("bad space"),
 				)
@@ -674,7 +674,7 @@ var _ = Describe("Client", func() {
 
 		Context("when there is an error getting an application by name", func() {
 			It("returns an error", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
 					nil, errors.New("some-error"))
 
 				_, err := client.GetAppByName("mysql-migrate")
@@ -684,7 +684,7 @@ var _ = Describe("Client", func() {
 
 		Context("when there are no applications returned by name", func() {
 			It("returns an error", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
 					`{"resources": [`,
 					`]}`,
 				}, nil)
@@ -696,7 +696,7 @@ var _ = Describe("Client", func() {
 
 		Context("when invalid json is returned", func() {
 			It("returns an error with the contents", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
 					`something bad happened`,
 				}, nil)
 
@@ -708,7 +708,7 @@ var _ = Describe("Client", func() {
 
 	Context("GetTaskByGUID", func() {
 		It("Returns a task by its guid", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
 				`{`,
 				`"guid": "6aef0cf0-c5d5-4ec1-89ae-73971d24241c",`,
 				`"state": "RUNNING"`,
@@ -720,19 +720,19 @@ var _ = Describe("Client", func() {
 			Expect(task.State).To(Equal("RUNNING"))
 			Expect(task.Guid).To(Equal("6aef0cf0-c5d5-4ec1-89ae-73971d24241c"))
 
-			args := fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)
+			args := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
 			Expect(args).To(Equal([]string{"curl", "/v3/tasks/6aef0cf0-c5d5-4ec1-89ae-73971d24241c"}))
 			Expect(fakeClock.SleepCallCount()).To(BeZero())
 		})
 
 		Context("When there is an error getting a task by guid", func() {
 			It("Returns an error after encountering more than MaxAttempts errors", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
 					nil, errors.New("some-error"))
 
 				_, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
 
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(client.MaxAttempts))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(client.MaxAttempts))
 				Expect(err).To(MatchError("failed to get task by GUID"))
 				Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by guid: some-error`))
 				Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to retrieve task by guid: some-error`))
@@ -743,9 +743,9 @@ var _ = Describe("Client", func() {
 			})
 
 			It("Returns a task by its guid if we eventually succeed within MaxAttempts tries", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(
 					0, nil, errors.New("some-error"))
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(
 					1,
 					[]string{
 						`{`,
@@ -757,7 +757,7 @@ var _ = Describe("Client", func() {
 
 				task, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
 
-				Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).To(Equal(2))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(2))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(task.State).To(Equal("RUNNING"))
 				Expect(task.Guid).To(Equal("6aef0cf0-c5d5-4ec1-89ae-73971d24241c"))
@@ -769,7 +769,7 @@ var _ = Describe("Client", func() {
 
 		Context("When invalid json is returned", func() {
 			It("Returns an error with the contents", func() {
-				fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns([]string{
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
 					`something bad happened`,
 				}, nil)
 
@@ -786,10 +786,10 @@ var _ = Describe("Client", func() {
 		It("pushes an app with --no when give a path and application name", func() {
 			Expect(client.PushApp("some-path", "some-app-name")).To(Succeed())
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).
 				To(Equal(1))
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal(
 					[]string{
 						"push",
@@ -805,7 +805,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("returns an error when pushing an app fails", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
 				nil, errors.New("some-error"),
 			)
 
@@ -819,17 +819,17 @@ var _ = Describe("Client", func() {
 			Expect(client.RenameService("some-service-name", "some-new-service-name")).
 				To(Succeed())
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).
 				To(Equal(1))
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{
 					"rename-service", "some-service-name", "some-new-service-name",
 				}))
 		})
 
 		It("returns an error when renaming a service fails", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
 				nil, errors.New("some-error"),
 			)
 
@@ -840,14 +840,14 @@ var _ = Describe("Client", func() {
 
 	Context("RunTask", func() {
 		BeforeEach(func() {
-			fakeCfCommandRunner.GetCurrentSpaceReturns(plugin_models.Space{
+			fakeCFPluginAPI.GetCurrentSpaceReturns(plugin_models.Space{
 				plugin_models.SpaceFields{
 					Guid: "some-guid",
 					Name: "some-name",
 				},
 			}, nil)
 
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(0,
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(0,
 				[]string{
 					`{"resources": [{`,
 					`"guid": "be5077ed-abba-bea7-deb7-50f7ba110000",`,
@@ -857,7 +857,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("runs a task and waits for it to finish", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1,
 				[]string{
 					`{`,
 					`"guid": "be5077ed-abba-bea7-deb7-50f7ba110000",`,
@@ -865,7 +865,7 @@ var _ = Describe("Client", func() {
 					`}`,
 				}, nil)
 
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(2,
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(2,
 				[]string{
 					`{`,
 					`"guid": "be5077ed-abba-bea7-deb7-50f7ba110000",`,
@@ -876,10 +876,10 @@ var _ = Describe("Client", func() {
 			Expect(client.RunTask("some-app", "some-command")).
 				To(Succeed())
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).
 				To(Equal(3))
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(1)).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(1)).
 				To(
 					Equal([]string{
 						"curl", "-X", "POST", "-d",
@@ -887,7 +887,7 @@ var _ = Describe("Client", func() {
 						"/v3/apps/be5077ed-abba-bea7-deb7-50f7ba110000/tasks",
 					}))
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(2)).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(2)).
 				To(Equal([]string{
 					"curl",
 					"/v3/tasks/be5077ed-abba-bea7-deb7-50f7ba110000",
@@ -895,7 +895,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("returns an error when looking up an app guid fails", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(0,
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(0,
 				nil, errors.New("app guid not found error"),
 			)
 
@@ -904,7 +904,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("returns an error when creating a task fails", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1,
 				nil, errors.New("create task failed"),
 			)
 
@@ -913,7 +913,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("returns an error when waiting for a task fails", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1,
 				[]string{
 					`{`,
 					`"guid": "be5077ed-abba-bea7-deb7-50f7ba110000",`,
@@ -921,7 +921,7 @@ var _ = Describe("Client", func() {
 					`}`,
 				}, nil)
 
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
 				nil, errors.New("some-api-error"))
 
 			err := client.RunTask("some-app", "some-command")
@@ -929,7 +929,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("returns an error when a tasks finishes with a failed state", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1,
 				[]string{
 					`{`,
 					`"guid": "be5077ed-abba-bea7-deb7-50f7ba110000",`,
@@ -937,7 +937,7 @@ var _ = Describe("Client", func() {
 					`}`,
 				}, nil)
 
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturnsOnCall(2,
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(2,
 				[]string{
 					`{`,
 					`"guid": "be5077ed-abba-bea7-deb7-50f7ba110000",`,
@@ -951,24 +951,9 @@ var _ = Describe("Client", func() {
 	})
 
 	Context("ServiceExists", func() {
-		var (
-			client              *cf.Client
-			fakeCfCommandRunner *cffakes.FakeCfCommandRunner
-			fakeClock           *FakeClock
-			fakeUnpacker        *cffakes.FakeUnpacker
-		)
-
-		BeforeEach(func() {
-			fakeCfCommandRunner = new(cffakes.FakeCfCommandRunner)
-			fakeUnpacker = new(cffakes.FakeUnpacker)
-			client = cf.NewClient(fakeCfCommandRunner)
-			fakeClock = &FakeClock{}
-			client.Sleep = fakeClock.Sleep
-		})
-
 		Context("When the service does not exist", func() {
 			It("Returns false", func() {
-				fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("Service does not exist"))
+				fakeCFPluginAPI.GetServiceReturns(plugin_models.GetService_Model{}, errors.New("Service does not exist"))
 
 				serviceExists := client.ServiceExists("service-name")
 				Expect(serviceExists).To(Equal(false))
@@ -977,7 +962,7 @@ var _ = Describe("Client", func() {
 
 		Context("When the service exists", func() {
 			It("Returns true", func() {
-				fakeCfCommandRunner.GetServiceReturns(plugin_models.GetService_Model{}, nil)
+				fakeCFPluginAPI.GetServiceReturns(plugin_models.GetService_Model{}, nil)
 
 				serviceExists := client.ServiceExists("service-name")
 				Expect(serviceExists).To(Equal(true))
@@ -990,15 +975,15 @@ var _ = Describe("Client", func() {
 			Expect(client.StartApp("some-app")).
 				To(Succeed())
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputCallCount()).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).
 				To(Equal(1))
 
-			Expect(fakeCfCommandRunner.CliCommandWithoutTerminalOutputArgsForCall(0)).
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{"start", "some-app"}))
 		})
 
 		It("returns an error when starting the application fails", func() {
-			fakeCfCommandRunner.CliCommandWithoutTerminalOutputReturns(
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
 				nil, errors.New("some-error"),
 			)
 

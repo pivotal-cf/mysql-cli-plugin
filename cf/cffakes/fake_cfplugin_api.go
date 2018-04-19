@@ -8,7 +8,7 @@ import (
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 )
 
-type FakeCfCommandRunner struct {
+type FakeCFPluginAPI struct {
 	CliCommandStub        func(...string) ([]string, error)
 	cliCommandMutex       sync.RWMutex
 	cliCommandArgsForCall []struct {
@@ -63,7 +63,7 @@ type FakeCfCommandRunner struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCfCommandRunner) CliCommand(arg1 ...string) ([]string, error) {
+func (fake *FakeCFPluginAPI) CliCommand(arg1 ...string) ([]string, error) {
 	fake.cliCommandMutex.Lock()
 	ret, specificReturn := fake.cliCommandReturnsOnCall[len(fake.cliCommandArgsForCall)]
 	fake.cliCommandArgsForCall = append(fake.cliCommandArgsForCall, struct {
@@ -80,19 +80,19 @@ func (fake *FakeCfCommandRunner) CliCommand(arg1 ...string) ([]string, error) {
 	return fake.cliCommandReturns.result1, fake.cliCommandReturns.result2
 }
 
-func (fake *FakeCfCommandRunner) CliCommandCallCount() int {
+func (fake *FakeCFPluginAPI) CliCommandCallCount() int {
 	fake.cliCommandMutex.RLock()
 	defer fake.cliCommandMutex.RUnlock()
 	return len(fake.cliCommandArgsForCall)
 }
 
-func (fake *FakeCfCommandRunner) CliCommandArgsForCall(i int) []string {
+func (fake *FakeCFPluginAPI) CliCommandArgsForCall(i int) []string {
 	fake.cliCommandMutex.RLock()
 	defer fake.cliCommandMutex.RUnlock()
 	return fake.cliCommandArgsForCall[i].arg1
 }
 
-func (fake *FakeCfCommandRunner) CliCommandReturns(result1 []string, result2 error) {
+func (fake *FakeCFPluginAPI) CliCommandReturns(result1 []string, result2 error) {
 	fake.CliCommandStub = nil
 	fake.cliCommandReturns = struct {
 		result1 []string
@@ -100,7 +100,7 @@ func (fake *FakeCfCommandRunner) CliCommandReturns(result1 []string, result2 err
 	}{result1, result2}
 }
 
-func (fake *FakeCfCommandRunner) CliCommandReturnsOnCall(i int, result1 []string, result2 error) {
+func (fake *FakeCFPluginAPI) CliCommandReturnsOnCall(i int, result1 []string, result2 error) {
 	fake.CliCommandStub = nil
 	if fake.cliCommandReturnsOnCall == nil {
 		fake.cliCommandReturnsOnCall = make(map[int]struct {
@@ -114,7 +114,7 @@ func (fake *FakeCfCommandRunner) CliCommandReturnsOnCall(i int, result1 []string
 	}{result1, result2}
 }
 
-func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutput(args ...string) ([]string, error) {
+func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutput(args ...string) ([]string, error) {
 	fake.cliCommandWithoutTerminalOutputMutex.Lock()
 	ret, specificReturn := fake.cliCommandWithoutTerminalOutputReturnsOnCall[len(fake.cliCommandWithoutTerminalOutputArgsForCall)]
 	fake.cliCommandWithoutTerminalOutputArgsForCall = append(fake.cliCommandWithoutTerminalOutputArgsForCall, struct {
@@ -131,19 +131,19 @@ func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutput(args ...string)
 	return fake.cliCommandWithoutTerminalOutputReturns.result1, fake.cliCommandWithoutTerminalOutputReturns.result2
 }
 
-func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputCallCount() int {
+func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputCallCount() int {
 	fake.cliCommandWithoutTerminalOutputMutex.RLock()
 	defer fake.cliCommandWithoutTerminalOutputMutex.RUnlock()
 	return len(fake.cliCommandWithoutTerminalOutputArgsForCall)
 }
 
-func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputArgsForCall(i int) []string {
+func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputArgsForCall(i int) []string {
 	fake.cliCommandWithoutTerminalOutputMutex.RLock()
 	defer fake.cliCommandWithoutTerminalOutputMutex.RUnlock()
 	return fake.cliCommandWithoutTerminalOutputArgsForCall[i].args
 }
 
-func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputReturns(result1 []string, result2 error) {
+func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputReturns(result1 []string, result2 error) {
 	fake.CliCommandWithoutTerminalOutputStub = nil
 	fake.cliCommandWithoutTerminalOutputReturns = struct {
 		result1 []string
@@ -151,7 +151,7 @@ func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputReturns(result1 
 	}{result1, result2}
 }
 
-func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputReturnsOnCall(i int, result1 []string, result2 error) {
+func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputReturnsOnCall(i int, result1 []string, result2 error) {
 	fake.CliCommandWithoutTerminalOutputStub = nil
 	if fake.cliCommandWithoutTerminalOutputReturnsOnCall == nil {
 		fake.cliCommandWithoutTerminalOutputReturnsOnCall = make(map[int]struct {
@@ -165,7 +165,7 @@ func (fake *FakeCfCommandRunner) CliCommandWithoutTerminalOutputReturnsOnCall(i 
 	}{result1, result2}
 }
 
-func (fake *FakeCfCommandRunner) GetCurrentSpace() (plugin_models.Space, error) {
+func (fake *FakeCFPluginAPI) GetCurrentSpace() (plugin_models.Space, error) {
 	fake.getCurrentSpaceMutex.Lock()
 	ret, specificReturn := fake.getCurrentSpaceReturnsOnCall[len(fake.getCurrentSpaceArgsForCall)]
 	fake.getCurrentSpaceArgsForCall = append(fake.getCurrentSpaceArgsForCall, struct{}{})
@@ -180,13 +180,13 @@ func (fake *FakeCfCommandRunner) GetCurrentSpace() (plugin_models.Space, error) 
 	return fake.getCurrentSpaceReturns.result1, fake.getCurrentSpaceReturns.result2
 }
 
-func (fake *FakeCfCommandRunner) GetCurrentSpaceCallCount() int {
+func (fake *FakeCFPluginAPI) GetCurrentSpaceCallCount() int {
 	fake.getCurrentSpaceMutex.RLock()
 	defer fake.getCurrentSpaceMutex.RUnlock()
 	return len(fake.getCurrentSpaceArgsForCall)
 }
 
-func (fake *FakeCfCommandRunner) GetCurrentSpaceReturns(result1 plugin_models.Space, result2 error) {
+func (fake *FakeCFPluginAPI) GetCurrentSpaceReturns(result1 plugin_models.Space, result2 error) {
 	fake.GetCurrentSpaceStub = nil
 	fake.getCurrentSpaceReturns = struct {
 		result1 plugin_models.Space
@@ -194,7 +194,7 @@ func (fake *FakeCfCommandRunner) GetCurrentSpaceReturns(result1 plugin_models.Sp
 	}{result1, result2}
 }
 
-func (fake *FakeCfCommandRunner) GetCurrentSpaceReturnsOnCall(i int, result1 plugin_models.Space, result2 error) {
+func (fake *FakeCFPluginAPI) GetCurrentSpaceReturnsOnCall(i int, result1 plugin_models.Space, result2 error) {
 	fake.GetCurrentSpaceStub = nil
 	if fake.getCurrentSpaceReturnsOnCall == nil {
 		fake.getCurrentSpaceReturnsOnCall = make(map[int]struct {
@@ -208,7 +208,7 @@ func (fake *FakeCfCommandRunner) GetCurrentSpaceReturnsOnCall(i int, result1 plu
 	}{result1, result2}
 }
 
-func (fake *FakeCfCommandRunner) GetService(arg1 string) (plugin_models.GetService_Model, error) {
+func (fake *FakeCFPluginAPI) GetService(arg1 string) (plugin_models.GetService_Model, error) {
 	fake.getServiceMutex.Lock()
 	ret, specificReturn := fake.getServiceReturnsOnCall[len(fake.getServiceArgsForCall)]
 	fake.getServiceArgsForCall = append(fake.getServiceArgsForCall, struct {
@@ -225,19 +225,19 @@ func (fake *FakeCfCommandRunner) GetService(arg1 string) (plugin_models.GetServi
 	return fake.getServiceReturns.result1, fake.getServiceReturns.result2
 }
 
-func (fake *FakeCfCommandRunner) GetServiceCallCount() int {
+func (fake *FakeCFPluginAPI) GetServiceCallCount() int {
 	fake.getServiceMutex.RLock()
 	defer fake.getServiceMutex.RUnlock()
 	return len(fake.getServiceArgsForCall)
 }
 
-func (fake *FakeCfCommandRunner) GetServiceArgsForCall(i int) string {
+func (fake *FakeCFPluginAPI) GetServiceArgsForCall(i int) string {
 	fake.getServiceMutex.RLock()
 	defer fake.getServiceMutex.RUnlock()
 	return fake.getServiceArgsForCall[i].arg1
 }
 
-func (fake *FakeCfCommandRunner) GetServiceReturns(result1 plugin_models.GetService_Model, result2 error) {
+func (fake *FakeCFPluginAPI) GetServiceReturns(result1 plugin_models.GetService_Model, result2 error) {
 	fake.GetServiceStub = nil
 	fake.getServiceReturns = struct {
 		result1 plugin_models.GetService_Model
@@ -245,7 +245,7 @@ func (fake *FakeCfCommandRunner) GetServiceReturns(result1 plugin_models.GetServ
 	}{result1, result2}
 }
 
-func (fake *FakeCfCommandRunner) GetServiceReturnsOnCall(i int, result1 plugin_models.GetService_Model, result2 error) {
+func (fake *FakeCFPluginAPI) GetServiceReturnsOnCall(i int, result1 plugin_models.GetService_Model, result2 error) {
 	fake.GetServiceStub = nil
 	if fake.getServiceReturnsOnCall == nil {
 		fake.getServiceReturnsOnCall = make(map[int]struct {
@@ -259,7 +259,7 @@ func (fake *FakeCfCommandRunner) GetServiceReturnsOnCall(i int, result1 plugin_m
 	}{result1, result2}
 }
 
-func (fake *FakeCfCommandRunner) Invocations() map[string][][]interface{} {
+func (fake *FakeCFPluginAPI) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.cliCommandMutex.RLock()
@@ -277,7 +277,7 @@ func (fake *FakeCfCommandRunner) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeCfCommandRunner) recordInvocation(key string, args []interface{}) {
+func (fake *FakeCFPluginAPI) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -289,4 +289,4 @@ func (fake *FakeCfCommandRunner) recordInvocation(key string, args []interface{}
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ cf.CfCommandRunner = new(FakeCfCommandRunner)
+var _ cf.CFPluginAPI = new(FakeCFPluginAPI)
