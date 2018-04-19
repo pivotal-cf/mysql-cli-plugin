@@ -30,22 +30,6 @@ var (
 	gitSHA  = "unknown"
 )
 
-//go:generate counterfeiter . CFClient
-type CFClient interface {
-	CreateServiceInstance(planType, instanceName string) error
-	GetHostnames(instanceName string) ([]string, error)
-	UpdateServiceConfig(instanceName string, jsonParams string) error
-	DeleteServiceInstance(instanceName string) error
-	BindService(appName, serviceName string) error
-	DeleteApp(appName string) error
-	DumpLogs(appName string)
-	PushApp(path, appName string) error
-	RenameService(oldName, newName string) error
-	RunTask(appName, command string) error
-	ServiceExists(serviceName string) bool
-	StartApp(appName string) error
-}
-
 //go:generate counterfeiter . migrator
 type migrator interface {
 	CheckServiceExists(donorInstanceName string) error
