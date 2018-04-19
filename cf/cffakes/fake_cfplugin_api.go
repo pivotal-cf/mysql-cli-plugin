@@ -59,6 +59,17 @@ type FakeCFPluginAPI struct {
 		result1 plugin_models.GetService_Model
 		result2 error
 	}
+	AccessTokenStub        func() (string, error)
+	accessTokenMutex       sync.RWMutex
+	accessTokenArgsForCall []struct{}
+	accessTokenReturns     struct {
+		result1 string
+		result2 error
+	}
+	accessTokenReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -259,6 +270,49 @@ func (fake *FakeCFPluginAPI) GetServiceReturnsOnCall(i int, result1 plugin_model
 	}{result1, result2}
 }
 
+func (fake *FakeCFPluginAPI) AccessToken() (string, error) {
+	fake.accessTokenMutex.Lock()
+	ret, specificReturn := fake.accessTokenReturnsOnCall[len(fake.accessTokenArgsForCall)]
+	fake.accessTokenArgsForCall = append(fake.accessTokenArgsForCall, struct{}{})
+	fake.recordInvocation("AccessToken", []interface{}{})
+	fake.accessTokenMutex.Unlock()
+	if fake.AccessTokenStub != nil {
+		return fake.AccessTokenStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.accessTokenReturns.result1, fake.accessTokenReturns.result2
+}
+
+func (fake *FakeCFPluginAPI) AccessTokenCallCount() int {
+	fake.accessTokenMutex.RLock()
+	defer fake.accessTokenMutex.RUnlock()
+	return len(fake.accessTokenArgsForCall)
+}
+
+func (fake *FakeCFPluginAPI) AccessTokenReturns(result1 string, result2 error) {
+	fake.AccessTokenStub = nil
+	fake.accessTokenReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCFPluginAPI) AccessTokenReturnsOnCall(i int, result1 string, result2 error) {
+	fake.AccessTokenStub = nil
+	if fake.accessTokenReturnsOnCall == nil {
+		fake.accessTokenReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.accessTokenReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCFPluginAPI) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -270,6 +324,8 @@ func (fake *FakeCFPluginAPI) Invocations() map[string][][]interface{} {
 	defer fake.getCurrentSpaceMutex.RUnlock()
 	fake.getServiceMutex.RLock()
 	defer fake.getServiceMutex.RUnlock()
+	fake.accessTokenMutex.RLock()
+	defer fake.accessTokenMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
