@@ -36,14 +36,16 @@ type CFPluginAPI interface {
 
 type SleepFunc func(time.Duration)
 
+type Error struct {
+	Detail string
+	Title  string
+	Code   int
+}
+
 type Task struct {
-	Errors []struct {
-		Detail string
-		Title  string
-		Code   int
-	}
-	State string
-	Guid  string
+	Errors []Error
+	State  string
+	Guid   string
 }
 
 type App struct {
@@ -263,49 +265,65 @@ func (c *Client) RunTask(appName, command string) error {
 	return nil
 }
 
-func (c *Client) GetTaskByGUID(guid string) (Task, error) {
-	maxAttempts := c.MaxAttempts
+type cliTask func(string) (*Task, error) // TODO: make the first arg generic
 
-	for attempt := 0; attempt < maxAttempts; attempt++ {
+func (c *Client) GetTaskByGUID(guid string) (*Task, error) {
+	response, err := c.retryCfCLIRequestWithExponentialBackoff(c.requestTask, guid, "failed to retrieve task by GUID")
+	task, _ := response.(*Task)
 
+	return task, err
+}
+
+func (c *Client) retryCfCLIRequestWithExponentialBackoff(requestFunc cliTask, requestArg string, failureMessage string) (interface{}, error) { // TODO: in an ideal world, the arguments passed in wouldn't know about Tasks
+	for attempt := 0; attempt < c.MaxAttempts; attempt ++ {
 		if attempt > 0 {
 			c.Sleep(time.Second << uint(attempt))
 		}
 
-		output, err := c.pluginAPI.CliCommandWithoutTerminalOutput("curl", "/v3/tasks/"+guid)
+		response, err := requestFunc(requestArg)
 		if err != nil {
-			c.Log.Printf("Attempt %d/%d: failed to retrieve task by guid: %s",
-				attempt+1, maxAttempts, err)
-			continue
-		}
+			if strings.Contains(err.Error(), "CF-InvalidAuthToken") {
 
-		task := Task{}
-		jsonRaw := strings.Join(output, "\n")
-		if err := json.Unmarshal([]byte(jsonRaw), &task); err != nil {
-			c.Log.Printf("Attempt %d/%d: failed to parse the following api response: %s",
-				attempt+1, maxAttempts, jsonRaw)
-			continue
-		}
-
-		if len(task.Errors) != 0 {
-			err := task.Errors[0]
-			c.Log.Printf("Attempt %d/%d: failed to look up task (error code %d: %s - %s)",
-				attempt+1, maxAttempts, err.Code, err.Title, err.Detail)
-			if err.Title == "CF-InvalidAuthToken" {
-				if _, err := c.pluginAPI.AccessToken(); err != nil {
-					c.Log.Printf("failed to refresh the access token: %s", err)
+				if _, e := c.pluginAPI.AccessToken(); e != nil {
+					c.Log.Printf("failed to refresh the access token: %s", e.Error())
 				}
 			}
+			c.Log.Printf("Attempt %d/%d: %s: %s", attempt+1, c.MaxAttempts, failureMessage, err)
+
 			continue
 		}
 
-		return task, nil
+		return response, nil
 	}
 
-	return Task{}, errors.New("failed to get task by GUID")
+	return nil, errors.New(failureMessage)
 }
 
-func (c *Client) CreateTask(app App, command string) (Task, error) {
+func (c *Client) requestTask(guid string) (*Task, error) {
+	output, err := c.pluginAPI.CliCommandWithoutTerminalOutput("curl", "/v3/tasks/"+guid)
+
+	if err != nil {
+		return nil, err
+	}
+
+	jsonRaw := strings.Join(output, "\n")
+
+	task := Task{}
+	err = json.Unmarshal([]byte(jsonRaw), &task)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse the following api response: %s", jsonRaw)
+	}
+
+	if len(task.Errors) != 0 {
+		if task.Errors[0].Title == "CF-InvalidAuthToken" {
+			return nil, errors.New("(error code 1000: CF-InvalidAuthToken - Invalid Auth Token)")
+		}
+		return nil, fmt.Errorf("cc error code %d: %s - %s", task.Errors[0].Code, task.Errors[0].Title, task.Errors[0].Detail)
+	}
+	return &task, err
+}
+
+func (c *Client) CreateTask(app App, command string) (*Task, error) {
 	cfArgs := []string{
 		"curl",
 		"-X", "POST",
@@ -315,24 +333,24 @@ func (c *Client) CreateTask(app App, command string) (Task, error) {
 
 	output, err := c.pluginAPI.CliCommandWithoutTerminalOutput(cfArgs...)
 	if err != nil {
-		return Task{}, fmt.Errorf("failed to create a task: %s", err)
+		return nil, fmt.Errorf("failed to create a task: %s", err)
 	}
 
 	taskInfo := Task{}
 	jsonRaw := strings.Join(output, "\n")
 	if err := json.Unmarshal([]byte(jsonRaw), &taskInfo); err != nil {
-		return Task{}, fmt.Errorf("failed to parse the following api response: %s", jsonRaw)
+		return nil, fmt.Errorf("failed to parse the following api response: %s", jsonRaw)
 	}
 
 	if len(taskInfo.Errors) != 0 {
 		err := taskInfo.Errors[0]
-		return Task{}, fmt.Errorf("failed to create a task: %d: %s - %s", err.Code, err.Title, err.Detail)
+		return nil, fmt.Errorf("failed to create a task: %d: %s - %s", err.Code, err.Title, err.Detail)
 	}
 
-	return taskInfo, nil
+	return &taskInfo, nil
 }
 
-func (c *Client) waitForTask(task Task) (string, error) {
+func (c *Client) waitForTask(task *Task) (string, error) {
 	var (
 		taskGUID = task.Guid
 		err      error
@@ -341,6 +359,7 @@ func (c *Client) waitForTask(task Task) (string, error) {
 	for task.State != "SUCCEEDED" && task.State != "FAILED" {
 		c.Sleep(time.Second)
 		task, err = c.GetTaskByGUID(taskGUID)
+
 		if err != nil {
 			return "", err
 		}
