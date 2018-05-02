@@ -38,7 +38,7 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		Expect(session.Err).To(gbytes.Say(`Usage: cf mysql-tools migrate <v1-service-instance> --create <v2-plan>`))
+		Expect(session.Err).To(gbytes.Say(`Usage: cf mysql-tools migrate \[--no-cleanup\] <v1-service-instance> --create <plan-type>`))
 	})
 
 	It("migrate requires the --create flag", func() {
@@ -47,7 +47,7 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		Expect(session.Err).To(gbytes.Say(`Usage: cf mysql-tools migrate <v1-service-instance> --create <v2-plan>`))
+		Expect(session.Err).To(gbytes.Say(`Usage: cf mysql-tools migrate \[--no-cleanup\] <v1-service-instance> --create <plan-type>`))
 	})
 
 	It("replace requires exactly 4 arguments", func() {
@@ -56,7 +56,7 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		Expect(session.Err).To(gbytes.Say(`Usage: cf mysql-tools replace <v1-service-instance> <v2-service-instance>`))
+		Expect(session.Err).To(gbytes.Say(`Usage: cf mysql-tools replace \[--no-cleanup\] <v1-service-instance> <v2-service-instance>`))
 	})
 
 	It("reports an error when given an unknown subcommand", func() {
@@ -65,7 +65,7 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		Expect(session.Err).To(gbytes.Say(`Unknown command 'invalid'`))
+		Expect(session.Err).To(gbytes.Say(`unknown command 'invalid'`))
 
 	})
 

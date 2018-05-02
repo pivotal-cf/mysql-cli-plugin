@@ -87,7 +87,7 @@ func (m *Migrator) CreateAndConfigureServiceInstance(planType, serviceName strin
 	return nil
 }
 
-func (m *Migrator) MigrateData(donorInstanceName, recipientInstanceName string) error {
+func (m *Migrator) MigrateData(donorInstanceName, recipientInstanceName string, cleanup bool) error {
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
 
 	if err != nil {
@@ -106,10 +106,12 @@ func (m *Migrator) MigrateData(donorInstanceName, recipientInstanceName string) 
 	if err = m.client.PushApp(tmpDir, m.appName); err != nil {
 		return errors.Errorf("failed to push application: %s", err)
 	}
-	defer func() {
-		m.client.DeleteApp(m.appName)
-		log.Print("Cleaning up...")
-	}()
+	if cleanup {
+		defer func() {
+			m.client.DeleteApp(m.appName)
+			log.Print("Cleaning up...")
+		}()
+	}
 	log.Print("Successfully pushed app")
 
 	if err = m.client.BindService(m.appName, donorInstanceName); err != nil {

@@ -16,9 +16,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/blang/semver"
+	"github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/mysql-cli-plugin/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/migrate"
 	"github.com/pivotal-cf/mysql-cli-plugin/unpack"
@@ -34,7 +36,7 @@ var (
 type migrator interface {
 	CheckServiceExists(donorInstanceName string) error
 	CreateAndConfigureServiceInstance(planType, serviceName string) error
-	MigrateData(donorInstanceName, recipientInstanceName string) error
+	MigrateData(donorInstanceName, recipientInstanceName string, cleanup bool) error
 	RenameServiceInstances(donorInstanceName, recipientInstanceName string) error
 	CleanupOnError(recipientInstanceName string) error
 }
@@ -53,7 +55,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 
 	if len(args) < 2 {
-		log.Println("Please pass in a command [migrate|replace|version] to mysql-tools")
+		fmt.Fprintln(os.Stderr,"Please pass in a command [migrate|replace|version] to mysql-tools")
 		os.Exit(1)
 		return
 	}
@@ -63,14 +65,14 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 	switch command {
 	default:
-		c.err = errors.Errorf("Unknown command '%s'", command)
+		c.err = errors.Errorf("unknown command '%s'", command)
 	case "version":
 		fmt.Printf("%s (%s)", version, gitSHA)
 		os.Exit(0)
 	case "replace":
-		c.err = Replace(migrator, args)
+		c.err = Replace(migrator, args[2:])
 	case "migrate":
-		c.err = Migrate(migrator, args)
+		c.err = Migrate(migrator, args[2:])
 	}
 }
 
@@ -89,8 +91,8 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 				HelpText: "Plugin to migrate mysql instances",
 				UsageDetails: plugin.Usage{
 					Usage: `mysql-tools
-    cf mysql-tools migrate <v1-service-instance> <v2-service-instance>
-    cf mysql-tools replace <v1-service-instance> <v2-service-instance>
+	cf mysql-tools migrate [--no-cleanup] <v1-service-instance> --create <plan-type>
+	cf mysql-tools replace [--no-cleanup] <v1-service-instance> <v2-service-instance>
 `,
 				},
 			},
@@ -99,12 +101,30 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 }
 
 func Replace(migrator migrator, args []string) error {
-	if len(args) != 4 {
-		return errors.New("Usage: cf mysql-tools replace <v1-service-instance> <v2-service-instance>")
+	var opts struct {
+		Args struct {
+			Source string `positional-arg-name:"<v1-service-instance>"`
+			Dest   string `positional-arg-name:"<v2-service-instance>"`
+		} `positional-args:"yes" required:"yes"`
+		NoCleanup bool `long:"no-cleanup" description:"don't clean up migration app after a failed migration'"`
 	}
 
-	donorInstanceName := args[2]
-	recipientInstanceName := args[3]
+	parser := flags.NewParser(&opts, flags.None)
+	parser.Name = "cf mysql-tools replace"
+
+	args, err := parser.ParseArgs(args)
+	if err != nil || len(args) != 0 {
+		fmt.Fprintln(os.Stderr, `Usage: cf mysql-tools replace [--no-cleanup] <v1-service-instance> <v2-service-instance>`)
+		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
+		if err != nil {
+			msg = err.Error()
+		}
+		return errors.Errorf("Usage: cf mysql-tools replace [--no-cleanup] <v1-service-instance> <v2-service-instance>\n%s", msg)
+	}
+
+	donorInstanceName := opts.Args.Source
+	recipientInstanceName := opts.Args.Dest
+	cleanup := ! opts.NoCleanup
 
 	if err := migrator.CheckServiceExists(donorInstanceName); err != nil {
 		return err
@@ -114,7 +134,7 @@ func Replace(migrator migrator, args []string) error {
 		return err
 	}
 
-	if err := migrator.MigrateData(donorInstanceName, recipientInstanceName); err != nil {
+	if err := migrator.MigrateData(donorInstanceName, recipientInstanceName, cleanup); err != nil {
 		return err
 	}
 
@@ -122,13 +142,30 @@ func Replace(migrator migrator, args []string) error {
 }
 
 func Migrate(migrator migrator, args []string) error {
-	if len(args) != 5 || args[3] != "--create" {
-		return errors.New("Usage: cf mysql-tools migrate <v1-service-instance> --create <v2-plan>")
+	var opts struct {
+		Args struct {
+			Source string `positional-arg-name:"<v1-service-instance>"`
+		} `positional-args:"yes"`
+		PlanName  string `long:"create" description:"create a new service instance with the given plan" required:"true"`
+		NoCleanup bool   `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
 	}
 
-	donorInstanceName := args[2]
+	parser := flags.NewParser(&opts, flags.None)
+	parser.Name = "cf mysql-tools migrate"
+	parser.Args()
+	args, err := parser.ParseArgs(args)
+	if err != nil || len(args) != 0 {
+		fmt.Fprintln(os.Stderr, `Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> --create <plan-type>`)
+		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
+		if err != nil {
+			msg = err.Error()
+		}
+		return errors.Errorf("Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> --create <plan-type>\n%s", msg)
+	}
+	donorInstanceName := opts.Args.Source
 	recipientInstanceName := donorInstanceName + "-new"
-	destPlan := args[4]
+	destPlan := opts.PlanName
+	cleanup := ! opts.NoCleanup
 
 	if err := migrator.CheckServiceExists(donorInstanceName); err != nil {
 		return err
@@ -144,11 +181,18 @@ func Migrate(migrator migrator, args []string) error {
 		return err
 	}
 
-	if err := migrator.MigrateData(donorInstanceName, recipientInstanceName); err != nil {
+	if err := migrator.MigrateData(donorInstanceName, recipientInstanceName, cleanup); err != nil {
 
-		migrator.CleanupOnError(recipientInstanceName)
+		if cleanup {
+			migrator.CleanupOnError(recipientInstanceName)
 
-		return fmt.Errorf("Error migrating data: %v. Attempting to clean up service %s",
+			return fmt.Errorf("Error migrating data: %v. Attempting to clean up service %s",
+				err,
+				recipientInstanceName,
+			)
+		}
+
+		return fmt.Errorf("Error migrating data: %v. Not cleaning up service %s",
 			err,
 			recipientInstanceName,
 		)

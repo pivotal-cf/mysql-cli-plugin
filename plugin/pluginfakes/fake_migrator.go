@@ -29,11 +29,12 @@ type FakeMigrator struct {
 	createAndConfigureServiceInstanceReturnsOnCall map[int]struct {
 		result1 error
 	}
-	MigrateDataStub        func(donorInstanceName, recipientInstanceName string) error
+	MigrateDataStub        func(donorInstanceName, recipientInstanceName string, cleanup bool) error
 	migrateDataMutex       sync.RWMutex
 	migrateDataArgsForCall []struct {
 		donorInstanceName     string
 		recipientInstanceName string
+		cleanup               bool
 	}
 	migrateDataReturns struct {
 		result1 error
@@ -165,17 +166,18 @@ func (fake *FakeMigrator) CreateAndConfigureServiceInstanceReturnsOnCall(i int, 
 	}{result1}
 }
 
-func (fake *FakeMigrator) MigrateData(donorInstanceName string, recipientInstanceName string) error {
+func (fake *FakeMigrator) MigrateData(donorInstanceName string, recipientInstanceName string, cleanup bool) error {
 	fake.migrateDataMutex.Lock()
 	ret, specificReturn := fake.migrateDataReturnsOnCall[len(fake.migrateDataArgsForCall)]
 	fake.migrateDataArgsForCall = append(fake.migrateDataArgsForCall, struct {
 		donorInstanceName     string
 		recipientInstanceName string
-	}{donorInstanceName, recipientInstanceName})
-	fake.recordInvocation("MigrateData", []interface{}{donorInstanceName, recipientInstanceName})
+		cleanup               bool
+	}{donorInstanceName, recipientInstanceName, cleanup})
+	fake.recordInvocation("MigrateData", []interface{}{donorInstanceName, recipientInstanceName, cleanup})
 	fake.migrateDataMutex.Unlock()
 	if fake.MigrateDataStub != nil {
-		return fake.MigrateDataStub(donorInstanceName, recipientInstanceName)
+		return fake.MigrateDataStub(donorInstanceName, recipientInstanceName, cleanup)
 	}
 	if specificReturn {
 		return ret.result1
@@ -189,10 +191,10 @@ func (fake *FakeMigrator) MigrateDataCallCount() int {
 	return len(fake.migrateDataArgsForCall)
 }
 
-func (fake *FakeMigrator) MigrateDataArgsForCall(i int) (string, string) {
+func (fake *FakeMigrator) MigrateDataArgsForCall(i int) (string, string, bool) {
 	fake.migrateDataMutex.RLock()
 	defer fake.migrateDataMutex.RUnlock()
-	return fake.migrateDataArgsForCall[i].donorInstanceName, fake.migrateDataArgsForCall[i].recipientInstanceName
+	return fake.migrateDataArgsForCall[i].donorInstanceName, fake.migrateDataArgsForCall[i].recipientInstanceName, fake.migrateDataArgsForCall[i].cleanup
 }
 
 func (fake *FakeMigrator) MigrateDataReturns(result1 error) {

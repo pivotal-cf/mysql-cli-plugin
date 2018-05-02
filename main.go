@@ -13,7 +13,8 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 
 	cliplugin "code.cloudfoundry.org/cli/plugin"
 	"github.com/pivotal-cf/mysql-cli-plugin/plugin"
@@ -24,6 +25,7 @@ func main() {
 	cliplugin.Start(mysqlPlugin)
 
 	if err := mysqlPlugin.Err(); err != nil {
-		log.Fatal(err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
 	}
 }

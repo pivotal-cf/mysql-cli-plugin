@@ -44,6 +44,12 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/jessevdk/go-flags"
+  packages = ["."]
+  revision = "c6ca198ec95c841fdb89fc0de7496fed11ab854e"
+  version = "v1.4.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/markbates/grift"
   packages = [
@@ -179,6 +185,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "79ed04958978132fc84f03e65636248b5bba0538a9c9fa48024a4a8bf10e8ec9"
+  inputs-digest = "51de8e361ae369b60445525febe13316d8339b4df7ddaa994d6f773bb5850a0c"
   solver-name = "gps-cdcl"
   solver-version = 1

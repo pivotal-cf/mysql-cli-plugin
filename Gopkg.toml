@@ -33,3 +33,7 @@ required = [ "golang.org/x/sync/errgroup", "github.com/markbates/grift", "github
 [[constraint]]
   name = "github.com/pborman/uuid"
   version = "1.1.0"
+
+[[constraint]]
+  name = "github.com/jessevdk/go-flags"
+  version = "1.4.0"
