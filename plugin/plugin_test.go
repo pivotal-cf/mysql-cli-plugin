@@ -56,19 +56,6 @@ var _ = Describe("Plugin Commands", func() {
 			Expect(fakeMigrator.CleanupOnErrorCallCount()).To(BeZero())
 		})
 
-		It("doesn't clean up when the --no-cleanup flag is passed", func() {
-			fakeMigrator.MigrateDataReturns(errors.New("some-error"))
-			args := []string{
-				"some-donor", "--create", "some-plan", "--no-cleanup",
-			}
-
-			Expect(plugin.Migrate(fakeMigrator, args)).NotTo(Succeed())
-			Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
-			_, _, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
-			Expect(cleanup).To(BeFalse())
-			Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
-		})
-
 		It("returns an error if the donor service instance does not exist", func() {
 			fakeMigrator.CheckServiceExistsReturns(errors.New("some-donor does not exist"))
 
@@ -96,19 +83,56 @@ var _ = Describe("Plugin Commands", func() {
 			Expect(err).To(MatchError("Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> --create <plan-type>\nunknown flag `invalid-flag'"))
 		})
 
-		It("returns an error if creating a service instance fails", func() {
-			fakeMigrator.CreateAndConfigureServiceInstanceReturns(errors.New("some-cf-error"))
-			args := []string{"some-donor", "--create", "some-plan"}
-			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError("some-cf-error"))
+		Context("when creating a service instance fails", func() {
+			BeforeEach(func() {
+				fakeMigrator.CreateAndConfigureServiceInstanceReturns(errors.New("some-cf-error"))
+			})
+
+			It("returns an error and attempts to delete the new service instance", func() {
+				args := []string{"some-donor", "--create", "some-plan"}
+				err := plugin.Migrate(fakeMigrator, args)
+				Expect(err).To(MatchError(MatchRegexp("error creating service instance: some-cf-error. Attempting to clean up service some-donor-new")))
+				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(1))
+			})
+
+			It("returns an error and doesn't clean up when the --no-cleanup flag is passed", func() {
+				args := []string{
+					"some-donor", "--create", "some-plan", "--no-cleanup",
+				}
+
+				err := plugin.Migrate(fakeMigrator, args)
+				Expect(err).To(MatchError("error creating service instance: some-cf-error. Not cleaning up service some-donor-new"))
+				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
+			})
 		})
 
-		It("returns an error and attempts to delete the new service instance if migrating data fails", func() {
-			fakeMigrator.MigrateDataReturns(errors.New("some-cf-error"))
-			args := []string{"some-donor", "--create", "some-plan"}
-			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(MatchRegexp("Error migrating data: some-cf-error. Attempting to clean up service some-donor-new")))
-			Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(1))
+		Context("when migrating data fails", func() {
+			BeforeEach(func() {
+				fakeMigrator.MigrateDataReturns(errors.New("some-cf-error"))
+			})
+
+			It("returns an error and attempts to delete the new service instance", func() {
+				args := []string{"some-donor", "--create", "some-plan"}
+				err := plugin.Migrate(fakeMigrator, args)
+				Expect(err).To(MatchError(MatchRegexp("error migrating data: some-cf-error. Attempting to clean up service some-donor-new")))
+				_, _, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
+				Expect(cleanup).To(BeTrue())
+				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(1))
+			})
+
+			It("returns an error and doesn't clean up when the --no-cleanup flag is passed", func() {
+				args := []string{
+					"some-donor", "--create", "some-plan", "--no-cleanup",
+				}
+
+				err := plugin.Migrate(fakeMigrator, args)
+
+				Expect(err).To(MatchError("error migrating data: some-cf-error. Not cleaning up service some-donor-new"))
+				Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
+				_, _, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
+				Expect(cleanup).To(BeFalse())
+				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
+			})
 		})
 	})
 
@@ -173,7 +197,6 @@ var _ = Describe("Plugin Commands", func() {
 			err := plugin.Replace(fakeMigrator, args)
 			Expect(err).To(MatchError("Usage: cf mysql-tools replace [--no-cleanup] <v1-service-instance> <v2-service-instance>\nunknown flag `invalid-flag'"))
 		})
-
 
 		It("returns an error if migrating data fails", func() {
 			fakeMigrator.MigrateDataReturns(errors.New("some-cf-error"))

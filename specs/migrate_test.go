@@ -13,12 +13,13 @@
 package specs
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
+	_ "github.com/go-sql-driver/mysql"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -102,7 +103,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "5m", "1s").Should(gexec.Exit(0))
+				Eventually(session, "10m", "1s").Should(gexec.Exit(0))
 			})
 
 			By("Binding the app to the newly created destination instance and reading back data", func() {
@@ -124,6 +125,17 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 		})
 
+		It("doesn't delete the migration app when the --no-cleanup flag is specified", func() {
+			cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, "--create", destPlan)
+			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, "5m", "1s").Should(gexec.Exit(0))
+
+			destGUID := test_helpers.InstanceUUID(destInstance)
+			guids := test_helpers.BoundAppGUIDs(destGUID)
+			Expect(guids).NotTo(BeEmpty())
+		})
+
 		It("fails on invalid service plan", func() {
 			cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", "fake-service-plan")
 			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -134,42 +146,77 @@ var _ = Describe("Migrate Integration Tests", func() {
 	})
 
 	Context("When migration fails", func() {
-		var (
-			sourceInstanceRenamed string
-		)
 		BeforeEach(func() {
 			sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
-			sourceInstanceRenamed = sourceInstance + "-renamed"
 			test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
 			destInstance = sourceInstance + "-new"
-
 			test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
+
+			createInvalidMigrationState(sourceInstance)
 		})
 
 		AfterEach(func() {
-			test_helpers.DeleteService(sourceInstanceRenamed)
+			test_helpers.DeleteService(sourceInstance)
+			test_helpers.DeleteService(destInstance)
 			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
-			test_helpers.WaitForService(sourceInstanceRenamed, fmt.Sprintf("Service instance %s not found", sourceInstanceRenamed))
+			test_helpers.WaitForService(sourceInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
 		})
 
-		It("Deletes the recipient service instance after migration failure", func() {
-			var (
-				session *gexec.Session
-				err     error
-			)
+		It("Deletes the recipient service instance", func() {
+			cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", destPlan)
+			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
 
-			By("Starting the migration", func() {
-				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", destPlan)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).NotTo(HaveOccurred())
-			})
+			Eventually(session, "10m", "1s").Should(gexec.Exit(1))
+			test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+delete in progress`)
+		})
 
-			By("Renaming the donor instance while recipient instance is being created", func() {
-				time.Sleep(10 * time.Second)
-				test_helpers.ExecuteCfCmd("rename-service", sourceInstance, sourceInstanceRenamed)
-			})
+		It("Does not delete the recipient service instance when the --no-cleanup flag is specified", func() {
+			cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, "--create", destPlan)
+			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(session, "5m", "1s").Should(gexec.Exit(1))
+			Eventually(session, "10m", "1s").Should(gexec.Exit(1))
+			test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
+
+			destGUID := test_helpers.InstanceUUID(destInstance)
+			guids := test_helpers.BoundAppGUIDs(destGUID)
+			Expect(guids).NotTo(BeEmpty())
 		})
 	})
 })
+
+func createInvalidMigrationState(sourceInstance string) {
+	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
+	sourceServiceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
+
+	test_helpers.PushApp(appName, "assets/spring-music")
+	test_helpers.BindAppToService(appName, sourceInstance)
+	defer test_helpers.DeleteApp(appName)
+
+	test_helpers.StartApp(appName)
+
+	serviceKeyCreds := test_helpers.GetServiceKey(sourceInstance, sourceServiceKey)
+	defer test_helpers.DeleteServiceKey(sourceInstance, sourceServiceKey)
+
+	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
+	defer closeTunnel()
+
+	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63308)/%s",
+		serviceKeyCreds.Username,
+		serviceKeyCreds.Password,
+		serviceKeyCreds.Name,
+	)
+	db, err := sql.Open("mysql", dsn)
+	Expect(err).NotTo(HaveOccurred())
+	defer db.Close()
+
+	_, err = db.Exec("CREATE TABLE migrate_fail (id VARCHAR(1))")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("CREATE VIEW migrate_fail_view AS SELECT * FROM migrate_fail")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("DROP TABLE migrate_fail")
+	Expect(err).NotTo(HaveOccurred())
+}

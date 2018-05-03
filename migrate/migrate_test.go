@@ -119,13 +119,13 @@ var _ = Describe("CreateAndConfigureServiceInstance", func() {
 			fakeClient.GetHostnamesReturns(nil, errors.New("get hostname failed"))
 		})
 
-		It("Fails, after attempting to delete the newly created service instance", func() {
+		It("Fails", func() {
 			err := migrator.CreateAndConfigureServiceInstance(planType, recipientName)
 
 			Expect(err).To(MatchError("Error obtaining hostname for new service instance: get hostname failed"))
 			Expect(fakeClient.CreateServiceInstanceCallCount()).To(Equal(1))
 			Expect(fakeClient.GetHostnamesCallCount()).To(Equal(1))
-			Expect(fakeClient.DeleteServiceInstanceCallCount()).To(Equal(1))
+			Expect(fakeClient.DeleteServiceInstanceCallCount()).To(Equal(0))
 			Expect(fakeClient.UpdateServiceConfigCallCount()).To(Equal(0))
 
 		})
@@ -173,7 +173,7 @@ var _ = Describe("MigrateData", func() {
 		})
 
 		It("Migrates data from the donor instance to the recipient instance", func() {
-			err := migrator.MigrateData(donorName, recipientName)
+			err := migrator.MigrateData(donorName, recipientName, true)
 
 			By("Unpacking the migration app", func() {
 				Expect(fakeUnpacker.UnpackCallCount()).To(Equal(1))
@@ -200,6 +200,15 @@ var _ = Describe("MigrateData", func() {
 			})
 
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		Context("when told to not cleanup", func() {
+			It("keeps the application around for inspection", func() {
+				err := migrator.MigrateData(donorName, recipientName, false)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(fakeClient.DeleteAppCallCount()).To(BeZero())
+			})
 		})
 	})
 })

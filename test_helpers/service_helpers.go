@@ -378,7 +378,7 @@ func OpenDatabaseTunnelToApp(port int, appName string, serviceKey ServiceKey) co
 
 func waitForTunnel(port int, serviceKey ServiceKey) {
 	connectionString := fmt.Sprintf(
-		"%s:%s@tcp(127.0.0.1:%d)/%s?interpolateParams=true&tls=skip-verify",
+		"%s:%s@tcp(127.0.0.1:%d)/%s?interpolateParams=true",
 		serviceKey.Username,
 		serviceKey.Password,
 		port,

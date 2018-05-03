@@ -109,7 +109,7 @@ var _ = Describe("Replace Integration Tests", func() {
 			cmd := exec.Command("cf", "mysql-tools", "replace", sourceInstance, destInstance)
 			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "5m", "1s").Should(gexec.Exit(0))
+			Eventually(session, "10m", "1s").Should(gexec.Exit(0))
 		})
 
 		By("Verifying the destination service was renamed to the source's name", func() {

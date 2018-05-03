@@ -72,7 +72,6 @@ func (m *Migrator) CreateAndConfigureServiceInstance(planType, serviceName strin
 
 	hostnames, err := m.client.GetHostnames(serviceName)
 	if err != nil {
-		m.client.DeleteServiceInstance(serviceName)
 		return errors.Wrap(err, "Error obtaining hostname for new service instance")
 	}
 
@@ -91,7 +90,6 @@ func (m *Migrator) MigrateData(donorInstanceName, recipientInstanceName string, 
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
 
 	if err != nil {
-
 		return errors.Errorf("Error creating temp directory: %s", err)
 	}
 	defer os.RemoveAll(tmpDir)

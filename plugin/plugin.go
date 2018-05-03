@@ -178,21 +178,31 @@ func Migrate(migrator migrator, args []string) error {
 
 	log.Printf("Creating new service instance %q for service %s using plan %s", recipientInstanceName, productName, destPlan)
 	if err := migrator.CreateAndConfigureServiceInstance(destPlan, recipientInstanceName); err != nil {
-		return err
-	}
-
-	if err := migrator.MigrateData(donorInstanceName, recipientInstanceName, cleanup); err != nil {
-
 		if cleanup {
 			migrator.CleanupOnError(recipientInstanceName)
-
-			return fmt.Errorf("Error migrating data: %v. Attempting to clean up service %s",
+			return fmt.Errorf("error creating service instance: %v. Attempting to clean up service %s",
 				err,
 				recipientInstanceName,
 			)
 		}
 
-		return fmt.Errorf("Error migrating data: %v. Not cleaning up service %s",
+		return fmt.Errorf("error creating service instance: %v. Not cleaning up service %s",
+			err,
+			recipientInstanceName,
+		)
+	}
+
+	if err := migrator.MigrateData(donorInstanceName, recipientInstanceName, cleanup); err != nil {
+		if cleanup {
+			migrator.CleanupOnError(recipientInstanceName)
+
+			return fmt.Errorf("error migrating data: %v. Attempting to clean up service %s",
+				err,
+				recipientInstanceName,
+			)
+		}
+
+		return fmt.Errorf("error migrating data: %v. Not cleaning up service %s",
 			err,
 			recipientInstanceName,
 		)
