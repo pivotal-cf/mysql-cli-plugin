@@ -49,11 +49,19 @@ type Entity struct {
 }
 
 type Resource struct {
-	Entity Entity `json:"entity"`
+	Entity   Entity   `json:"entity"`
+	Metadata Metadata `json:"metadata"`
 }
 
 type BindingResult struct {
 	Resources []Resource `json:"resources"`
+}
+
+type Metadata struct {
+	CreatedAt string `json:"created_at"`
+	GUID      string `json:"guid"`
+	UpdatedAt string `json:"updated_at"`
+	URL       string `json:"url"`
 }
 
 func CreateService(serviceName string, planName string, name string, args ...string) {
@@ -78,7 +86,7 @@ func CreateInstanceAndWait(args ...string) string {
 }
 
 func DeleteService(name string) {
-	if ResourceExists("service", name) {
+	if ! ResourceDeleted("service", name) {
 		output := ExecuteCfCmd("delete-service", name, "-f")
 		Expect(output).To(SatisfyAny(
 			ContainSubstring("Delete in progress"),
@@ -93,11 +101,11 @@ func DeleteInstanceAndWait(instanceName string) {
 	WaitForService(instanceName, fmt.Sprintf("Service instance %s not found", instanceName))
 }
 
-func ResourceExists(resourceType string, resourceName string) bool {
+func ResourceDeleted(resourceType string, resourceName string) bool {
 	session := cf.Cf(resourceType, resourceName).Wait(cfCommandTimeout)
 	output := string(session.Out.Contents())
 
-	return !strings.Contains(output, "not found")
+	return strings.Contains(output, "not found") || strings.Contains(output, "delete in progress")
 }
 
 func WaitForService(name string, success string) {
@@ -225,6 +233,19 @@ func BoundAppGUIDs(instanceGUID string) []string {
 	return appGUIDs
 }
 
+func UnbindAllAppsFromService(instanceGUID string) {
+	var binding BindingResult
+	var session *gexec.Session
+	bindingResponse := cf.Cf("curl", fmt.Sprintf("/v2/service_instances/%s/service_bindings", instanceGUID)).Wait(cfCommandTimeout).Out.Contents()
+	err := json.Unmarshal(bindingResponse, &binding)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	for _, resource := range binding.Resources {
+		session = cf.Cf("curl", "-X", "DELETE", resource.Metadata.URL).Wait(cfCommandTimeout)
+		ExpectWithOffset(1, session.ExitCode()).To(Equal(0))
+	}
+}
+
 func BindAppToService(appName string, instance string) {
 	output := cf.Cf("bind-service", appName, instance).Wait(cfCommandTimeout).Out.Contents()
 	Expect(string(output)).To(ContainSubstring("Binding service %s to app %s", instance, appName))
@@ -326,7 +347,6 @@ func WriteData(skipSSLValidation bool, appURI string, value string) string {
 	Expect(err).ToNot(HaveOccurred())
 
 	Expect(resp.StatusCode).To(Equal(http.StatusOK), string(writtenData))
-
 
 	var inputAlbum album
 	Expect(json.Unmarshal([]byte(writtenData), &inputAlbum)).To(Succeed())

@@ -121,19 +121,30 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 				Expect(serviceKey.TLS.Cert.CA).
 					NotTo(BeEmpty(),
-						"Expected recipient service instance to be TLS enabled, but it was not")
+					"Expected recipient service instance to be TLS enabled, but it was not")
 			})
 		})
 
-		It("doesn't delete the migration app when the --no-cleanup flag is specified", func() {
-			cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, "--create", destPlan)
-			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, "5m", "1s").Should(gexec.Exit(0))
+		Context("when the --no-cleanup flag is specified", func() {
+			var (
+				destinationGUID string
+			)
+			AfterEach(func() {
+				srcGUID := test_helpers.InstanceUUID(sourceInstance)
+				test_helpers.UnbindAllAppsFromService(srcGUID)
+				test_helpers.UnbindAllAppsFromService(destinationGUID)
+			})
 
-			destGUID := test_helpers.InstanceUUID(destInstance)
-			guids := test_helpers.BoundAppGUIDs(destGUID)
-			Expect(guids).NotTo(BeEmpty())
+			It("doesn't delete the migration app when the --no-cleanup flag is specified", func() {
+				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, "--create", destPlan)
+				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, "10m", "1s").Should(gexec.Exit(0))
+
+				destinationGUID = test_helpers.InstanceUUID(destInstance)
+				appGUIDs := test_helpers.BoundAppGUIDs(destinationGUID)
+				Expect(appGUIDs).NotTo(BeEmpty())
+			})
 		})
 
 		It("fails on invalid service plan", func() {
@@ -158,8 +169,8 @@ var _ = Describe("Migrate Integration Tests", func() {
 		AfterEach(func() {
 			test_helpers.DeleteService(sourceInstance)
 			test_helpers.DeleteService(destInstance)
-			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
 			test_helpers.WaitForService(sourceInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
+			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
 		})
 
 		It("Deletes the recipient service instance", func() {
@@ -168,20 +179,32 @@ var _ = Describe("Migrate Integration Tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(session, "10m", "1s").Should(gexec.Exit(1))
-			test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+delete in progress`)
+			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
 		})
 
-		It("Does not delete the recipient service instance when the --no-cleanup flag is specified", func() {
-			cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, "--create", destPlan)
-			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
+		Context ("When --no-cleanup flag is specified", func() {
+			var (
+				destinationGUID string
+			)
+			AfterEach(func() {
+				srcGUID := test_helpers.InstanceUUID(sourceInstance)
+				test_helpers.UnbindAllAppsFromService(srcGUID)
+				test_helpers.UnbindAllAppsFromService(destinationGUID)
+			})
 
-			Eventually(session, "10m", "1s").Should(gexec.Exit(1))
-			test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
+			It("Does not delete the recipient service instance when the --no-cleanup flag is specified", func() {
+				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, "--create", destPlan)
+				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
 
-			destGUID := test_helpers.InstanceUUID(destInstance)
-			guids := test_helpers.BoundAppGUIDs(destGUID)
-			Expect(guids).NotTo(BeEmpty())
+				Eventually(session, "10m", "1s").Should(gexec.Exit(1))
+				test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
+
+				destinationGUID = test_helpers.InstanceUUID(destInstance)
+
+				appGUIDs := test_helpers.BoundAppGUIDs(destinationGUID)
+				Expect(appGUIDs).NotTo(BeEmpty())
+			})
 		})
 	})
 })
@@ -192,7 +215,10 @@ func createInvalidMigrationState(sourceInstance string) {
 
 	test_helpers.PushApp(appName, "assets/spring-music")
 	test_helpers.BindAppToService(appName, sourceInstance)
-	defer test_helpers.DeleteApp(appName)
+	defer func() {
+		test_helpers.DeleteApp(appName)
+		test_helpers.AssertAppIsDeleted(appName)
+	}()
 
 	test_helpers.StartApp(appName)
 
