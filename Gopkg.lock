@@ -32,6 +32,12 @@
   revision = "1a8c223f1cc4110cc866f7298ff622b83e274173"
 
 [[projects]]
+  name = "github.com/go-sql-driver/mysql"
+  packages = ["."]
+  revision = "a0583e0143b1624142adab07e0e97fe106d99561"
+  version = "v1.3"
+
+[[projects]]
   name = "github.com/gobuffalo/packr"
   packages = ["."]
   revision = "7f4074995d431987caaa35088199f13c44b24440"
@@ -185,6 +191,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "51de8e361ae369b60445525febe13316d8339b4df7ddaa994d6f773bb5850a0c"
+  inputs-digest = "3f5ba74fc7de150bcf85a4f15857b9d2b02e378d8da0f738b547874c6d96d5a9"
   solver-name = "gps-cdcl"
   solver-version = 1
