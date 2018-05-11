@@ -154,6 +154,22 @@ var _ = Describe("Plugin Commands", func() {
 				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
 			})
 		})
+
+		Context("when renaming the service instances fail", func() {
+			BeforeEach(func() {
+				fakeMigrator.RenameServiceInstancesReturns(errors.New("some-cf-error"))
+			})
+
+			It("returns an error and doesn't clean up regardless of --no-cleanup flag", func() {
+				args := []string{"some-donor", "--create", "some-plan"}
+				err := plugin.Migrate(fakeMigrator, args)
+				Expect(err).To(MatchError("some-cf-error"))
+				Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
+				_, _, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
+				Expect(cleanup).To(BeFalse())
+				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
+			})
+		})
 	})
 
 	Context("Replace", func() {

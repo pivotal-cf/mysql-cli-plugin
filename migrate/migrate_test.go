@@ -230,13 +230,34 @@ var _ = Describe("RenameServiceInstances", func() {
 		migrator = NewMigrator(fakeClient, fakeUnpacker)
 	})
 
-	Context("If a service instance with the donor name appended with '-old' already exists", func() {
-		It("Fails", func() {
-			fakeClient.RenameServiceReturns(errors.New("The service instance name is taken: some-donor-instance-old"))
+	Context("When renaming the donor instance fails", func() {
+		It("tells the operator what command to run to complete the migration", func() {
+			fakeClient.RenameServiceReturnsOnCall(0,
+				errors.New("The service instance name is taken: some-donor-instance-old"))
 
 			err := migrator.RenameServiceInstances(donorName, recipientName)
 
-			Expect(err).To(MatchError("Error renaming service instance some-donor-instance: The service instance name is taken: some-donor-instance-old"))
+			renameError := `Error renaming service instance some-donor-instance: The service instance name is taken: some-donor-instance-old.
+The migration of data from some-donor-instance to a newly created service instance with name: some-donor-instance-new has successfully completed.
+
+In order to complete the data migration, please run 'cf rename-service some-donor-instance some-donor-instance-old' and 
+'cf rename-service some-donor-instance-new some-donor-instance' to complete the migration process.`
+			Expect(err).To(MatchError(renameError))
+		})
+	})
+
+	Context("When renaming the recipient instance fails", func() {
+		It("tells the operator what command to run to complete the migration", func() {
+			fakeClient.RenameServiceReturnsOnCall(1,
+				errors.New("The service instance name is taken: some-donor-instance"))
+
+			err := migrator.RenameServiceInstances(donorName, recipientName)
+
+			renameError := `Error renaming service instance some-donor-instance: The service instance name is taken: some-donor-instance.
+The migration of data from some-donor-instance to a newly created service instance with name: some-donor-instance-new has successfully completed.
+
+In order to complete the data migration, please run 'cf rename-service some-donor-instance-new some-donor-instance' to complete the migration process.`
+			Expect(err).To(MatchError(renameError))
 		})
 	})
 

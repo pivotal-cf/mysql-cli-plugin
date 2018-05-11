@@ -145,11 +145,22 @@ func (m *Migrator) MigrateData(donorInstanceName, recipientInstanceName string, 
 func (m *Migrator) RenameServiceInstances(donorInstanceName, recipientInstanceName string) error {
 	newDonorInstanceName := donorInstanceName + "-old"
 	if err := m.client.RenameService(donorInstanceName, newDonorInstanceName); err != nil {
-		return fmt.Errorf("Error renaming service instance %s: %s", donorInstanceName, err)
+		renameError := `Error renaming service instance %[1]s: %[2]s.
+The migration of data from %[1]s to a newly created service instance with name: %[1]s-new has successfully completed.
+
+In order to complete the data migration, please run 'cf rename-service %[1]s %[1]s-old' and 
+'cf rename-service %[1]s-new %[1]s' to complete the migration process.`
+
+		return fmt.Errorf(renameError, donorInstanceName, err)
 	}
 
 	if err := m.client.RenameService(recipientInstanceName, donorInstanceName); err != nil {
-		return fmt.Errorf("Error renaming service instance %s: %s", recipientInstanceName, err)
+		renameError := `Error renaming service instance %[1]s: %[2]s.
+The migration of data from %[1]s to a newly created service instance with name: %[1]s-new has successfully completed.
+
+In order to complete the data migration, please run 'cf rename-service %[1]s-new %[1]s' to complete the migration process.`
+
+		return fmt.Errorf(renameError, donorInstanceName, err)
 	}
 
 	return nil
