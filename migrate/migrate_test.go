@@ -246,8 +246,14 @@ var _ = Describe("RenameServiceInstances", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fakeClient.RenameServiceCallCount()).To(Equal(2))
 
-	})
+		previousDonorName, newDonorName := fakeClient.RenameServiceArgsForCall(0)
+		Expect(previousDonorName).To(Equal(donorName))
+		Expect(newDonorName).To(Equal("some-donor-instance-old"))
 
+		previousRecipientName, newRecipientName := fakeClient.RenameServiceArgsForCall(1)
+		Expect(previousRecipientName).To(Equal(recipientName))
+		Expect(newRecipientName).To(Equal(donorName))
+	})
 })
 
 var _ = Describe("CleanupOnError", func() {

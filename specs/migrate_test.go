@@ -14,9 +14,11 @@ package specs
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	_ "github.com/go-sql-driver/mysql"
@@ -28,12 +30,14 @@ import (
 
 var _ = Describe("Migrate Integration Tests", func() {
 	var (
-		appDomain      string
-		appName        string
-		destInstance   string
-		destPlan       string
-		sourceInstance string
-		serviceKey     = "tls-key"
+		appDomain          string
+		appName            string
+		destInstance       string
+		destPlan           string
+		sourceInstance     string
+		sourceInstanceGUID string
+		destInstanceGUID   string
+		serviceKey         = "tls-key"
 	)
 
 	BeforeEach(func() {
@@ -57,6 +61,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 			destInstance = sourceInstance + "-new"
 
 			test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
+			sourceInstanceGUID = test_helpers.InstanceUUID(sourceInstance)
 		})
 
 		AfterEach(func() {
@@ -106,18 +111,42 @@ var _ = Describe("Migrate Integration Tests", func() {
 				Eventually(session, "10m", "1s").Should(gexec.Exit(0))
 			})
 
+			By("Verifying the destination service was renamed to the source's name", func() {
+				destInstanceGUID = test_helpers.InstanceUUID(sourceInstance)
+				Expect(destInstanceGUID).NotTo(Equal(sourceInstanceGUID))
+			})
+
 			By("Binding the app to the newly created destination instance and reading back data", func() {
-				test_helpers.BindAppToService(appName, destInstance)
+				test_helpers.BindAppToService(appName, sourceInstance)
 				test_helpers.ExecuteCfCmd("restage", appName)
 
 				readValue = test_helpers.ReadData(true, appURI, albumID)
 				Expect(readValue).To(Equal(writeValue))
 			})
 
+			By("Verifying that the credhub reference in the binding only contains the destination service's GUID", func() {
+				appGUID := strings.TrimSpace(test_helpers.ExecuteCfCmd("app", appName, "--guid"))
+
+				envOutput := test_helpers.ExecuteCfCmd("curl", fmt.Sprintf("/v2/apps/%s/env", appGUID))
+
+				var result envResult
+
+				err := json.Unmarshal([]byte(envOutput), &result)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(result.Env.VCAPServices).To(HaveKey(os.Getenv("RECIPIENT_SERVICE_NAME")))
+				mysqlServices := result.Env.VCAPServices[os.Getenv("RECIPIENT_SERVICE_NAME")]
+
+				Expect(mysqlServices).To(HaveLen(1))
+				Expect(mysqlServices[0].Credentials).To(HaveKey("credhub-ref"))
+				Expect(mysqlServices[0].Credentials["credhub-ref"]).To(ContainSubstring(destInstanceGUID))
+				Expect(mysqlServices[0].Credentials["credhub-ref"]).NotTo(ContainSubstring(sourceInstanceGUID))
+			})
+
 			By("Verifying TLS was enabled on the recipient instance", func() {
-				test_helpers.CreateServiceKey(destInstance, "tls-check")
-				serviceKey := test_helpers.GetServiceKey(destInstance, "tls-check")
-				test_helpers.DeleteServiceKey(destInstance, "tls-check")
+				test_helpers.CreateServiceKey(sourceInstance, "tls-check")
+				serviceKey := test_helpers.GetServiceKey(sourceInstance, "tls-check")
+				test_helpers.DeleteServiceKey(sourceInstance, "tls-check")
 
 				Expect(serviceKey.TLS.Cert.CA).
 					NotTo(BeEmpty(),
@@ -182,7 +211,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
 		})
 
-		Context ("When --no-cleanup flag is specified", func() {
+		Context("When --no-cleanup flag is specified", func() {
 			var (
 				destinationGUID string
 			)

@@ -55,7 +55,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 
 	if len(args) < 2 {
-		fmt.Fprintln(os.Stderr,"Please pass in a command [migrate|replace|version] to mysql-tools")
+		fmt.Fprintln(os.Stderr, "Please pass in a command [migrate|replace|version] to mysql-tools")
 		os.Exit(1)
 		return
 	}
@@ -163,7 +163,7 @@ func Migrate(migrator migrator, args []string) error {
 		return errors.Errorf("Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> --create <plan-type>\n%s", msg)
 	}
 	donorInstanceName := opts.Args.Source
-	recipientInstanceName := donorInstanceName + "-new"
+	tempRecipientInstanceName := donorInstanceName + "-new"
 	destPlan := opts.PlanName
 	cleanup := ! opts.NoCleanup
 
@@ -176,39 +176,39 @@ func Migrate(migrator migrator, args []string) error {
 		productName = "p.mysql"
 	}
 
-	log.Printf("Creating new service instance %q for service %s using plan %s", recipientInstanceName, productName, destPlan)
-	if err := migrator.CreateAndConfigureServiceInstance(destPlan, recipientInstanceName); err != nil {
+	log.Printf("Creating new service instance %q for service %s using plan %s", tempRecipientInstanceName, productName, destPlan)
+	if err := migrator.CreateAndConfigureServiceInstance(destPlan, tempRecipientInstanceName); err != nil {
 		if cleanup {
-			migrator.CleanupOnError(recipientInstanceName)
+			migrator.CleanupOnError(tempRecipientInstanceName)
 			return fmt.Errorf("error creating service instance: %v. Attempting to clean up service %s",
 				err,
-				recipientInstanceName,
+				tempRecipientInstanceName,
 			)
 		}
 
 		return fmt.Errorf("error creating service instance: %v. Not cleaning up service %s",
 			err,
-			recipientInstanceName,
+			tempRecipientInstanceName,
 		)
 	}
 
-	if err := migrator.MigrateData(donorInstanceName, recipientInstanceName, cleanup); err != nil {
+	if err := migrator.MigrateData(donorInstanceName, tempRecipientInstanceName, cleanup); err != nil {
 		if cleanup {
-			migrator.CleanupOnError(recipientInstanceName)
+			migrator.CleanupOnError(tempRecipientInstanceName)
 
 			return fmt.Errorf("error migrating data: %v. Attempting to clean up service %s",
 				err,
-				recipientInstanceName,
+				tempRecipientInstanceName,
 			)
 		}
 
 		return fmt.Errorf("error migrating data: %v. Not cleaning up service %s",
 			err,
-			recipientInstanceName,
+			tempRecipientInstanceName,
 		)
 	}
 
-	return nil
+	return migrator.RenameServiceInstances(donorInstanceName, tempRecipientInstanceName)
 }
 
 func versionFromSemver(in string) plugin.VersionType {
