@@ -88,7 +88,7 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 				Name:     "mysql-tools",
 				HelpText: "Plugin to migrate mysql instances",
 				UsageDetails: plugin.Usage{
-					Usage: `mysql-tools cf mysql-tools migrate [--no-cleanup] <v1-service-instance> --create <plan-type> `,
+					Usage: `mysql-tools cf mysql-tools migrate [--no-cleanup] <v1-service-instance> <plan-type> `,
 				},
 			},
 		},
@@ -99,8 +99,8 @@ func Migrate(migrator migrator, args []string) error {
 	var opts struct {
 		Args struct {
 			Source string `positional-arg-name:"<v1-service-instance>"`
-		} `positional-args:"yes"`
-		PlanName  string `long:"create" description:"create a new service instance with the given plan" required:"true"`
+			PlanName string `positional-arg-name:"<plan-type>"`
+		} `positional-args:"yes" required:"yes"`
 		NoCleanup bool   `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
 	}
 
@@ -109,16 +109,16 @@ func Migrate(migrator migrator, args []string) error {
 	parser.Args()
 	args, err := parser.ParseArgs(args)
 	if err != nil || len(args) != 0 {
-		fmt.Fprintln(os.Stderr, `Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> --create <plan-type>`)
+		fmt.Fprintln(os.Stderr, `Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> <plan-type>`)
 		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
 		if err != nil {
 			msg = err.Error()
 		}
-		return errors.Errorf("Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> --create <plan-type>\n%s", msg)
+		return errors.Errorf("Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> <plan-type>\n%s", msg)
 	}
 	donorInstanceName := opts.Args.Source
 	tempRecipientInstanceName := donorInstanceName + "-new"
-	destPlan := opts.PlanName
+	destPlan := opts.Args.PlanName
 	cleanup := ! opts.NoCleanup
 
 	if err := migrator.CheckServiceExists(donorInstanceName); err != nil {

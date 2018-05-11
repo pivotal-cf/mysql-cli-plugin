@@ -115,7 +115,7 @@ func (m *Migrator) MigrateData(donorInstanceName, recipientInstanceName string, 
 	if err = m.client.BindService(m.appName, donorInstanceName); err != nil {
 		return errors.Errorf("failed to bind-service %q to application %q: %s", m.appName, donorInstanceName, err)
 	}
-	log.Print("Successfully bound app to v1 instance") //TODO: shouldn't this say donor instance instead of v1 instance, since it isn't necessarily guaranteed that this will be used with a v1 instance?
+	log.Print("Successfully bound app to v1 instance")
 
 	if err = m.client.BindService(m.appName, recipientInstanceName); err != nil {
 		return errors.Errorf("failed to bind-service %q to application %q: %s", m.appName, recipientInstanceName, err)

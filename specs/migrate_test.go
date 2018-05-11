@@ -56,7 +56,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 	})
 
 	It("fails on invalid donor service instance", func() {
-		cmd := exec.Command("cf", "mysql-tools", "migrate", "fake-donor-service", "--create", destPlan)
+		cmd := exec.Command("cf", "mysql-tools", "migrate", "fake-donor-service", destPlan)
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "1m", "1s").Should(gexec.Exit(1))
@@ -116,7 +116,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 
 			By("Migrating data using the migrate command", func() {
-				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", destPlan)
+				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, "10m", "1s").Should(gexec.Exit(0))
@@ -176,7 +176,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 
 			It("doesn't delete the migration app when the --no-cleanup flag is specified", func() {
-				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, "--create", destPlan)
+				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, "10m", "1s").Should(gexec.Exit(0))
@@ -188,7 +188,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 		})
 
 		It("fails on invalid service plan", func() {
-			cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", "fake-service-plan")
+			cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "fake-service-plan")
 			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(session, "1m", "1s").Should(gexec.Exit(1))
@@ -214,7 +214,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 		})
 
 		It("Deletes the recipient service instance", func() {
-			cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "--create", destPlan)
+			cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destPlan)
 			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -233,7 +233,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 
 			It("Does not delete the recipient service instance when the --no-cleanup flag is specified", func() {
-				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, "--create", destPlan)
+				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
