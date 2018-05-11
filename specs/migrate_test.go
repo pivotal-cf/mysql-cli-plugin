@@ -28,6 +28,17 @@ import (
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
 
+type credential struct {
+	Name        string            `json:"name"`
+	Credentials map[string]string `json:"credentials"`
+}
+
+type envResult struct {
+	Env struct {
+		VCAPServices map[string][]credential `json:"VCAP_SERVICES"`
+	} `json:"system_env_json"`
+}
+
 var _ = Describe("Migrate Integration Tests", func() {
 	var (
 		appDomain          string
@@ -170,7 +181,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, "10m", "1s").Should(gexec.Exit(0))
 
-				destinationGUID = test_helpers.InstanceUUID(destInstance)
+				destinationGUID = test_helpers.InstanceUUID(sourceInstance)
 				appGUIDs := test_helpers.BoundAppGUIDs(destinationGUID)
 				Expect(appGUIDs).NotTo(BeEmpty())
 			})

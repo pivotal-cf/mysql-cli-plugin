@@ -29,7 +29,7 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		Expect(session.Err).To(gbytes.Say(`Please pass in a command \[migrate\|replace\|version\] to mysql-tools`))
+		Expect(session.Err).To(gbytes.Say(`Please pass in a command \[migrate\|version\] to mysql-tools`))
 	})
 
 	It("migrate requires exactly 5 arguments", func() {
@@ -48,15 +48,6 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
 		Expect(session.Err).To(gbytes.Say(`Usage: cf mysql-tools migrate \[--no-cleanup\] <v1-service-instance> --create <plan-type>`))
-	})
-
-	It("replace requires exactly 4 arguments", func() {
-		cmd := exec.Command("cf", "mysql-tools", "replace")
-		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
-
-		Expect(session.Err).To(gbytes.Say(`Usage: cf mysql-tools replace \[--no-cleanup\] <v1-service-instance> <v2-service-instance>`))
 	})
 
 	It("reports an error when given an unknown subcommand", func() {

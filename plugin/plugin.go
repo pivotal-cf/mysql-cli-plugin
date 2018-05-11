@@ -55,7 +55,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 
 	if len(args) < 2 {
-		fmt.Fprintln(os.Stderr, "Please pass in a command [migrate|replace|version] to mysql-tools")
+		fmt.Fprintln(os.Stderr, "Please pass in a command [migrate|version] to mysql-tools")
 		os.Exit(1)
 		return
 	}
@@ -69,8 +69,6 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	case "version":
 		fmt.Printf("%s (%s)", version, gitSHA)
 		os.Exit(0)
-	case "replace":
-		c.err = Replace(migrator, args[2:])
 	case "migrate":
 		c.err = Migrate(migrator, args[2:])
 	}
@@ -90,55 +88,11 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 				Name:     "mysql-tools",
 				HelpText: "Plugin to migrate mysql instances",
 				UsageDetails: plugin.Usage{
-					Usage: `mysql-tools
-	cf mysql-tools migrate [--no-cleanup] <v1-service-instance> --create <plan-type>
-	cf mysql-tools replace [--no-cleanup] <v1-service-instance> <v2-service-instance>
-`,
+					Usage: `mysql-tools cf mysql-tools migrate [--no-cleanup] <v1-service-instance> --create <plan-type> `,
 				},
 			},
 		},
 	}
-}
-
-func Replace(migrator migrator, args []string) error {
-	var opts struct {
-		Args struct {
-			Source string `positional-arg-name:"<v1-service-instance>"`
-			Dest   string `positional-arg-name:"<v2-service-instance>"`
-		} `positional-args:"yes" required:"yes"`
-		NoCleanup bool `long:"no-cleanup" description:"don't clean up migration app after a failed migration'"`
-	}
-
-	parser := flags.NewParser(&opts, flags.None)
-	parser.Name = "cf mysql-tools replace"
-
-	args, err := parser.ParseArgs(args)
-	if err != nil || len(args) != 0 {
-		fmt.Fprintln(os.Stderr, `Usage: cf mysql-tools replace [--no-cleanup] <v1-service-instance> <v2-service-instance>`)
-		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
-		if err != nil {
-			msg = err.Error()
-		}
-		return errors.Errorf("Usage: cf mysql-tools replace [--no-cleanup] <v1-service-instance> <v2-service-instance>\n%s", msg)
-	}
-
-	donorInstanceName := opts.Args.Source
-	recipientInstanceName := opts.Args.Dest
-	cleanup := ! opts.NoCleanup
-
-	if err := migrator.CheckServiceExists(donorInstanceName); err != nil {
-		return err
-	}
-
-	if err := migrator.CheckServiceExists(recipientInstanceName); err != nil {
-		return err
-	}
-
-	if err := migrator.MigrateData(donorInstanceName, recipientInstanceName, cleanup); err != nil {
-		return err
-	}
-
-	return migrator.RenameServiceInstances(donorInstanceName, recipientInstanceName)
 }
 
 func Migrate(migrator migrator, args []string) error {

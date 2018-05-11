@@ -31,9 +31,6 @@ var _ = Describe("Plugin Commands", func() {
 	})
 
 	Context("Migrate", func() {
-		BeforeEach(func() {
-		})
-
 		It("migrates data from a source service instance to a newly created instance", func() {
 			args := []string{
 				"some-donor", "--create", "some-plan",
@@ -68,9 +65,9 @@ var _ = Describe("Plugin Commands", func() {
 			By("renaming the service instances", func() {
 				Expect(fakeMigrator.RenameServiceInstancesCallCount()).
 					To(Equal(1))
-				renamedDonorInstance, renamedRecipientInstance := fakeMigrator.RenameServiceInstancesArgsForCall(0)
-				Expect(renamedDonorInstance).To(Equal("some-donor-old"))
-				Expect(renamedRecipientInstance).To(Equal("some-donor"))
+				donorInstance, recipientName := fakeMigrator.RenameServiceInstancesArgsForCall(0)
+				Expect(donorInstance).To(Equal("some-donor"))
+				Expect(recipientName).To(Equal("some-donor-new"))
 			})
 
 			Expect(fakeMigrator.CleanupOnErrorCallCount()).To(BeZero())
@@ -166,86 +163,9 @@ var _ = Describe("Plugin Commands", func() {
 				Expect(err).To(MatchError("some-cf-error"))
 				Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
 				_, _, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
-				Expect(cleanup).To(BeFalse())
+				Expect(cleanup).To(BeTrue())
 				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
 			})
-		})
-	})
-
-	Context("Replace", func() {
-		It("migrates data from an existing source and destination service and renames the destination to source", func() {
-			args := []string{
-				"some-donor", "some-recipient",
-			}
-			Expect(plugin.Replace(fakeMigrator, args)).To(Succeed())
-
-			By("checking that donor and recipient instances exists", func() {
-				Expect(fakeMigrator.CheckServiceExistsCallCount()).
-					To(Equal(2))
-				Expect(fakeMigrator.CheckServiceExistsArgsForCall(0)).
-					To(Equal("some-donor"))
-				Expect(fakeMigrator.CheckServiceExistsArgsForCall(1)).
-					To(Equal("some-recipient"))
-			})
-
-			By("migrating data from the donor to the recipient", func() {
-				Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
-				migratedDonorName, migratedRecipientname, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
-				Expect(migratedDonorName).To(Equal("some-donor"))
-				Expect(migratedRecipientname).To(Equal("some-recipient"))
-				Expect(cleanup).To(BeTrue())
-			})
-
-			By("renaming the recipient instance to the donor instance", func() {
-				Expect(fakeMigrator.RenameServiceInstancesCallCount()).
-					To(Equal(1))
-				renamedDonorInstance, renamedRecipientInstance := fakeMigrator.RenameServiceInstancesArgsForCall(0)
-				Expect(renamedDonorInstance).To(Equal("some-donor"))
-				Expect(renamedRecipientInstance).To(Equal("some-recipient"))
-			})
-		})
-
-		It("doesn't clean up when the --no-cleanup flag is passed", func() {
-			args := []string{
-				"some-donor", "some-recipient", "--no-cleanup",
-			}
-
-			Expect(plugin.Replace(fakeMigrator, args)).To(Succeed())
-			Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
-			_, _, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
-			Expect(cleanup).To(BeFalse())
-		})
-
-		It("returns an error if not enough args are passed", func() {
-			args := []string{"source-only"}
-			err := plugin.Replace(fakeMigrator, args)
-			Expect(err).To(MatchError("Usage: cf mysql-tools replace [--no-cleanup] <v1-service-instance> <v2-service-instance>\nthe required argument `<v2-service-instance>` was not provided"))
-		})
-
-		It("returns an error if too many args are passed", func() {
-			args := []string{"source", "dest", "extra-dest-not-allowed"}
-			err := plugin.Replace(fakeMigrator, args)
-			Expect(err).To(MatchError("Usage: cf mysql-tools replace [--no-cleanup] <v1-service-instance> <v2-service-instance>\nunexpected arguments: extra-dest-not-allowed"))
-		})
-
-		It("returns an error if an invalid flag is passed", func() {
-			args := []string{"source", "dest", "--invalid-flag"}
-			err := plugin.Replace(fakeMigrator, args)
-			Expect(err).To(MatchError("Usage: cf mysql-tools replace [--no-cleanup] <v1-service-instance> <v2-service-instance>\nunknown flag `invalid-flag'"))
-		})
-
-		It("returns an error if migrating data fails", func() {
-			fakeMigrator.MigrateDataReturns(errors.New("some-cf-error"))
-			args := []string{"some-donor", "some-recipient"}
-			err := plugin.Replace(fakeMigrator, args)
-			Expect(err).To(MatchError("some-cf-error"))
-		})
-
-		It("returns an error if renaming instances fails", func() {
-			fakeMigrator.RenameServiceInstancesReturns(errors.New("some-cf-error"))
-			args := []string{"some-donor", "some-recipient"}
-			err := plugin.Replace(fakeMigrator, args)
-			Expect(err).To(MatchError("some-cf-error"))
 		})
 	})
 })
