@@ -225,14 +225,18 @@ var _ = Describe("Migrate Integration Tests", func() {
 		Context("When --no-cleanup flag is specified", func() {
 			var (
 				destinationGUID string
+				renamedSourceInstance string
 			)
 			AfterEach(func() {
 				srcGUID := test_helpers.InstanceUUID(sourceInstance)
 				test_helpers.UnbindAllAppsFromService(srcGUID)
 				test_helpers.UnbindAllAppsFromService(destinationGUID)
+				test_helpers.DeleteService(renamedSourceInstance)
+				test_helpers.WaitForService(renamedSourceInstance, fmt.Sprintf("Service instance %s not found", renamedSourceInstance))
 			})
 
 			It("Does not delete the recipient service instance when the --no-cleanup flag is specified", func() {
+				renamedSourceInstance = sourceInstance + "-old"
 				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
