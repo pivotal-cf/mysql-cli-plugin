@@ -22,14 +22,38 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
+const usage = `NAME:
+   mysql-tools - Plugin to migrate mysql instances
+
+USAGE:
+   mysql-tools cf mysql-tools migrate [--no-cleanup] <v1-service-instance> <plan-type>`
+
 var _ = Describe("MysqlCliPlugin", func() {
-	It("requires a command", func() {
+	It("displays usage with no arguments", func() {
 		cmd := exec.Command("cf", "mysql-tools")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		Expect(session.Err).To(gbytes.Say(`Please pass in a command \[migrate\|version\] to mysql-tools`))
+		Expect(string(session.Err.Contents())).To(ContainSubstring(usage))
+	})
+
+	It("Displays usage when -h flag is passed to base command", func() {
+		cmd := exec.Command("cf", "mysql-tools", "-h")
+		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "60s", "1s").Should(gexec.Exit(0))
+
+		Expect(string(session.Out.Contents())).To(ContainSubstring(usage))
+	})
+
+	It("Displays usage when -h flag is passed to migrate command", func() {
+		cmd := exec.Command("cf", "mysql-tools", "migrate", "-h")
+		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "60s", "1s").Should(gexec.Exit(0))
+
+		Expect(string(session.Out.Contents())).To(ContainSubstring(usage))
 	})
 
 	It("migrate requires exactly 4 arguments", func() {

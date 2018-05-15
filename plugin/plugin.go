@@ -32,6 +32,12 @@ var (
 	gitSHA  = "unknown"
 )
 
+const usage = `NAME:
+   mysql-tools - Plugin to migrate mysql instances
+
+USAGE:
+   mysql-tools cf mysql-tools migrate [--no-cleanup] <v1-service-instance> <plan-type>`
+
 //go:generate counterfeiter . migrator
 type migrator interface {
 	CheckServiceExists(donorInstanceName string) error
@@ -55,7 +61,9 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	}
 
 	if len(args) < 2 {
-		fmt.Fprintln(os.Stderr, "Please pass in a command [migrate|version] to mysql-tools")
+		// Unfortunately there is no good way currently to show the usage on a plugin
+		// without having `-h` added to the command line, so we hardcode it.
+		fmt.Fprintln(os.Stderr, usage)
 		os.Exit(1)
 		return
 	}
