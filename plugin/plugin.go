@@ -109,7 +109,6 @@ func Migrate(migrator migrator, args []string) error {
 	parser.Args()
 	args, err := parser.ParseArgs(args)
 	if err != nil || len(args) != 0 {
-		fmt.Fprintln(os.Stderr, `Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> <plan-type>`)
 		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
 		if err != nil {
 			msg = err.Error()

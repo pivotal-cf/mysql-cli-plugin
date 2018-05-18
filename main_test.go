@@ -38,7 +38,9 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		Expect(session.Err).To(gbytes.Say(`Usage: cf mysql-tools migrate \[--no-cleanup\] <v1-service-instance> <plan-type>`))
+		Expect(string(session.Err.Contents())).To(Equal(
+			"Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> <plan-type>\n" +
+				"the required arguments `<v1-service-instance>` and `<plan-type>` were not provided\n"))
 	})
 
 	It("reports an error when given an unknown subcommand", func() {
