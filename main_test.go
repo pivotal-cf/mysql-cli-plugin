@@ -22,38 +22,40 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-const usage = `NAME:
+const shortUsage = `cf mysql-tools migrate [-h] [-v] [--no-cleanup] <v1-service-instance> <plan-type>`
+const longUsage = `NAME:
    mysql-tools - Plugin to migrate mysql instances
 
 USAGE:
-   mysql-tools cf mysql-tools migrate [--no-cleanup] <v1-service-instance> <plan-type>`
+   ` + shortUsage
 
 var _ = Describe("MysqlCliPlugin", func() {
-	It("displays usage with no arguments", func() {
+	It("displays short usage string with no arguments", func() {
 		cmd := exec.Command("cf", "mysql-tools")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		Expect(string(session.Err.Contents())).To(ContainSubstring(usage))
+		Expect(string(session.Err.Contents())).To(ContainSubstring(shortUsage))
+		Expect(string(session.Err.Contents())).NotTo(ContainSubstring(longUsage))
 	})
 
-	It("Displays usage when -h flag is passed to base command", func() {
+	It("Displays long usage string when -h flag is passed to base command", func() {
 		cmd := exec.Command("cf", "mysql-tools", "-h")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(0))
 
-		Expect(string(session.Out.Contents())).To(ContainSubstring(usage))
+		Expect(string(session.Out.Contents())).To(ContainSubstring(longUsage))
 	})
 
-	It("Displays usage when -h flag is passed to migrate command", func() {
+	It("Displays long usage string when -h flag is passed to migrate command", func() {
 		cmd := exec.Command("cf", "mysql-tools", "migrate", "-h")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(0))
 
-		Expect(string(session.Out.Contents())).To(ContainSubstring(usage))
+		Expect(string(session.Out.Contents())).To(ContainSubstring(longUsage))
 	})
 
 	It("migrate requires exactly 4 arguments", func() {
@@ -63,8 +65,8 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
 		Expect(string(session.Err.Contents())).To(Equal(
-			"Usage: cf mysql-tools migrate [--no-cleanup] <v1-service-instance> <plan-type>\n" +
-				"the required arguments `<v1-service-instance>` and `<plan-type>` were not provided\n"))
+			"Usage: " + shortUsage +
+				"\nthe required arguments `<v1-service-instance>` and `<plan-type>` were not provided\n"))
 	})
 
 	It("reports an error when given an unknown subcommand", func() {
