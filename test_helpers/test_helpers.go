@@ -28,8 +28,6 @@ import (
 	pollcf "github.com/pivotal-cf/mysql-cli-plugin/test_helpers/poll_cf/cf"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -37,7 +35,6 @@ import (
 )
 
 const (
-	BoshPath                 = "/usr/local/bin/bosh"
 	cfCommandTimeout         = "4m"
 	cfServiceWaitTimeout     = "15m"
 	cfServicePollingInterval = "2s"
@@ -64,6 +61,18 @@ type Metadata struct {
 	URL       string `json:"url"`
 }
 
+func CheckForRequiredEnvVars(envs []string) {
+	var missingEnvs []string
+
+	for _, v := range envs {
+		if os.Getenv(v) == "" {
+			missingEnvs = append(missingEnvs, v)
+		}
+	}
+
+	Expect(missingEnvs).To(BeEmpty(), "Missing environment variables: %s", strings.Join(missingEnvs, ", "))
+}
+
 func CreateService(serviceName string, planName string, name string, args ...string) {
 	createServiceArgs := []string{
 		"create-service",
@@ -78,13 +87,6 @@ func CreateService(serviceName string, planName string, name string, args ...str
 		ContainSubstring("Creating service instance")))
 }
 
-func CreateInstanceAndWait(args ...string) string {
-	instanceName := generator.PrefixedRandomName("MYSQL", "MIGRATE")
-	CreateService(os.Getenv("SERVICE_NAME"), os.Getenv("PLAN_NAME"), instanceName, args...)
-	WaitForService(instanceName, "Status: create succeeded")
-	return instanceName
-}
-
 func DeleteService(name string) {
 	if ! ResourceDeleted("service", name) {
 		output := ExecuteCfCmd("delete-service", name, "-f")
@@ -93,12 +95,6 @@ func DeleteService(name string) {
 			ContainSubstring("Deleting service"),
 		))
 	}
-}
-
-func DeleteInstanceAndWait(instanceName string) {
-	ExpectWithOffset(1, instanceName).NotTo(BeEmpty())
-	DeleteService(instanceName)
-	WaitForService(instanceName, fmt.Sprintf("Service instance %s not found", instanceName))
 }
 
 func ResourceDeleted(resourceType string, resourceName string) bool {
@@ -132,15 +128,6 @@ func AppUUID(name string) string {
 func resourceGUID(resourceType string, name string) string {
 	output := ExecuteCfCmd(resourceType, name, "--guid")
 	return strings.TrimSpace(output)
-}
-
-func InstanceDeploymentName(instanceUUID string) string {
-	return fmt.Sprintf("service-instance_%s", instanceUUID)
-}
-
-func GetDeploymentName(instanceName string) string {
-	serviceInstanceUUID := InstanceUUID(instanceName)
-	return InstanceDeploymentName(serviceInstanceUUID)
 }
 
 type ServiceKey struct {
@@ -200,12 +187,6 @@ func StartApp(appName string) {
 	ExecuteCfCmd("start", appName)
 }
 
-func DeployApp(appName string) {
-	PushApp(appName, "../assets/spring-music/")
-	StartApp(appName)
-	cf.Cf("enable-ssh", appName).Wait(cfCommandTimeout)
-}
-
 func DeleteApp(appName string) {
 	ExecuteCfCmd("delete", appName, "-f")
 }
@@ -258,19 +239,6 @@ func BindAppToService(appName string, instance string) {
 	Eventually(BoundAppGUIDs(instanceGUID), cfServiceWaitTimeout, curlTimeout).Should(ContainElement(appGUID))
 }
 
-func BindAppToServiceWithUsername(appName, instance, username string) {
-	usernameArgs := fmt.Sprintf(`{"username":"%s"}`, username)
-	output := cf.Cf("bind-service", appName, instance, "-c", usernameArgs).Wait(cfCommandTimeout).Out.Contents()
-	Expect(string(output)).To(ContainSubstring("Binding service %s to app %s", instance, appName))
-	Expect(string(output)).ToNot(SatisfyAny(ContainSubstring("FAILED"),
-		ContainSubstring("Server error")))
-
-	instanceGUID := InstanceUUID(instance)
-	appGUID := AppUUID(appName)
-
-	Eventually(BoundAppGUIDs(instanceGUID), cfServiceWaitTimeout, curlTimeout).Should(ContainElement(appGUID))
-}
-
 func UnbindAppFromService(appName string, instance string) {
 	output := cf.Cf("unbind-service", appName, instance).Wait(cfCommandTimeout).Out
 	ExpectWithOffset(1, output).To(Say("Unbinding app %s from service %s", appName, instance))
@@ -282,30 +250,6 @@ func UnbindAppFromService(appName string, instance string) {
 	appGUID := AppUUID(appName)
 
 	Eventually(BoundAppGUIDs(instanceGUID), cfServiceWaitTimeout, curlTimeout).ShouldNot(ContainElement(appGUID))
-}
-
-func CreateAndBindServiceToApp(serviceName, planName, appName, appPath, instanceName string) {
-	CreateService(serviceName, planName, instanceName)
-	WaitForService(instanceName, "Status: create succeeded")
-
-	PushApp(appName, appPath)
-	BindAppToService(appName, instanceName)
-	StartApp(appName)
-}
-
-func ManageInstanceProcesses(deploymentName, task, instance string) {
-	command := exec.Command(
-		BoshPath, "-d", deploymentName, task, instance, "-n")
-	command.Stdout = GinkgoWriter
-	command.Stderr = GinkgoWriter
-	err := command.Run()
-	ExpectWithOffset(1, err).ToNot(HaveOccurred())
-}
-
-func DeleteAppAndService(appName, instance string) {
-	DeleteApp(appName)
-	AssertAppIsDeleted(appName)
-	DeleteInstanceAndWait(instance)
 }
 
 func CheckAppInfo(skipSSLValidation bool, appURI string, instance string) {
