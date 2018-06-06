@@ -71,7 +71,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	default:
 		c.err = errors.Errorf("unknown command '%s'", command)
 	case "version":
-		fmt.Printf("%s (%s)", version, gitSHA)
+		fmt.Printf("%s (%s)\n", version, gitSHA)
 		os.Exit(0)
 	case "migrate":
 		c.err = Migrate(migrator, args[2:])
