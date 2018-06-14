@@ -25,6 +25,13 @@ At the end of this operation, the v2 service instance will have the same name as
 and the v1 instance will have `-old` appended to its name.
 
 More detailed instructions are available in the [MySQL for PCF docs.](http://docs.pivotal.io/p-mysql/2-3/migrate-to-v2.html)
+
+Some Notice:
+* Stop all apps bound to the service instance before migrating.
+* The Database instance should not be receiving any write traffic while the migration is happening.
+* The apps bounded to the original v1 service instance need to be manually bound to the new v2 service instance at the end of the migration.
+* There will be token timeout messages when migrating lots of data, which can be ignored.
+
 ## Building
 
 ### Prerequisites
