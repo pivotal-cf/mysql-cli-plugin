@@ -10,7 +10,7 @@
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-package v2
+package specs
 
 import (
 	"fmt"
@@ -24,17 +24,6 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
-
-type credential struct {
-	Name        string            `json:"name"`
-	Credentials map[string]string `json:"credentials"`
-}
-
-type envResult struct {
-	Env struct {
-		VCAPServices map[string][]credential `json:"VCAP_SERVICES"`
-	} `json:"system_env_json"`
-}
 
 var _ = Describe("Migrate Integration Tests v2", func() {
 	var (
@@ -54,9 +43,11 @@ var _ = Describe("Migrate Integration Tests v2", func() {
 	Context("when a valid donor service instance exists", func() {
 		BeforeEach(func() {
 			appDomain = os.Getenv("APP_DOMAIN")
+			sinatraAppName = generator.PrefixedRandomName("MYSQL", "SINATRA")
+			test_helpers.PushApp(sinatraAppName, "assets/sinatra-app")
 
 			sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
-			test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
+			test_helpers.CreateService(os.Getenv("V2_DONOR_SERVICE_NAME"), os.Getenv("V2_DONOR_PLAN_NAME"), sourceInstance)
 			destInstance = sourceInstance + "-new"
 
 			test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
@@ -83,9 +74,6 @@ var _ = Describe("Migrate Integration Tests v2", func() {
 			)
 
 			By("Binding an app to the source instance", func() {
-				sinatraAppName = generator.PrefixedRandomName("MYSQL", "SINATRA")
-				test_helpers.PushApp(sinatraAppName, "../assets/sinatra-app")
-
 				test_helpers.BindAppToService(sinatraAppName, sourceInstance)
 				test_helpers.StartApp(sinatraAppName)
 			})
