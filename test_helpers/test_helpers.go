@@ -88,7 +88,7 @@ func CreateService(serviceName string, planName string, name string, args ...str
 }
 
 func DeleteService(name string) {
-	if ! ResourceDeleted("service", name) {
+	if !ResourceDeleted("service", name) {
 		output := ExecuteCfCmd("delete-service", name, "-f")
 		Expect(output).To(SatisfyAny(
 			ContainSubstring("Delete in progress"),
@@ -138,7 +138,7 @@ type ServiceKey struct {
 	Port     int    `json:"port"`
 	Uri      string `json:"uri"`
 	Username string `json:"username"`
-	TLS struct {
+	TLS      struct {
 		Cert struct {
 			CA string
 		}
@@ -259,6 +259,38 @@ func CheckAppInfo(skipSSLValidation bool, appURI string, instance string) {
 	appConfigurationInfo, _ := ioutil.ReadAll(resp.Body)
 
 	Expect(string(appConfigurationInfo)).Should(SatisfyAll(ContainSubstring("mysql"), ContainSubstring(instance)))
+}
+
+func ReadDb(skipSSLValidation bool, appURI string) map[string]string {
+	getUri := fmt.Sprintf("https://%s/show-db", appURI)
+
+	resp, err := httpClient(skipSSLValidation).Get(getUri)
+	Expect(err).ToNot(HaveOccurred())
+
+	fetchedData, err := ioutil.ReadAll(resp.Body)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(resp.StatusCode).To(Equal(http.StatusOK), string(fetchedData))
+
+	var output map[string]string
+	Expect(json.Unmarshal([]byte(fetchedData), &output)).To(Succeed())
+
+	return output
+}
+
+func CreateDb(skipSSLValidation bool, appURI string) map[string]string {
+	getUri := fmt.Sprintf("https://%s/create-db", appURI)
+
+	resp, err := httpClient(skipSSLValidation).Get(getUri)
+	Expect(err).ToNot(HaveOccurred())
+
+	fetchedData, err := ioutil.ReadAll(resp.Body)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(resp.StatusCode).To(Equal(http.StatusOK), string(fetchedData))
+
+	var output map[string]string
+	Expect(json.Unmarshal([]byte(fetchedData), &output)).To(Succeed())
+
+	return output
 }
 
 func ReadData(skipSSLValidation bool, appURI string, id string) string {

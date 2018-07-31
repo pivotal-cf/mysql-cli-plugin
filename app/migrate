@@ -25,11 +25,19 @@ fi
 src_svc="$1"
 tgt_svc="$2"
 
+function get_service_name() {
+  local service_instance_name="$1"
+  jq --raw-output \
+     --arg svc "${service_instance_name}" \
+     '. | to_entries | [ .[] | select(.value[].name == $svc) ] | .[0].key' \
+     <<< "${VCAP_SERVICES}"
+}
+
 function vcap_credentials() {
-  local service_name="$1"
+  local service_instance_name="$1"
 
   jq --raw-output \
-     --arg svc "${service_name}" \
+     --arg svc "${service_instance_name}" \
      '.[][] | select(.name == $svc) | .credentials' \
      <<< "${VCAP_SERVICES}"
 }
@@ -45,7 +53,34 @@ function vcap_cred() {
   fi
 }
 
+function backup_db_name() {
+  local src_creds="$(vcap_credentials "${src_svc}")"
+  local service_name="$(get_service_name "${src_svc}")"
+
+  if [[ $service_name == "p.mysql" ]]; then
+    local use_tls="$(jq 'has("tls")' <<<"${src_creds}")"
+    local mysql_tls_opts=""
+
+    if [[ "${use_tls}" == "true" ]]; then
+      mysql_tls_opts="--ssl-mode=VERIFY_IDENTITY --ssl-capath=/etc/ssl/certs"
+    fi
+
+    databases=$(MYSQL_PWD="$(vcap_cred "password" "${src_creds}" )" \
+      mysql --user="$(vcap_cred "username" "${src_creds}" )" \
+      --host="$(vcap_cred "hostname" "${src_creds}" )" \
+      --port="$(vcap_cred "port" "${src_creds}" )" \
+      ${mysql_tls_opts} \
+      -sse "SHOW DATABASES" \
+      | egrep -v "mysql|sys|information_schema|performance_schema|cf_metadata")
+
+    echo "--databases $databases"
+  elif [[ $service_name == "p-mysql" ]]; then
+    vcap_cred "name" "${src_creds}"
+  fi
+}
+
 function backup_source() {
+
   local src_creds="$(vcap_credentials "${src_svc}")"
   local use_tls="$(jq 'has("tls")' <<<"${src_creds}")"
   local mysql_tls_opts=""
@@ -64,7 +99,7 @@ function backup_source() {
               --events \
               --set-gtid-purged=off \
               ${mysql_tls_opts} \
-              "$(vcap_cred "name" "${src_creds}")"
+              $(backup_db_name)
 }
 
 function restore_target() {

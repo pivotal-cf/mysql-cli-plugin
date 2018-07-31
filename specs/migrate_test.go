@@ -42,7 +42,8 @@ type envResult struct {
 var _ = Describe("Migrate Integration Tests", func() {
 	var (
 		appDomain          string
-		appName            string
+		springAppName      string
+		sinatraAppName     string
 		destInstance       string
 		destPlan           string
 		sourceInstance     string
@@ -76,8 +77,12 @@ var _ = Describe("Migrate Integration Tests", func() {
 		})
 
 		AfterEach(func() {
-			if appName != "" {
-				test_helpers.DeleteApp(appName)
+			if springAppName != "" {
+				test_helpers.DeleteApp(springAppName)
+			}
+
+			if sinatraAppName != "" {
+				test_helpers.DeleteApp(sinatraAppName)
 			}
 
 			test_helpers.DeleteServiceKey(destInstance, serviceKey)
@@ -89,30 +94,47 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 		It("migrates data from donor to recipient", func() {
 			var (
-				readValue  string
-				appURI     string
-				albumID    string
-				writeValue string
+				readValue     string
+				springAppURI  string
+				sinatraAppURI string
+				albumID       string
+				writeValue    string
+				allDb         map[string]string
 			)
 
 			By("Binding an app to the source instance", func() {
-				appName = generator.PrefixedRandomName("MYSQL", "APP")
-				test_helpers.PushApp(appName, "assets/spring-music")
+				springAppName = generator.PrefixedRandomName("MYSQL", "APP")
+				sinatraAppName = generator.PrefixedRandomName("MYSQL", "SINATRA")
+				test_helpers.PushApp(springAppName, "assets/spring-music")
+				test_helpers.PushApp(sinatraAppName, "assets/sinatra-app")
 
-				test_helpers.BindAppToService(appName, sourceInstance)
-				test_helpers.StartApp(appName)
+				test_helpers.BindAppToService(springAppName, sourceInstance)
+				test_helpers.BindAppToService(sinatraAppName, sourceInstance)
+				test_helpers.StartApp(springAppName)
+				test_helpers.StartApp(sinatraAppName)
 			})
 
 			By("Writing data to the source instance", func() {
-				appURI = appName + "." + appDomain
-				test_helpers.CheckAppInfo(true, appURI, sourceInstance)
+				springAppURI = springAppName + "." + appDomain
+				sinatraAppURI = sinatraAppName + "." + appDomain
+				test_helpers.CheckAppInfo(true, springAppURI, sourceInstance)
 
 				writeValue = "DM Greatest Hits"
-				albumID = test_helpers.WriteData(true, appURI, writeValue)
-				readValue = test_helpers.ReadData(true, appURI, albumID)
-				Expect(readValue).To(Equal(writeValue))
+				albumID = test_helpers.WriteData(true, springAppURI, writeValue)
+				readValue = test_helpers.ReadData(true, springAppURI, albumID)
+				createdDb := test_helpers.CreateDb(true, sinatraAppURI)
+				allDb = test_helpers.ReadDb(true, sinatraAppURI)
 
-				test_helpers.UnbindAppFromService(appName, sourceInstance)
+				createdDbName := createdDb["db"]
+				createdDbValue := createdDb["value"]
+				Expect(createdDbName).ToNot(BeEmpty())
+				Expect(createdDbValue).ToNot(BeEmpty())
+
+				Expect(readValue).To(Equal(writeValue))
+				Expect(allDb[createdDbName]).To(Equal(createdDbValue))
+
+				test_helpers.UnbindAppFromService(springAppName, sourceInstance)
+				test_helpers.UnbindAppFromService(sinatraAppName, sourceInstance)
 			})
 
 			By("Migrating data using the migrate command", func() {
@@ -128,15 +150,22 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 
 			By("Binding the app to the newly created destination instance and reading back data", func() {
-				test_helpers.BindAppToService(appName, sourceInstance)
-				test_helpers.ExecuteCfCmd("restage", appName)
+				test_helpers.BindAppToService(springAppName, sourceInstance)
+				test_helpers.BindAppToService(sinatraAppName, sourceInstance)
+				test_helpers.ExecuteCfCmd("restage", springAppName)
+				test_helpers.ExecuteCfCmd("restage", sinatraAppName)
 
-				readValue = test_helpers.ReadData(true, appURI, albumID)
+				readValue = test_helpers.ReadData(true, springAppURI, albumID)
 				Expect(readValue).To(Equal(writeValue))
+
+				dbAfterMigrate := test_helpers.ReadDb(true, sinatraAppURI)
+
+				Expect(readValue).To(Equal(writeValue))
+				Expect(allDb).To(Equal(dbAfterMigrate))
 			})
 
 			By("Verifying that the credhub reference in the binding only contains the destination service's GUID", func() {
-				appGUID := strings.TrimSpace(test_helpers.ExecuteCfCmd("app", appName, "--guid"))
+				appGUID := strings.TrimSpace(test_helpers.ExecuteCfCmd("app", springAppName, "--guid"))
 
 				envOutput := test_helpers.ExecuteCfCmd("curl", fmt.Sprintf("/v2/apps/%s/env", appGUID))
 
@@ -161,7 +190,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 				Expect(serviceKey.TLS.Cert.CA).
 					NotTo(BeEmpty(),
-					"Expected recipient service instance to be TLS enabled, but it was not")
+						"Expected recipient service instance to be TLS enabled, but it was not")
 			})
 		})
 
@@ -224,7 +253,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 		Context("When --no-cleanup flag is specified", func() {
 			var (
-				destinationGUID string
+				destinationGUID       string
 				renamedSourceInstance string
 			)
 			AfterEach(func() {
