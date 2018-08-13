@@ -23,7 +23,6 @@ DEBIAN_FRONTEND=noninteractive apt-get update && \
 DEBIAN_FRONTEND=noninteractive apt-get -y install \
   --no-install-recommends \
   cmake g++ make \
-  libreadline6-dev \
   libncurses5-dev \
   libssl-dev \
   zlib1g-dev
@@ -43,7 +42,7 @@ CMAKE_INCLUDE_PATH=/usr/include/ cmake . \
   -DINSTALL_MYSQLTESTDIR= \
   -DWITH_BOOST=../boost_${boost_version} \
   -DWITH_EMBEDDED_SERVER=OFF \
-  -DWITH_READLINE=system \
+  -DWITH_EDITLINE=bundled \
   -DWITH_SSL=system \
   -DWITH_ZLIB=system \
   -DIGNORE_AIO_CHECK=ON \
