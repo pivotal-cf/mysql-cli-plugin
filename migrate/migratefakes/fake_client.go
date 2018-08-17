@@ -42,6 +42,19 @@ type FakeClient struct {
 		result1 []string
 		result2 error
 	}
+	GetSingleHostnameStub        func(instanceName string) (string, error)
+	getSingleHostnameMutex       sync.RWMutex
+	getSingleHostnameArgsForCall []struct {
+		instanceName string
+	}
+	getSingleHostnameReturns struct {
+		result1 string
+		result2 error
+	}
+	getSingleHostnameReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	UpdateServiceConfigStub        func(instanceName string, jsonParams string) error
 	updateServiceConfigMutex       sync.RWMutex
 	updateServiceConfigArgsForCall []struct {
@@ -288,6 +301,57 @@ func (fake *FakeClient) GetHostnamesReturnsOnCall(i int, result1 []string, resul
 	}
 	fake.getHostnamesReturnsOnCall[i] = struct {
 		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetSingleHostname(instanceName string) (string, error) {
+	fake.getSingleHostnameMutex.Lock()
+	ret, specificReturn := fake.getSingleHostnameReturnsOnCall[len(fake.getSingleHostnameArgsForCall)]
+	fake.getSingleHostnameArgsForCall = append(fake.getSingleHostnameArgsForCall, struct {
+		instanceName string
+	}{instanceName})
+	fake.recordInvocation("GetSingleHostname", []interface{}{instanceName})
+	fake.getSingleHostnameMutex.Unlock()
+	if fake.GetSingleHostnameStub != nil {
+		return fake.GetSingleHostnameStub(instanceName)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getSingleHostnameReturns.result1, fake.getSingleHostnameReturns.result2
+}
+
+func (fake *FakeClient) GetSingleHostnameCallCount() int {
+	fake.getSingleHostnameMutex.RLock()
+	defer fake.getSingleHostnameMutex.RUnlock()
+	return len(fake.getSingleHostnameArgsForCall)
+}
+
+func (fake *FakeClient) GetSingleHostnameArgsForCall(i int) string {
+	fake.getSingleHostnameMutex.RLock()
+	defer fake.getSingleHostnameMutex.RUnlock()
+	return fake.getSingleHostnameArgsForCall[i].instanceName
+}
+
+func (fake *FakeClient) GetSingleHostnameReturns(result1 string, result2 error) {
+	fake.GetSingleHostnameStub = nil
+	fake.getSingleHostnameReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetSingleHostnameReturnsOnCall(i int, result1 string, result2 error) {
+	fake.GetSingleHostnameStub = nil
+	if fake.getSingleHostnameReturnsOnCall == nil {
+		fake.getSingleHostnameReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.getSingleHostnameReturnsOnCall[i] = struct {
+		result1 string
 		result2 error
 	}{result1, result2}
 }
@@ -714,6 +778,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.createServiceInstanceMutex.RUnlock()
 	fake.getHostnamesMutex.RLock()
 	defer fake.getHostnamesMutex.RUnlock()
+	fake.getSingleHostnameMutex.RLock()
+	defer fake.getSingleHostnameMutex.RUnlock()
 	fake.updateServiceConfigMutex.RLock()
 	defer fake.updateServiceConfigMutex.RUnlock()
 	fake.bindServiceMutex.RLock()

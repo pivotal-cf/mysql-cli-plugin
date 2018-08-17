@@ -130,6 +130,7 @@ var _ = Describe("CreateAndConfigureServiceInstance", func() {
 
 		})
 	})
+
 	Context("When we cannot update a new service instance", func() {
 		BeforeEach(func() {
 			fakeClient.UpdateServiceConfigReturns(errors.New("update service failed"))

@@ -29,6 +29,7 @@ type client interface {
 	ServiceExists(serviceName string) bool
 	CreateServiceInstance(planType, instanceName string) error
 	GetHostnames(instanceName string) ([]string, error)
+	GetSingleHostname(instanceName string) (string, error)
 	UpdateServiceConfig(instanceName string, jsonParams string) error
 	BindService(appName, serviceName string) error
 	DeleteApp(appName string) error
@@ -80,8 +81,21 @@ func (m *Migrator) CreateAndConfigureServiceInstance(planType, serviceName strin
 		return errors.Wrapf(err, "Error JSON encoding hostnames: %s", hostnames)
 	}
 
-	_ = m.client.UpdateServiceConfig(serviceName,
-		fmt.Sprintf(`{"enable_tls": %s}`, jsonEncodedHostnames))
+	if err := m.client.UpdateServiceConfig(serviceName,
+		fmt.Sprintf(`{"enable_tls": %s}`, jsonEncodedHostnames)); err != nil {
+		hostname, err := m.client.GetSingleHostname(serviceName)
+		if err != nil {
+			return errors.Wrap(err, "Error obtaining hostname for new service instance")
+		}
+
+		jsonEncodedHostname, err := json.Marshal([]string{hostname})
+		if err != nil {
+			return errors.Wrapf(err, "Error JSON encoding hostnames: %s", hostnames)
+		}
+
+		m.client.UpdateServiceConfig(serviceName,
+			fmt.Sprintf(`{"enable_tls": %s}`, jsonEncodedHostname))
+	}
 
 	return nil
 }

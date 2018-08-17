@@ -121,6 +121,33 @@ func (c *Client) GetHostnames(instanceName string) ([]string, error) {
 	return []string{serviceKey.Hostname}, nil
 }
 
+
+func (c *Client) GetSingleHostname(instanceName string) (string, error) {
+	serviceKeyName := "MIGRATE-" + uuid.New()
+	if err := c.createServiceKey(instanceName, serviceKeyName); err != nil {
+		return "", errors.Wrapf(err, "Cannot get the hostname for %s", instanceName)
+	}
+	defer func() {
+		_ = c.deleteServiceKey(instanceName, serviceKeyName)
+	}()
+
+	jsonRaw, err := c.serviceKey(instanceName, serviceKeyName)
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot get the hostname for %s", instanceName)
+	}
+
+	var serviceKey struct {
+		Hostname  string   `json:"hostname"`
+		Hostnames []string `json:"hostnames"`
+	}
+
+	if err = json.Unmarshal([]byte(jsonRaw), &serviceKey); err != nil {
+		return "", fmt.Errorf("Cannot get the hostname for %s: invalid response: %s", instanceName, jsonRaw)
+	}
+
+	return serviceKey.Hostname, nil
+}
+
 func (c *Client) createServiceKey(instanceName, serviceKeyName string) error {
 	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput("create-service-key", instanceName, serviceKeyName)
 	return err
