@@ -40,6 +40,8 @@ var _ = BeforeSuite(func() {
 		"DONOR_SERVICE_NAME",
 		"RECIPIENT_PLAN_NAME",
 		"RECIPIENT_SERVICE_NAME",
+		"V2_DONOR_SERVICE_NAME",
+		"V2_DONOR_PLAN_NAME",
 	})
 
 	Config = config.LoadConfig()
