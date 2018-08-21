@@ -114,7 +114,9 @@ func (c *Client) GetHostnames(instanceName string) ([]string, error) {
 		return nil, fmt.Errorf("Cannot get the hostnames for %s: invalid response: %s", instanceName, jsonRaw)
 	}
 
-	if len(serviceKey.Hostnames) != 0 {
+	dnsEnabled := strings.HasPrefix(serviceKey.Hostname, "q-")
+
+	if !dnsEnabled && len(serviceKey.Hostnames) != 0 {
 		return serviceKey.Hostnames, nil
 	}
 
