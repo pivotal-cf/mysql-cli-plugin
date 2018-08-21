@@ -424,6 +424,100 @@ var _ = Describe("Client", func() {
 				Expect(deleteServiceKeyArgs[3]).To(HavePrefix("MIGRATE-"))
 			})
 		})
+
+		Context("When Bosh DNS is enabled", func() {
+			It("Returns the hostname for a single service instance", func() {
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+					[]string{
+						`Getting key some-service-key for service instance test-tls as admin...`,
+						``,
+						`{`,
+						` "hostname": "q-s3y1n0.q-g3.test.bosh",`,
+						` "jdbcUrl": "jdbc:mysql://some-host-name:3306/service_instance_db?user=8efbb5299eae4b8698fdfaca0e07e0d1\u0026password=1jms9jmd7i0twuk7\u0026useSSL=true\u0026requireSSL=true",`,
+						` "name": "service_instance_db",`,
+						` "password": "1jms9jmd7i0twuk7",`,
+						` "port": 3306,`,
+						` "uri": "mysql://8efbb5299eae4b8698fdfaca0e07e0d1:1jms9jmd7i0twuk7@some-host-name:3306/service_instance_db?reconnect=true",`,
+						` "username": "8efbb5299eae4b8698fdfaca0e07e0d1"`,
+						`}`,
+					}, nil,
+				)
+
+				hostname, err := client.GetHostnames("some-instance")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(hostname).To(ConsistOf(`q-s3y1n0.q-g3.test.bosh`))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+
+
+				createServiceArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
+				Expect(createServiceArgs).To(HaveLen(3))
+				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
+				Expect(createServiceArgs[1]).To(Equal("some-instance"))
+				Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
+
+				serviceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(1)
+				Expect(serviceKeyArgs).To(HaveLen(3))
+				Expect(serviceKeyArgs[0]).To(Equal("service-key"))
+				Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
+				Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
+
+				deleteServiceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(2)
+				Expect(deleteServiceKeyArgs).To(HaveLen(4))
+				Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
+				Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
+				Expect(deleteServiceKeyArgs[2]).To(Equal("some-instance"))
+				Expect(deleteServiceKeyArgs[3]).To(HavePrefix("MIGRATE-"))
+			})
+
+			It("Returns the hostname even when hostnames is present", func() {
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1,
+					[]string{
+						`Getting key some-service-key for service instance test-tls as admin...`,
+						``,
+						`{`,
+						` "hostname": "q-s3y1n0.q-g3.test.bosh",`,
+						` "hostnames": [`,
+						`  "q-s3y1i10n0.q-g3.test.bosh",`,
+						`  "q-s3y1i11n0.q-g3.test.bosh"`,
+						` ],`,
+						` "jdbcUrl": "jdbc:mysql://some-host-name:3306/service_instance_db?user=8efbb5299eae4b8698fdfaca0e07e0d1\u0026password=1jms9jmd7i0twuk7\u0026useSSL=true\u0026requireSSL=true",`,
+						` "name": "service_instance_db",`,
+						` "password": "1jms9jmd7i0twuk7",`,
+						` "port": 3306,`,
+						` "uri": "mysql://8efbb5299eae4b8698fdfaca0e07e0d1:1jms9jmd7i0twuk7@some-host-name:3306/service_instance_db?reconnect=true",`,
+						` "username": "8efbb5299eae4b8698fdfaca0e07e0d1"`,
+						`}`,
+					}, nil,
+				)
+
+				hostname, err := client.GetHostnames("some-instance")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(hostname).To(ConsistOf(`q-s3y1n0.q-g3.test.bosh`))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
+
+
+				createServiceArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
+				Expect(createServiceArgs).To(HaveLen(3))
+				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
+				Expect(createServiceArgs[1]).To(Equal("some-instance"))
+				Expect(createServiceArgs[2]).To(HavePrefix("MIGRATE-"))
+
+				serviceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(1)
+				Expect(serviceKeyArgs).To(HaveLen(3))
+				Expect(serviceKeyArgs[0]).To(Equal("service-key"))
+				Expect(serviceKeyArgs[1]).To(Equal("some-instance"))
+				Expect(serviceKeyArgs[2]).To(HavePrefix("MIGRATE-"))
+
+				deleteServiceKeyArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(2)
+				Expect(deleteServiceKeyArgs).To(HaveLen(4))
+				Expect(deleteServiceKeyArgs[0]).To(Equal("delete-service-key"))
+				Expect(deleteServiceKeyArgs[1]).To(Equal("-f"))
+				Expect(deleteServiceKeyArgs[2]).To(Equal("some-instance"))
+				Expect(deleteServiceKeyArgs[3]).To(HavePrefix("MIGRATE-"))
+			})
+		})
 	})
 
 	Context("UpdateServiceConfig", func() {
