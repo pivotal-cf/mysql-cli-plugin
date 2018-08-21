@@ -120,7 +120,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "10m", "1s").Should(gexec.Exit(0))
+				Eventually(session, "20m", "1s").Should(gexec.Exit(0))
 			})
 
 			By("Verifying the destination service was renamed to the source's name", func() {
@@ -180,7 +180,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "10m", "1s").Should(gexec.Exit(0))
+				Eventually(session, "20m", "1s").Should(gexec.Exit(0))
 
 				destinationGUID = test_helpers.InstanceUUID(sourceInstance)
 				appGUIDs := test_helpers.BoundAppGUIDs(destinationGUID)
@@ -219,7 +219,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(session, "10m", "1s").Should(gexec.Exit(1))
+			Eventually(session, "20m", "1s").Should(gexec.Exit(1))
 			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
 		})
 
@@ -242,7 +242,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(session, "10m", "1s").Should(gexec.Exit(1))
+				Eventually(session, "20m", "1s").Should(gexec.Exit(1))
 				test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
 
 				destinationGUID = test_helpers.InstanceUUID(destInstance)
