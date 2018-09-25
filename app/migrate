@@ -53,30 +53,24 @@ function vcap_cred() {
   fi
 }
 
-function backup_db_name() {
+function backup_db_names() {
   local src_creds="$(vcap_credentials "${src_svc}")"
   local service_name="$(get_service_name "${src_svc}")"
 
-  if [[ $service_name == "p.mysql" ]]; then
-    local use_tls="$(jq 'has("tls")' <<<"${src_creds}")"
-    local mysql_tls_opts=""
+  local use_tls="$(jq 'has("tls")' <<<"${src_creds}")"
+  local mysql_tls_opts=""
 
-    if [[ "${use_tls}" == "true" ]]; then
-      mysql_tls_opts="--ssl-mode=VERIFY_IDENTITY --ssl-capath=/etc/ssl/certs"
-    fi
-
-    databases=$(MYSQL_PWD="$(vcap_cred "password" "${src_creds}" )" \
-      mysql --user="$(vcap_cred "username" "${src_creds}" )" \
-      --host="$(vcap_cred "hostname" "${src_creds}" )" \
-      --port="$(vcap_cred "port" "${src_creds}" )" \
-      ${mysql_tls_opts} \
-      -sse "SHOW DATABASES" \
-      | egrep -v "mysql|sys|information_schema|performance_schema|cf_metadata")
-
-    echo "--databases $databases"
-  elif [[ $service_name == "p-mysql" ]]; then
-    vcap_cred "name" "${src_creds}"
+  if [[ "${use_tls}" == "true" ]]; then
+    mysql_tls_opts="--ssl-mode=VERIFY_IDENTITY --ssl-capath=/etc/ssl/certs"
   fi
+
+  MYSQL_PWD="$(vcap_cred "password" "${src_creds}" )" \
+    mysql --user="$(vcap_cred "username" "${src_creds}" )" \
+    --host="$(vcap_cred "hostname" "${src_creds}" )" \
+    --port="$(vcap_cred "port" "${src_creds}" )" \
+    ${mysql_tls_opts} \
+    -sse "SHOW DATABASES" \
+    | egrep -v "^(mysql|sys|information_schema|performance_schema|cf_metadata)$"
 }
 
 function backup_source() {
@@ -89,6 +83,12 @@ function backup_source() {
     mysql_tls_opts="--ssl-mode=VERIFY_IDENTITY --ssl-capath=/etc/ssl/certs"
   fi
 
+  mapfile -t dbs <<< "$(backup_db_names)"
+
+  if [[ "${#dbs[@]}" -gt 1 ]]; then
+    dbs=("--databases" "${dbs[@]}")
+  fi
+
   MYSQL_PWD="$(vcap_cred "password" "${src_creds}" )" \
     mysqldump --user="$(vcap_cred "username" "${src_creds}" )" \
               --host="$(vcap_cred "hostname" "${src_creds}" )" \
@@ -99,7 +99,7 @@ function backup_source() {
               --events \
               --set-gtid-purged=off \
               ${mysql_tls_opts} \
-              $(backup_db_name)
+              "${dbs[@]}"
 }
 
 function restore_target() {
