@@ -381,17 +381,11 @@ func waitForTunnel(port int, serviceKey ServiceKey) {
 		serviceKey.Name,
 	)
 
-	Eventually(func() error {
-		db, err := sql.Open("mysql", connectionString)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			e := db.Close()
-			Expect(e).NotTo(HaveOccurred())
-		}()
+	db, err := sql.Open("mysql", connectionString)
+	Expect(err).NotTo(HaveOccurred())
+	defer db.Close()
 
-		_, err = db.Exec("SELECT 1")
-		return err
+	Eventually(func() error {
+		return db.Ping()
 	}, "1m", "5s").Should(Not(HaveOccurred()))
 }
