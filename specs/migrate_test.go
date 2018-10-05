@@ -63,7 +63,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 		Expect(session.Err.Contents()).To(ContainSubstring("Service instance fake-donor-service not found"))
 	})
 
-	Context("when a valid donor service instance exists", func() {
+	Context("When a valid donor service instance exists", func() {
 		BeforeEach(func() {
 			appDomain = os.Getenv("APP_DOMAIN")
 
@@ -162,7 +162,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 				Expect(serviceKey.TLS.Cert.CA).
 					NotTo(BeEmpty(),
-						"Expected recipient service instance to be TLS enabled, but it was not")
+					"Expected recipient service instance to be TLS enabled, but it was not")
 			})
 		})
 
@@ -185,6 +185,33 @@ var _ = Describe("Migrate Integration Tests", func() {
 				destinationGUID = test_helpers.InstanceUUID(sourceInstance)
 				appGUIDs := test_helpers.BoundAppGUIDs(destinationGUID)
 				Expect(appGUIDs).NotTo(BeEmpty())
+			})
+		})
+
+		FContext("DB names with the containing substrings of the filtered grep will be migrated", func() {
+			var (
+				destinationGUID string
+				testDbName      string
+			)
+
+			BeforeEach(func() {
+				testDbName = "sysblah"
+				createTestDb(sourceInstance, testDbName)
+			})
+
+			It("transfers all DBs", func() {
+				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, destPlan)
+				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, "20m", "1s").Should(gexec.Exit(0))
+
+				destinationGUID = test_helpers.InstanceUUID(sourceInstance)
+				appGUIDs := test_helpers.BoundAppGUIDs(destinationGUID)
+				Expect(appGUIDs).NotTo(BeEmpty())
+
+				dbExists, err := dbExists(sourceInstance, testDbName)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dbExists).To(BeTrue())
 			})
 		})
 
@@ -254,6 +281,76 @@ var _ = Describe("Migrate Integration Tests", func() {
 	})
 })
 
+func createTestDb(sourceInstance, dbName string) {
+	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
+	sourceServiceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
+
+	test_helpers.PushApp(appName, "assets/spring-music")
+	test_helpers.BindAppToService(appName, sourceInstance)
+	defer func() {
+		test_helpers.DeleteApp(appName)
+		test_helpers.AssertAppIsDeleted(appName)
+	}()
+
+	test_helpers.StartApp(appName)
+
+	serviceKeyCreds := test_helpers.GetServiceKey(sourceInstance, sourceServiceKey)
+	defer test_helpers.DeleteServiceKey(sourceInstance, sourceServiceKey)
+
+	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
+	defer closeTunnel()
+
+	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63308)/%s",
+		serviceKeyCreds.Username,
+		serviceKeyCreds.Password,
+		serviceKeyCreds.Name,
+	)
+	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func dbExists(sourceInstance, dbName string) (bool, error) {
+	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
+	sourceServiceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
+
+	test_helpers.PushApp(appName, "assets/spring-music")
+	test_helpers.BindAppToService(appName, sourceInstance)
+	defer func() {
+		test_helpers.DeleteApp(appName)
+		test_helpers.AssertAppIsDeleted(appName)
+	}()
+
+	test_helpers.StartApp(appName)
+
+	serviceKeyCreds := test_helpers.GetServiceKey(sourceInstance, sourceServiceKey)
+	defer test_helpers.DeleteServiceKey(sourceInstance, sourceServiceKey)
+
+	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
+	defer closeTunnel()
+
+	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63308)/%s",
+		serviceKeyCreds.Username,
+		serviceKeyCreds.Password,
+		serviceKeyCreds.Name,
+	)
+	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
+	if err != nil {
+		return false, err
+	}
+
+	result, err := db.Query(fmt.Sprintf("SHOW DATABASES LIKE '%s'", dbName))
+	if err != nil {
+		return false, err
+	}
+
+	return result.Next(), nil
+}
+
 func createInvalidMigrationState(sourceInstance string) {
 	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
 	sourceServiceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
@@ -279,8 +376,8 @@ func createInvalidMigrationState(sourceInstance string) {
 		serviceKeyCreds.Name,
 	)
 	db, err := sql.Open("mysql", dsn)
-	Expect(err).NotTo(HaveOccurred())
 	defer db.Close()
+	Expect(err).NotTo(HaveOccurred())
 
 	_, err = db.Exec("CREATE TABLE migrate_fail (id VARCHAR(1))")
 	Expect(err).NotTo(HaveOccurred())
