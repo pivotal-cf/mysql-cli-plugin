@@ -188,10 +188,9 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 		})
 
-		FContext("DB names with the containing substrings of the filtered grep will be migrated", func() {
+		Context("DB names with the containing substrings of the filtered grep will be migrated", func() {
 			var (
-				destinationGUID string
-				testDbName      string
+				testDbName string
 			)
 
 			BeforeEach(func() {
@@ -200,14 +199,10 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 
 			It("transfers all DBs", func() {
-				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, destPlan)
+				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, "20m", "1s").Should(gexec.Exit(0))
-
-				destinationGUID = test_helpers.InstanceUUID(sourceInstance)
-				appGUIDs := test_helpers.BoundAppGUIDs(destinationGUID)
-				Expect(appGUIDs).NotTo(BeEmpty())
 
 				dbExists, err := dbExists(sourceInstance, testDbName)
 				Expect(err).NotTo(HaveOccurred())
@@ -282,7 +277,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 })
 
 func createTestDb(sourceInstance, dbName string) {
-	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
+	appName := generator.PrefixedRandomName("MYSQL", "MIGRATION_TEST")
 	sourceServiceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
 
 	test_helpers.PushApp(appName, "assets/spring-music")
