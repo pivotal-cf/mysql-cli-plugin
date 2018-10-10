@@ -153,7 +153,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				Expect(mysqlServices).To(HaveLen(1))
 				Expect(mysqlServices[0].Credentials).To(HaveKey("credhub-ref"))
 				Expect(mysqlServices[0].Credentials["credhub-ref"]).To(ContainSubstring(destInstanceGUID))
-				Expect(mysqlServices[0].Credentials["credhub-ref"]).NotTo(ContainSubstring(destInstanceGUID))
+				Expect(mysqlServices[0].Credentials["credhub-ref"]).NotTo(ContainSubstring(sourceInstanceGUID))
 			})
 
 			By("Verifying TLS was enabled on the recipient instance", func() {
