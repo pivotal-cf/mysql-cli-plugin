@@ -53,6 +53,23 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 	BeforeEach(func() {
 		destPlan = os.Getenv("RECIPIENT_PLAN_NAME")
+		appDomain = Config.AppsDomain
+
+		sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
+		test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
+		destInstance = sourceInstance + "-new"
+		test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
+		sourceInstanceGUID = test_helpers.InstanceUUID(sourceInstance)
+	})
+
+	AfterEach(func() {
+		oldInstance := sourceInstance + "-old"
+		test_helpers.DeleteService(oldInstance)
+		test_helpers.DeleteService(destInstance)
+		test_helpers.DeleteService(sourceInstance)
+		test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
+		test_helpers.WaitForService(sourceInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
+		test_helpers.WaitForService(oldInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
 	})
 
 	It("fails on invalid donor service instance", func() {
@@ -64,27 +81,11 @@ var _ = Describe("Migrate Integration Tests", func() {
 	})
 
 	Context("When a valid donor service instance exists", func() {
-		BeforeEach(func() {
-			appDomain = Config.AppsDomain
-
-			sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
-			test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
-			destInstance = sourceInstance + "-new"
-
-			test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
-			sourceInstanceGUID = test_helpers.InstanceUUID(sourceInstance)
-		})
-
 		AfterEach(func() {
 			if springAppName != "" {
 				test_helpers.DeleteApp(springAppName)
 			}
-
 			test_helpers.DeleteServiceKey(destInstance, serviceKey)
-			test_helpers.DeleteService(destInstance)
-			test_helpers.DeleteService(sourceInstance)
-			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
-			test_helpers.WaitForService(sourceInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
 		})
 
 		It("migrates data from donor to recipient", func() {
@@ -200,19 +201,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 	Context("When migration fails", func() {
 		BeforeEach(func() {
-			sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
-			test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
-			destInstance = sourceInstance + "-new"
-			test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
-
 			createInvalidMigrationState(sourceInstance)
-		})
-
-		AfterEach(func() {
-			test_helpers.DeleteService(sourceInstance)
-			test_helpers.DeleteService(destInstance)
-			test_helpers.WaitForService(sourceInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
-			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
 		})
 
 		It("Deletes the recipient service instance", func() {
