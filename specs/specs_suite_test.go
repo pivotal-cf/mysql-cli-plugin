@@ -35,7 +35,6 @@ var (
 
 var _ = BeforeSuite(func() {
 	test_helpers.CheckForRequiredEnvVars([]string{
-		"APP_DOMAIN",
 		"DONOR_PLAN_NAME",
 		"DONOR_SERVICE_NAME",
 		"RECIPIENT_PLAN_NAME",
