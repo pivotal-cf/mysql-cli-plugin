@@ -44,7 +44,7 @@ Some Notice:
 1. Execute the `./scripts/build-assets` script in the corresponding docker image to compile utilites (mysqldump, mysql) to be bundled with the plugin.
    
    ```
-   $ docker run -v $PWD:$PWD -w $PWD -t cloudfoundry/cflinuxfs2 ./scripts/build-assets
+   $ docker run -v $PWD:$PWD -w $PWD -t cloudfoundry/cflinuxfs3 ./scripts/build-assets
    ```
 1. Run go generate to create golang compatible static assets out of the utilities
    ```

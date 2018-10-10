@@ -52,8 +52,10 @@ CMAKE_INCLUDE_PATH=/usr/include/ cmake . \
 popd >/dev/null
 
 rm -rf ${output_dir}
-mkdir -p ${output_dir}
+mkdir -p ${output_dir}/lib/
 mv /build/COPYING ${output_dir}
 mv /build/README.MySQL ${output_dir}
 mv /build/bin/mysql ${output_dir}
 mv /build/bin/mysqldump ${output_dir}
+cp /usr/lib/x86_64-linux-gnu/libssl.so.1.1 ${output_dir}/lib/
+cp /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 ${output_dir}/lib/
