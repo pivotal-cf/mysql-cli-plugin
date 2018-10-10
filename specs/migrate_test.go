@@ -126,10 +126,11 @@ var _ = Describe("Migrate Integration Tests", func() {
 			By("Verifying the destination service was renamed to the source's name", func() {
 				destInstanceGUID = test_helpers.InstanceUUID(sourceInstance)
 				Expect(destInstanceGUID).NotTo(Equal(sourceInstanceGUID))
+				destInstance = sourceInstance
 			})
 
 			By("Binding the app to the newly created destination instance and reading back data", func() {
-				test_helpers.BindAppToService(springAppName, sourceInstance)
+				test_helpers.BindAppToService(springAppName, destInstance)
 				test_helpers.ExecuteCfCmd("restage", springAppName)
 
 				readValue = test_helpers.ReadData(true, springAppURI, albumID)
@@ -152,13 +153,13 @@ var _ = Describe("Migrate Integration Tests", func() {
 				Expect(mysqlServices).To(HaveLen(1))
 				Expect(mysqlServices[0].Credentials).To(HaveKey("credhub-ref"))
 				Expect(mysqlServices[0].Credentials["credhub-ref"]).To(ContainSubstring(destInstanceGUID))
-				Expect(mysqlServices[0].Credentials["credhub-ref"]).NotTo(ContainSubstring(sourceInstanceGUID))
+				Expect(mysqlServices[0].Credentials["credhub-ref"]).NotTo(ContainSubstring(destInstanceGUID))
 			})
 
 			By("Verifying TLS was enabled on the recipient instance", func() {
-				test_helpers.CreateServiceKey(sourceInstance, "tls-check")
-				serviceKey := test_helpers.GetServiceKey(sourceInstance, "tls-check")
-				test_helpers.DeleteServiceKey(sourceInstance, "tls-check")
+				test_helpers.CreateServiceKey(destInstance, "tls-check")
+				serviceKey := test_helpers.GetServiceKey(destInstance, "tls-check")
+				test_helpers.DeleteServiceKey(destInstance, "tls-check")
 
 				Expect(serviceKey.TLS.Cert.CA).
 					NotTo(BeEmpty(),
