@@ -42,7 +42,7 @@ var _ = Describe("Migrate Integration Tests v2", func() {
 
 	Context("when a valid donor service instance exists", func() {
 		BeforeEach(func() {
-			appDomain = os.Getenv("APP_DOMAIN")
+			appDomain = Config.AppsDomain
 			sinatraAppName = generator.PrefixedRandomName("MYSQL", "SINATRA")
 			test_helpers.PushApp(sinatraAppName, "assets/sinatra-app")
 

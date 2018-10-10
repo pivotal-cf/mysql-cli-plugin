@@ -65,7 +65,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 	Context("When a valid donor service instance exists", func() {
 		BeforeEach(func() {
-			appDomain = os.Getenv("APP_DOMAIN")
+			appDomain = Config.AppsDomain
 
 			sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
 			test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
