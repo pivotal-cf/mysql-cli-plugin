@@ -69,7 +69,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 		test_helpers.DeleteService(sourceInstance)
 		test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
 		test_helpers.WaitForService(sourceInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
-		test_helpers.WaitForService(oldInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
+		test_helpers.WaitForService(oldInstance, fmt.Sprintf("Service instance %s not found", oldInstance))
 	})
 
 	It("fails on invalid donor service instance", func() {
@@ -164,7 +164,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 				Expect(serviceKey.TLS.Cert.CA).
 					NotTo(BeEmpty(),
-					"Expected recipient service instance to be TLS enabled, but it was not")
+						"Expected recipient service instance to be TLS enabled, but it was not")
 			})
 		})
 
