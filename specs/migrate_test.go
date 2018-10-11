@@ -172,10 +172,12 @@ var _ = Describe("Migrate Integration Tests", func() {
 			var (
 				destinationGUID string
 			)
+
 			AfterEach(func() {
-				srcGUID := test_helpers.InstanceUUID(sourceInstance)
-				test_helpers.UnbindAllAppsFromService(srcGUID)
-				test_helpers.UnbindAllAppsFromService(destinationGUID)
+				test_helpers.UnbindAllAppsFromService(sourceInstanceGUID)
+				if destinationGUID != "" {
+					test_helpers.UnbindAllAppsFromService(destinationGUID)
+				}
 			})
 
 			It("doesn't delete the migration app when the --no-cleanup flag is specified", func() {
