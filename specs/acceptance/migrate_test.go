@@ -10,7 +10,7 @@
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-package specs
+package acceptance
 
 import (
 	"database/sql"
@@ -98,7 +98,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 			By("Binding an app to the source instance", func() {
 				springAppName = generator.PrefixedRandomName("MYSQL", "APP")
-				test_helpers.PushApp(springAppName, "assets/spring-music")
+				test_helpers.PushApp(springAppName, "../assets/spring-music")
 
 				test_helpers.BindAppToService(springAppName, sourceInstance)
 				test_helpers.StartApp(springAppName)

@@ -10,7 +10,7 @@
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-package specs
+package acceptance
 
 import (
 	"database/sql"
@@ -45,7 +45,7 @@ var _ = Describe("Migrate Integration Tests v2", func() {
 		BeforeEach(func() {
 			appDomain = Config.AppsDomain
 			sinatraAppName = generator.PrefixedRandomName("MYSQL", "SINATRA")
-			test_helpers.PushApp(sinatraAppName, "assets/sinatra-app")
+			test_helpers.PushApp(sinatraAppName, "../assets/sinatra-app")
 
 			sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
 			test_helpers.CreateService(os.Getenv("V2_DONOR_SERVICE_NAME"), os.Getenv("V2_DONOR_PLAN_NAME"), sourceInstance)
@@ -116,7 +116,6 @@ var _ = Describe("Migrate Integration Tests v2", func() {
 			})
 		})
 
-
 		Context("DB names with the containing substrings of the filtered grep will be migrated", func() {
 			var (
 				testDbName string
@@ -141,12 +140,11 @@ var _ = Describe("Migrate Integration Tests v2", func() {
 	})
 })
 
-
 func createTestDb(sourceInstance, dbName string) {
 	appName := generator.PrefixedRandomName("MYSQL", "MIGRATION_TEST")
 	sourceServiceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
 
-	test_helpers.PushApp(appName, "assets/spring-music")
+	test_helpers.PushApp(appName, "../assets/spring-music")
 	test_helpers.BindAppToService(appName, sourceInstance)
 	defer func() {
 		test_helpers.DeleteApp(appName)
@@ -178,7 +176,7 @@ func dbExists(sourceInstance, dbName string) (bool, error) {
 	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
 	sourceServiceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
 
-	test_helpers.PushApp(appName, "assets/spring-music")
+	test_helpers.PushApp(appName, "../assets/spring-music")
 	test_helpers.BindAppToService(appName, sourceInstance)
 	defer func() {
 		test_helpers.DeleteApp(appName)

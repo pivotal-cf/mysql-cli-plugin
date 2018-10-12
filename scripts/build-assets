@@ -59,3 +59,4 @@ mv /build/bin/mysql ${output_dir}
 mv /build/bin/mysqldump ${output_dir}
 cp /usr/lib/x86_64-linux-gnu/libssl.so.1.1 ${output_dir}/lib/
 cp /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 ${output_dir}/lib/
+cp /lib/x86_64-linux-gnu/libtinfo.so.5 ${output_dir}/lib/
