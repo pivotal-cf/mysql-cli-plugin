@@ -250,7 +250,7 @@ func createInvalidMigrationState(sourceInstance string) {
 	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
 	sourceServiceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
 
-	test_helpers.PushApp(appName, "assets/spring-music")
+	test_helpers.PushApp(appName, "../assets/spring-music")
 	test_helpers.BindAppToService(appName, sourceInstance)
 	defer func() {
 		test_helpers.DeleteApp(appName)
