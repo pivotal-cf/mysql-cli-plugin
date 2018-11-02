@@ -24,8 +24,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate counterfeiter . client
-type client interface {
+//go:generate counterfeiter . Client
+type Client interface {
 	ServiceExists(serviceName string) bool
 	CreateServiceInstance(planType, instanceName string) error
 	GetHostnames(instanceName string) ([]string, error)
@@ -44,7 +44,7 @@ type unpacker interface {
 	Unpack(destDir string) error
 }
 
-func NewMigrator(client client, unpacker unpacker) *Migrator {
+func NewMigrator(client Client, unpacker unpacker) *Migrator {
 	return &Migrator{
 		client:   client,
 		unpacker: unpacker,
@@ -53,7 +53,7 @@ func NewMigrator(client client, unpacker unpacker) *Migrator {
 
 type Migrator struct {
 	appName  string
-	client   client
+	client   Client
 	unpacker unpacker
 }
 

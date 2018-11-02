@@ -17,8 +17,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/mysql-cli-plugin/plugin"
-	"github.com/pivotal-cf/mysql-cli-plugin/plugin/pluginfakes"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin/pluginfakes"
 )
 
 var _ = Describe("Plugin Commands", func() {

@@ -21,9 +21,9 @@ import (
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/blang/semver"
 	"github.com/jessevdk/go-flags"
-	"github.com/pivotal-cf/mysql-cli-plugin/cf"
-	"github.com/pivotal-cf/mysql-cli-plugin/migrate"
-	"github.com/pivotal-cf/mysql-cli-plugin/unpack"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 	"github.com/pkg/errors"
 )
 
@@ -34,8 +34,8 @@ var (
 
 const usage = `cf mysql-tools migrate [-h] [-v] [--no-cleanup] <v1-service-instance> <plan-type>`
 
-//go:generate counterfeiter . migrator
-type migrator interface {
+//go:generate counterfeiter . Migrator
+type Migrator interface {
 	CheckServiceExists(donorInstanceName string) error
 	CreateAndConfigureServiceInstance(planType, serviceName string) error
 	MigrateData(donorInstanceName, recipientInstanceName string, cleanup bool) error
@@ -99,13 +99,13 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 	}
 }
 
-func Migrate(migrator migrator, args []string) error {
+func Migrate(migrator Migrator, args []string) error {
 	var opts struct {
 		Args struct {
-			Source string `positional-arg-name:"<v1-service-instance>"`
+			Source   string `positional-arg-name:"<v1-service-instance>"`
 			PlanName string `positional-arg-name:"<plan-type>"`
 		} `positional-args:"yes" required:"yes"`
-		NoCleanup bool   `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
+		NoCleanup bool `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
 	}
 
 	parser := flags.NewParser(&opts, flags.None)
@@ -122,7 +122,7 @@ func Migrate(migrator migrator, args []string) error {
 	donorInstanceName := opts.Args.Source
 	tempRecipientInstanceName := donorInstanceName + "-new"
 	destPlan := opts.Args.PlanName
-	cleanup := ! opts.NoCleanup
+	cleanup := !opts.NoCleanup
 
 	if err := migrator.CheckServiceExists(donorInstanceName); err != nil {
 		return err

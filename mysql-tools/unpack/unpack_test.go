@@ -10,10 +10,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/mysql-cli-plugin/unpack/unpackfakes"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack/unpackfakes"
 
 	"github.com/gobuffalo/packr"
-	. "github.com/pivotal-cf/mysql-cli-plugin/unpack"
+	. "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 )
 
 var _ = Describe("Unpacker", func() {

@@ -24,7 +24,7 @@ import (
 //go:generate go install github.com/pivotal-cf/mysql-cli-plugin/vendor/github.com/gobuffalo/packr/...
 //go:generate $GOPATH/bin/packr --compress
 var (
-	defaultBox = packr.NewBox("../app")
+	defaultBox = packr.NewBox("../../app")
 )
 
 //go:generate counterfeiter . Box

@@ -21,8 +21,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"github.com/pivotal-cf/mysql-cli-plugin/cf"
-	"github.com/pivotal-cf/mysql-cli-plugin/cf/cffakes"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf/cffakes"
 )
 
 type FakeClock struct {
@@ -70,12 +70,12 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal(
-				[]string{
-					"bind-service",
-					"some-app",
-					"some-service",
-				},
-			))
+					[]string{
+						"bind-service",
+						"some-app",
+						"some-service",
+					},
+				))
 		})
 
 		It("returns an error when the binding request fails", func() {
@@ -181,11 +181,11 @@ var _ = Describe("Client", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 						To(Equal([]string{
-						"create-service",
-						"some-fake-product",
-						"plan-type",
-						"service-instance-name",
-					}))
+							"create-service",
+							"some-fake-product",
+							"plan-type",
+							"service-instance-name",
+						}))
 					Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 				})
 
@@ -204,11 +204,11 @@ var _ = Describe("Client", func() {
 				Expect(err).To(MatchError("Invalid service plan"))
 				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 					To(Equal([]string{
-					"create-service",
-					"p.mysql",
-					"invalid-plan-type",
-					"service-instance-name",
-				}))
+						"create-service",
+						"p.mysql",
+						"invalid-plan-type",
+						"service-instance-name",
+					}))
 				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 			})
 		})
@@ -449,7 +449,6 @@ var _ = Describe("Client", func() {
 				Expect(hostname).To(ConsistOf(`q-s3y1n0.q-g3.test.bosh`))
 				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
 
-
 				createServiceArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
 				Expect(createServiceArgs).To(HaveLen(3))
 				Expect(createServiceArgs[0]).To(Equal("create-service-key"))
@@ -496,7 +495,6 @@ var _ = Describe("Client", func() {
 
 				Expect(hostname).To(ConsistOf(`q-s3y1n0.q-g3.test.bosh`))
 				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(3))
-
 
 				createServiceArgs := fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)
 				Expect(createServiceArgs).To(HaveLen(3))
@@ -745,9 +743,9 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{
-				"curl",
-				"/v3/apps?names=some-app&space_guids=some-guid",
-			}))
+					"curl",
+					"/v3/apps?names=some-app&space_guids=some-guid",
+				}))
 		})
 
 		Context("when there is an error getting the current space", func() {
@@ -858,9 +856,9 @@ var _ = Describe("Client", func() {
 			})
 
 			Context("Because the oauth token expired", func() {
-				 BeforeEach(func() {
-					 fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
-						 `{
+				BeforeEach(func() {
+					fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns([]string{
+						`{
 						   "errors": [
 							 {
 							  "detail": "Invalid Auth Token",
@@ -869,98 +867,98 @@ var _ = Describe("Client", func() {
 							 }
 						   ]
 						 }`,
-					 }, nil)
-				 })
+					}, nil)
+				})
 
-				 It("Tries to auto-refresh the token", func() {
-					 client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
+				It("Tries to auto-refresh the token", func() {
+					client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
 
-					 Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
-					 Expect(fakeCFPluginAPI.AccessTokenCallCount()).To(Equal(3)) //TODO: decouple this test
-				 })
+					Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
+					Expect(fakeCFPluginAPI.AccessTokenCallCount()).To(Equal(3)) //TODO: decouple this test
+				})
 
-				 Context("When automatic token refresh succeeds", func() {
-					 It("Returns the task after successfully auto-refreshing the token", func() {
-						 fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1, []string{
-							 `{`,
-							 `"guid": "some-guid",`,
-							 `"state": "some-state"`,
-							 `}`,
-						 }, nil)
+				Context("When automatic token refresh succeeds", func() {
+					It("Returns the task after successfully auto-refreshing the token", func() {
+						fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(1, []string{
+							`{`,
+							`"guid": "some-guid",`,
+							`"state": "some-state"`,
+							`}`,
+						}, nil)
 
-						 task, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
-						 Expect(err).NotTo(HaveOccurred())
+						task, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
+						Expect(err).NotTo(HaveOccurred())
 
-						 Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`)) //TODO: decouple this test
-						 Expect(buffer).NotTo(gbytes.Say(`Attempt 2/3:`))
+						Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`)) //TODO: decouple this test
+						Expect(buffer).NotTo(gbytes.Say(`Attempt 2/3:`))
 
-						 Expect(task.Guid).To(Equal(`some-guid`))
-						 Expect(task.State).To(Equal(`some-state`))
+						Expect(task.Guid).To(Equal(`some-guid`))
+						Expect(task.State).To(Equal(`some-state`))
 
-						 Expect(fakeCFPluginAPI.AccessTokenCallCount()).To(Equal(1))
-					 })
-				 })
+						Expect(fakeCFPluginAPI.AccessTokenCallCount()).To(Equal(1))
+					})
+				})
 
-				 Context("When automatic token refresh fails", func(){
-					 It("Logs a failure", func() {
-						 fakeCFPluginAPI.AccessTokenReturns("", errors.New("something"))
+				Context("When automatic token refresh fails", func() {
+					It("Logs a failure", func() {
+						fakeCFPluginAPI.AccessTokenReturns("", errors.New("something"))
 
-						 _, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
-						 Expect(err).To(HaveOccurred())
+						_, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
+						Expect(err).To(HaveOccurred())
 
-						 Expect(buffer).To(gbytes.Say(`failed to refresh the access token: something`))
-						 Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`)) //TODO: decouple this test
-						 Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
-						 Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
-					 })
-				 })
-			 })
+						Expect(buffer).To(gbytes.Say(`failed to refresh the access token: something`))
+						Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`)) //TODO: decouple this test
+						Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
+						Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
+					})
+				})
+			})
 
 			Context("Because /v3/tasks fails", func() {
-			     Context("And we retry the maximum allowed number of times without success", func() {
-					 It("Returns an error", func() {
-						 fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
-							 nil, errors.New("some-error"))
+				Context("And we retry the maximum allowed number of times without success", func() {
+					It("Returns an error", func() {
+						fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(
+							nil, errors.New("some-error"))
 
-						 _, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
+						_, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
 
-						 Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(client.MaxAttempts))
-						 Expect(err).To(MatchError("failed to retrieve task by GUID"))
-						 Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: some-error`))
-						 Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to retrieve task by GUID: some-error`))
-						 Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to retrieve task by GUID: some-error`))
-						 Expect(fakeClock.SleepCallCount()).To(Equal(2))
-						 Expect(fakeClock.SleepCallArgs(0)).Should(Equal(2 * time.Second))
-						 Expect(fakeClock.SleepCallArgs(1)).Should(Equal(4 * time.Second))
-					 })
-			     })
+						Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(client.MaxAttempts))
+						Expect(err).To(MatchError("failed to retrieve task by GUID"))
+						Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: some-error`))
+						Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to retrieve task by GUID: some-error`))
+						Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to retrieve task by GUID: some-error`))
+						Expect(fakeClock.SleepCallCount()).To(Equal(2))
+						Expect(fakeClock.SleepCallArgs(0)).Should(Equal(2 * time.Second))
+						Expect(fakeClock.SleepCallArgs(1)).Should(Equal(4 * time.Second))
+					})
+				})
 
-			     Context("And we get a successful response after retrying", func() {
-			         It("Returns the task", func() {
-						 fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(
-							 0, nil, errors.New("some-error"))
-						 fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(
-							 1,
-							 []string{
-								 `{`,
-								 `"guid": "6aef0cf0-c5d5-4ec1-89ae-73971d24241c",`,
-								 `"state": "RUNNING"`,
-								 `}`,
-							 },
-							 nil)
+				Context("And we get a successful response after retrying", func() {
+					It("Returns the task", func() {
+						fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(
+							0, nil, errors.New("some-error"))
+						fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturnsOnCall(
+							1,
+							[]string{
+								`{`,
+								`"guid": "6aef0cf0-c5d5-4ec1-89ae-73971d24241c",`,
+								`"state": "RUNNING"`,
+								`}`,
+							},
+							nil)
 
-						 task, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
+						task, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
 
-						 Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(2))
-						 Expect(err).NotTo(HaveOccurred())
-						 Expect(task.State).To(Equal("RUNNING"))
-						 Expect(task.Guid).To(Equal("6aef0cf0-c5d5-4ec1-89ae-73971d24241c"))
-						 Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: some-error`))
-						 Expect(fakeClock.SleepCallCount()).To(Equal(1))
-						 Expect(fakeClock.SleepCallArgs(0)).To(Equal(2 * time.Second))
-			         })
-			     })
-			 })
+						Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(2))
+						Expect(err).NotTo(HaveOccurred())
+						Expect(task.State).To(Equal("RUNNING"))
+						Expect(task.Guid).To(Equal("6aef0cf0-c5d5-4ec1-89ae-73971d24241c"))
+						Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: some-error`))
+						Expect(fakeClock.SleepCallCount()).To(Equal(1))
+						Expect(fakeClock.SleepCallArgs(0)).To(Equal(2 * time.Second))
+					})
+				})
+			})
 		})
 	})
 
@@ -973,17 +971,17 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal(
-				[]string{
-					"push",
-					"some-app-name",
-					"-b", "binary_buildpack",
-					"-u", "none",
-					"-c", "sleep infinity",
-					"-p", "some-path",
-					"--no-route",
-					"--no-start",
-				},
-			))
+					[]string{
+						"push",
+						"some-app-name",
+						"-b", "binary_buildpack",
+						"-u", "none",
+						"-c", "sleep infinity",
+						"-p", "some-path",
+						"--no-route",
+						"--no-start",
+					},
+				))
 		})
 
 		It("returns an error when pushing an app fails", func() {
@@ -1006,8 +1004,8 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{
-				"rename-service", "some-service-name", "some-new-service-name",
-			}))
+					"rename-service", "some-service-name", "some-new-service-name",
+				}))
 		})
 
 		It("returns an error when renaming a service fails", func() {
@@ -1063,17 +1061,17 @@ var _ = Describe("Client", func() {
 
 			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(1)).
 				To(
-				Equal([]string{
-					"curl", "-X", "POST", "-d",
-					`{"command":"some-command"}`,
-					"/v3/apps/be5077ed-abba-bea7-deb7-50f7ba110000/tasks",
-				}))
+					Equal([]string{
+						"curl", "-X", "POST", "-d",
+						`{"command":"some-command"}`,
+						"/v3/apps/be5077ed-abba-bea7-deb7-50f7ba110000/tasks",
+					}))
 
 			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(2)).
 				To(Equal([]string{
-				"curl",
-				"/v3/tasks/be5077ed-abba-bea7-deb7-50f7ba110000",
-			}))
+					"curl",
+					"/v3/tasks/be5077ed-abba-bea7-deb7-50f7ba110000",
+				}))
 		})
 
 		It("returns an error when looking up an app guid fails", func() {

@@ -17,7 +17,7 @@ import (
 	"os"
 
 	cliplugin "code.cloudfoundry.org/cli/plugin"
-	"github.com/pivotal-cf/mysql-cli-plugin/plugin"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 )
 
 func main() {

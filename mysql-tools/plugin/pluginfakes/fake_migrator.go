@@ -2,14 +2,16 @@
 package pluginfakes
 
 import (
-	"sync"
+	sync "sync"
+
+	plugin "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 )
 
 type FakeMigrator struct {
-	CheckServiceExistsStub        func(donorInstanceName string) error
+	CheckServiceExistsStub        func(string) error
 	checkServiceExistsMutex       sync.RWMutex
 	checkServiceExistsArgsForCall []struct {
-		donorInstanceName string
+		arg1 string
 	}
 	checkServiceExistsReturns struct {
 		result1 error
@@ -17,47 +19,10 @@ type FakeMigrator struct {
 	checkServiceExistsReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CreateAndConfigureServiceInstanceStub        func(planType, serviceName string) error
-	createAndConfigureServiceInstanceMutex       sync.RWMutex
-	createAndConfigureServiceInstanceArgsForCall []struct {
-		planType    string
-		serviceName string
-	}
-	createAndConfigureServiceInstanceReturns struct {
-		result1 error
-	}
-	createAndConfigureServiceInstanceReturnsOnCall map[int]struct {
-		result1 error
-	}
-	MigrateDataStub        func(donorInstanceName, recipientInstanceName string, cleanup bool) error
-	migrateDataMutex       sync.RWMutex
-	migrateDataArgsForCall []struct {
-		donorInstanceName     string
-		recipientInstanceName string
-		cleanup               bool
-	}
-	migrateDataReturns struct {
-		result1 error
-	}
-	migrateDataReturnsOnCall map[int]struct {
-		result1 error
-	}
-	RenameServiceInstancesStub        func(donorInstanceName, recipientInstanceName string) error
-	renameServiceInstancesMutex       sync.RWMutex
-	renameServiceInstancesArgsForCall []struct {
-		donorInstanceName     string
-		recipientInstanceName string
-	}
-	renameServiceInstancesReturns struct {
-		result1 error
-	}
-	renameServiceInstancesReturnsOnCall map[int]struct {
-		result1 error
-	}
-	CleanupOnErrorStub        func(recipientInstanceName string) error
+	CleanupOnErrorStub        func(string) error
 	cleanupOnErrorMutex       sync.RWMutex
 	cleanupOnErrorArgsForCall []struct {
-		recipientInstanceName string
+		arg1 string
 	}
 	cleanupOnErrorReturns struct {
 		result1 error
@@ -65,25 +30,63 @@ type FakeMigrator struct {
 	cleanupOnErrorReturnsOnCall map[int]struct {
 		result1 error
 	}
+	CreateAndConfigureServiceInstanceStub        func(string, string) error
+	createAndConfigureServiceInstanceMutex       sync.RWMutex
+	createAndConfigureServiceInstanceArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	createAndConfigureServiceInstanceReturns struct {
+		result1 error
+	}
+	createAndConfigureServiceInstanceReturnsOnCall map[int]struct {
+		result1 error
+	}
+	MigrateDataStub        func(string, string, bool) error
+	migrateDataMutex       sync.RWMutex
+	migrateDataArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 bool
+	}
+	migrateDataReturns struct {
+		result1 error
+	}
+	migrateDataReturnsOnCall map[int]struct {
+		result1 error
+	}
+	RenameServiceInstancesStub        func(string, string) error
+	renameServiceInstancesMutex       sync.RWMutex
+	renameServiceInstancesArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	renameServiceInstancesReturns struct {
+		result1 error
+	}
+	renameServiceInstancesReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMigrator) CheckServiceExists(donorInstanceName string) error {
+func (fake *FakeMigrator) CheckServiceExists(arg1 string) error {
 	fake.checkServiceExistsMutex.Lock()
 	ret, specificReturn := fake.checkServiceExistsReturnsOnCall[len(fake.checkServiceExistsArgsForCall)]
 	fake.checkServiceExistsArgsForCall = append(fake.checkServiceExistsArgsForCall, struct {
-		donorInstanceName string
-	}{donorInstanceName})
-	fake.recordInvocation("CheckServiceExists", []interface{}{donorInstanceName})
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("CheckServiceExists", []interface{}{arg1})
 	fake.checkServiceExistsMutex.Unlock()
 	if fake.CheckServiceExistsStub != nil {
-		return fake.CheckServiceExistsStub(donorInstanceName)
+		return fake.CheckServiceExistsStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.checkServiceExistsReturns.result1
+	fakeReturns := fake.checkServiceExistsReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeMigrator) CheckServiceExistsCallCount() int {
@@ -92,13 +95,22 @@ func (fake *FakeMigrator) CheckServiceExistsCallCount() int {
 	return len(fake.checkServiceExistsArgsForCall)
 }
 
+func (fake *FakeMigrator) CheckServiceExistsCalls(stub func(string) error) {
+	fake.checkServiceExistsMutex.Lock()
+	defer fake.checkServiceExistsMutex.Unlock()
+	fake.CheckServiceExistsStub = stub
+}
+
 func (fake *FakeMigrator) CheckServiceExistsArgsForCall(i int) string {
 	fake.checkServiceExistsMutex.RLock()
 	defer fake.checkServiceExistsMutex.RUnlock()
-	return fake.checkServiceExistsArgsForCall[i].donorInstanceName
+	argsForCall := fake.checkServiceExistsArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeMigrator) CheckServiceExistsReturns(result1 error) {
+	fake.checkServiceExistsMutex.Lock()
+	defer fake.checkServiceExistsMutex.Unlock()
 	fake.CheckServiceExistsStub = nil
 	fake.checkServiceExistsReturns = struct {
 		result1 error
@@ -106,6 +118,8 @@ func (fake *FakeMigrator) CheckServiceExistsReturns(result1 error) {
 }
 
 func (fake *FakeMigrator) CheckServiceExistsReturnsOnCall(i int, result1 error) {
+	fake.checkServiceExistsMutex.Lock()
+	defer fake.checkServiceExistsMutex.Unlock()
 	fake.CheckServiceExistsStub = nil
 	if fake.checkServiceExistsReturnsOnCall == nil {
 		fake.checkServiceExistsReturnsOnCall = make(map[int]struct {
@@ -117,169 +131,22 @@ func (fake *FakeMigrator) CheckServiceExistsReturnsOnCall(i int, result1 error) 
 	}{result1}
 }
 
-func (fake *FakeMigrator) CreateAndConfigureServiceInstance(planType string, serviceName string) error {
-	fake.createAndConfigureServiceInstanceMutex.Lock()
-	ret, specificReturn := fake.createAndConfigureServiceInstanceReturnsOnCall[len(fake.createAndConfigureServiceInstanceArgsForCall)]
-	fake.createAndConfigureServiceInstanceArgsForCall = append(fake.createAndConfigureServiceInstanceArgsForCall, struct {
-		planType    string
-		serviceName string
-	}{planType, serviceName})
-	fake.recordInvocation("CreateAndConfigureServiceInstance", []interface{}{planType, serviceName})
-	fake.createAndConfigureServiceInstanceMutex.Unlock()
-	if fake.CreateAndConfigureServiceInstanceStub != nil {
-		return fake.CreateAndConfigureServiceInstanceStub(planType, serviceName)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.createAndConfigureServiceInstanceReturns.result1
-}
-
-func (fake *FakeMigrator) CreateAndConfigureServiceInstanceCallCount() int {
-	fake.createAndConfigureServiceInstanceMutex.RLock()
-	defer fake.createAndConfigureServiceInstanceMutex.RUnlock()
-	return len(fake.createAndConfigureServiceInstanceArgsForCall)
-}
-
-func (fake *FakeMigrator) CreateAndConfigureServiceInstanceArgsForCall(i int) (string, string) {
-	fake.createAndConfigureServiceInstanceMutex.RLock()
-	defer fake.createAndConfigureServiceInstanceMutex.RUnlock()
-	return fake.createAndConfigureServiceInstanceArgsForCall[i].planType, fake.createAndConfigureServiceInstanceArgsForCall[i].serviceName
-}
-
-func (fake *FakeMigrator) CreateAndConfigureServiceInstanceReturns(result1 error) {
-	fake.CreateAndConfigureServiceInstanceStub = nil
-	fake.createAndConfigureServiceInstanceReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeMigrator) CreateAndConfigureServiceInstanceReturnsOnCall(i int, result1 error) {
-	fake.CreateAndConfigureServiceInstanceStub = nil
-	if fake.createAndConfigureServiceInstanceReturnsOnCall == nil {
-		fake.createAndConfigureServiceInstanceReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.createAndConfigureServiceInstanceReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeMigrator) MigrateData(donorInstanceName string, recipientInstanceName string, cleanup bool) error {
-	fake.migrateDataMutex.Lock()
-	ret, specificReturn := fake.migrateDataReturnsOnCall[len(fake.migrateDataArgsForCall)]
-	fake.migrateDataArgsForCall = append(fake.migrateDataArgsForCall, struct {
-		donorInstanceName     string
-		recipientInstanceName string
-		cleanup               bool
-	}{donorInstanceName, recipientInstanceName, cleanup})
-	fake.recordInvocation("MigrateData", []interface{}{donorInstanceName, recipientInstanceName, cleanup})
-	fake.migrateDataMutex.Unlock()
-	if fake.MigrateDataStub != nil {
-		return fake.MigrateDataStub(donorInstanceName, recipientInstanceName, cleanup)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.migrateDataReturns.result1
-}
-
-func (fake *FakeMigrator) MigrateDataCallCount() int {
-	fake.migrateDataMutex.RLock()
-	defer fake.migrateDataMutex.RUnlock()
-	return len(fake.migrateDataArgsForCall)
-}
-
-func (fake *FakeMigrator) MigrateDataArgsForCall(i int) (string, string, bool) {
-	fake.migrateDataMutex.RLock()
-	defer fake.migrateDataMutex.RUnlock()
-	return fake.migrateDataArgsForCall[i].donorInstanceName, fake.migrateDataArgsForCall[i].recipientInstanceName, fake.migrateDataArgsForCall[i].cleanup
-}
-
-func (fake *FakeMigrator) MigrateDataReturns(result1 error) {
-	fake.MigrateDataStub = nil
-	fake.migrateDataReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeMigrator) MigrateDataReturnsOnCall(i int, result1 error) {
-	fake.MigrateDataStub = nil
-	if fake.migrateDataReturnsOnCall == nil {
-		fake.migrateDataReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.migrateDataReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeMigrator) RenameServiceInstances(donorInstanceName string, recipientInstanceName string) error {
-	fake.renameServiceInstancesMutex.Lock()
-	ret, specificReturn := fake.renameServiceInstancesReturnsOnCall[len(fake.renameServiceInstancesArgsForCall)]
-	fake.renameServiceInstancesArgsForCall = append(fake.renameServiceInstancesArgsForCall, struct {
-		donorInstanceName     string
-		recipientInstanceName string
-	}{donorInstanceName, recipientInstanceName})
-	fake.recordInvocation("RenameServiceInstances", []interface{}{donorInstanceName, recipientInstanceName})
-	fake.renameServiceInstancesMutex.Unlock()
-	if fake.RenameServiceInstancesStub != nil {
-		return fake.RenameServiceInstancesStub(donorInstanceName, recipientInstanceName)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.renameServiceInstancesReturns.result1
-}
-
-func (fake *FakeMigrator) RenameServiceInstancesCallCount() int {
-	fake.renameServiceInstancesMutex.RLock()
-	defer fake.renameServiceInstancesMutex.RUnlock()
-	return len(fake.renameServiceInstancesArgsForCall)
-}
-
-func (fake *FakeMigrator) RenameServiceInstancesArgsForCall(i int) (string, string) {
-	fake.renameServiceInstancesMutex.RLock()
-	defer fake.renameServiceInstancesMutex.RUnlock()
-	return fake.renameServiceInstancesArgsForCall[i].donorInstanceName, fake.renameServiceInstancesArgsForCall[i].recipientInstanceName
-}
-
-func (fake *FakeMigrator) RenameServiceInstancesReturns(result1 error) {
-	fake.RenameServiceInstancesStub = nil
-	fake.renameServiceInstancesReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeMigrator) RenameServiceInstancesReturnsOnCall(i int, result1 error) {
-	fake.RenameServiceInstancesStub = nil
-	if fake.renameServiceInstancesReturnsOnCall == nil {
-		fake.renameServiceInstancesReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.renameServiceInstancesReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeMigrator) CleanupOnError(recipientInstanceName string) error {
+func (fake *FakeMigrator) CleanupOnError(arg1 string) error {
 	fake.cleanupOnErrorMutex.Lock()
 	ret, specificReturn := fake.cleanupOnErrorReturnsOnCall[len(fake.cleanupOnErrorArgsForCall)]
 	fake.cleanupOnErrorArgsForCall = append(fake.cleanupOnErrorArgsForCall, struct {
-		recipientInstanceName string
-	}{recipientInstanceName})
-	fake.recordInvocation("CleanupOnError", []interface{}{recipientInstanceName})
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("CleanupOnError", []interface{}{arg1})
 	fake.cleanupOnErrorMutex.Unlock()
 	if fake.CleanupOnErrorStub != nil {
-		return fake.CleanupOnErrorStub(recipientInstanceName)
+		return fake.CleanupOnErrorStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.cleanupOnErrorReturns.result1
+	fakeReturns := fake.cleanupOnErrorReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeMigrator) CleanupOnErrorCallCount() int {
@@ -288,13 +155,22 @@ func (fake *FakeMigrator) CleanupOnErrorCallCount() int {
 	return len(fake.cleanupOnErrorArgsForCall)
 }
 
+func (fake *FakeMigrator) CleanupOnErrorCalls(stub func(string) error) {
+	fake.cleanupOnErrorMutex.Lock()
+	defer fake.cleanupOnErrorMutex.Unlock()
+	fake.CleanupOnErrorStub = stub
+}
+
 func (fake *FakeMigrator) CleanupOnErrorArgsForCall(i int) string {
 	fake.cleanupOnErrorMutex.RLock()
 	defer fake.cleanupOnErrorMutex.RUnlock()
-	return fake.cleanupOnErrorArgsForCall[i].recipientInstanceName
+	argsForCall := fake.cleanupOnErrorArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeMigrator) CleanupOnErrorReturns(result1 error) {
+	fake.cleanupOnErrorMutex.Lock()
+	defer fake.cleanupOnErrorMutex.Unlock()
 	fake.CleanupOnErrorStub = nil
 	fake.cleanupOnErrorReturns = struct {
 		result1 error
@@ -302,6 +178,8 @@ func (fake *FakeMigrator) CleanupOnErrorReturns(result1 error) {
 }
 
 func (fake *FakeMigrator) CleanupOnErrorReturnsOnCall(i int, result1 error) {
+	fake.cleanupOnErrorMutex.Lock()
+	defer fake.cleanupOnErrorMutex.Unlock()
 	fake.CleanupOnErrorStub = nil
 	if fake.cleanupOnErrorReturnsOnCall == nil {
 		fake.cleanupOnErrorReturnsOnCall = make(map[int]struct {
@@ -313,19 +191,203 @@ func (fake *FakeMigrator) CleanupOnErrorReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeMigrator) CreateAndConfigureServiceInstance(arg1 string, arg2 string) error {
+	fake.createAndConfigureServiceInstanceMutex.Lock()
+	ret, specificReturn := fake.createAndConfigureServiceInstanceReturnsOnCall[len(fake.createAndConfigureServiceInstanceArgsForCall)]
+	fake.createAndConfigureServiceInstanceArgsForCall = append(fake.createAndConfigureServiceInstanceArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("CreateAndConfigureServiceInstance", []interface{}{arg1, arg2})
+	fake.createAndConfigureServiceInstanceMutex.Unlock()
+	if fake.CreateAndConfigureServiceInstanceStub != nil {
+		return fake.CreateAndConfigureServiceInstanceStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.createAndConfigureServiceInstanceReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeMigrator) CreateAndConfigureServiceInstanceCallCount() int {
+	fake.createAndConfigureServiceInstanceMutex.RLock()
+	defer fake.createAndConfigureServiceInstanceMutex.RUnlock()
+	return len(fake.createAndConfigureServiceInstanceArgsForCall)
+}
+
+func (fake *FakeMigrator) CreateAndConfigureServiceInstanceCalls(stub func(string, string) error) {
+	fake.createAndConfigureServiceInstanceMutex.Lock()
+	defer fake.createAndConfigureServiceInstanceMutex.Unlock()
+	fake.CreateAndConfigureServiceInstanceStub = stub
+}
+
+func (fake *FakeMigrator) CreateAndConfigureServiceInstanceArgsForCall(i int) (string, string) {
+	fake.createAndConfigureServiceInstanceMutex.RLock()
+	defer fake.createAndConfigureServiceInstanceMutex.RUnlock()
+	argsForCall := fake.createAndConfigureServiceInstanceArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeMigrator) CreateAndConfigureServiceInstanceReturns(result1 error) {
+	fake.createAndConfigureServiceInstanceMutex.Lock()
+	defer fake.createAndConfigureServiceInstanceMutex.Unlock()
+	fake.CreateAndConfigureServiceInstanceStub = nil
+	fake.createAndConfigureServiceInstanceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMigrator) CreateAndConfigureServiceInstanceReturnsOnCall(i int, result1 error) {
+	fake.createAndConfigureServiceInstanceMutex.Lock()
+	defer fake.createAndConfigureServiceInstanceMutex.Unlock()
+	fake.CreateAndConfigureServiceInstanceStub = nil
+	if fake.createAndConfigureServiceInstanceReturnsOnCall == nil {
+		fake.createAndConfigureServiceInstanceReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.createAndConfigureServiceInstanceReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMigrator) MigrateData(arg1 string, arg2 string, arg3 bool) error {
+	fake.migrateDataMutex.Lock()
+	ret, specificReturn := fake.migrateDataReturnsOnCall[len(fake.migrateDataArgsForCall)]
+	fake.migrateDataArgsForCall = append(fake.migrateDataArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 bool
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("MigrateData", []interface{}{arg1, arg2, arg3})
+	fake.migrateDataMutex.Unlock()
+	if fake.MigrateDataStub != nil {
+		return fake.MigrateDataStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.migrateDataReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeMigrator) MigrateDataCallCount() int {
+	fake.migrateDataMutex.RLock()
+	defer fake.migrateDataMutex.RUnlock()
+	return len(fake.migrateDataArgsForCall)
+}
+
+func (fake *FakeMigrator) MigrateDataCalls(stub func(string, string, bool) error) {
+	fake.migrateDataMutex.Lock()
+	defer fake.migrateDataMutex.Unlock()
+	fake.MigrateDataStub = stub
+}
+
+func (fake *FakeMigrator) MigrateDataArgsForCall(i int) (string, string, bool) {
+	fake.migrateDataMutex.RLock()
+	defer fake.migrateDataMutex.RUnlock()
+	argsForCall := fake.migrateDataArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeMigrator) MigrateDataReturns(result1 error) {
+	fake.migrateDataMutex.Lock()
+	defer fake.migrateDataMutex.Unlock()
+	fake.MigrateDataStub = nil
+	fake.migrateDataReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMigrator) MigrateDataReturnsOnCall(i int, result1 error) {
+	fake.migrateDataMutex.Lock()
+	defer fake.migrateDataMutex.Unlock()
+	fake.MigrateDataStub = nil
+	if fake.migrateDataReturnsOnCall == nil {
+		fake.migrateDataReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.migrateDataReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMigrator) RenameServiceInstances(arg1 string, arg2 string) error {
+	fake.renameServiceInstancesMutex.Lock()
+	ret, specificReturn := fake.renameServiceInstancesReturnsOnCall[len(fake.renameServiceInstancesArgsForCall)]
+	fake.renameServiceInstancesArgsForCall = append(fake.renameServiceInstancesArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("RenameServiceInstances", []interface{}{arg1, arg2})
+	fake.renameServiceInstancesMutex.Unlock()
+	if fake.RenameServiceInstancesStub != nil {
+		return fake.RenameServiceInstancesStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.renameServiceInstancesReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeMigrator) RenameServiceInstancesCallCount() int {
+	fake.renameServiceInstancesMutex.RLock()
+	defer fake.renameServiceInstancesMutex.RUnlock()
+	return len(fake.renameServiceInstancesArgsForCall)
+}
+
+func (fake *FakeMigrator) RenameServiceInstancesCalls(stub func(string, string) error) {
+	fake.renameServiceInstancesMutex.Lock()
+	defer fake.renameServiceInstancesMutex.Unlock()
+	fake.RenameServiceInstancesStub = stub
+}
+
+func (fake *FakeMigrator) RenameServiceInstancesArgsForCall(i int) (string, string) {
+	fake.renameServiceInstancesMutex.RLock()
+	defer fake.renameServiceInstancesMutex.RUnlock()
+	argsForCall := fake.renameServiceInstancesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeMigrator) RenameServiceInstancesReturns(result1 error) {
+	fake.renameServiceInstancesMutex.Lock()
+	defer fake.renameServiceInstancesMutex.Unlock()
+	fake.RenameServiceInstancesStub = nil
+	fake.renameServiceInstancesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMigrator) RenameServiceInstancesReturnsOnCall(i int, result1 error) {
+	fake.renameServiceInstancesMutex.Lock()
+	defer fake.renameServiceInstancesMutex.Unlock()
+	fake.RenameServiceInstancesStub = nil
+	if fake.renameServiceInstancesReturnsOnCall == nil {
+		fake.renameServiceInstancesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.renameServiceInstancesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeMigrator) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.checkServiceExistsMutex.RLock()
 	defer fake.checkServiceExistsMutex.RUnlock()
+	fake.cleanupOnErrorMutex.RLock()
+	defer fake.cleanupOnErrorMutex.RUnlock()
 	fake.createAndConfigureServiceInstanceMutex.RLock()
 	defer fake.createAndConfigureServiceInstanceMutex.RUnlock()
 	fake.migrateDataMutex.RLock()
 	defer fake.migrateDataMutex.RUnlock()
 	fake.renameServiceInstancesMutex.RLock()
 	defer fake.renameServiceInstancesMutex.RUnlock()
-	fake.cleanupOnErrorMutex.RLock()
-	defer fake.cleanupOnErrorMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
@@ -344,3 +406,5 @@ func (fake *FakeMigrator) recordInvocation(key string, args []interface{}) {
 	}
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
+
+var _ plugin.Migrator = new(FakeMigrator)

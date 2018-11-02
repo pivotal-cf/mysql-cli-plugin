@@ -15,10 +15,10 @@ package migrate_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/mysql-cli-plugin/migrate/migratefakes"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate/migratefakes"
 	"github.com/pkg/errors"
 
-	. "github.com/pivotal-cf/mysql-cli-plugin/migrate"
+	. "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
 )
 
 var _ = Describe("CheckServiceExists", func() {
@@ -56,7 +56,6 @@ var _ = Describe("CheckServiceExists", func() {
 var _ = Describe("CreateAndConfigureServiceInstance", func() {
 	var (
 		planType      string
-		donorName     string
 		recipientName string
 		fakeClient    *migratefakes.FakeClient
 		fakeUnpacker  *migratefakes.FakeUnpacker
@@ -65,7 +64,6 @@ var _ = Describe("CreateAndConfigureServiceInstance", func() {
 
 	BeforeEach(func() {
 		planType = "plan-type"
-		donorName = "some-donor-instance"
 		recipientName = "some-recipient-instance"
 		fakeClient = new(migratefakes.FakeClient)
 		fakeUnpacker = new(migratefakes.FakeUnpacker)
