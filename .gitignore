@@ -4,4 +4,5 @@ mysql-cli-plugin
 .idea/
 *-packr.go
 .DS_Store
-app/assets
+app/bin
+app/lib
