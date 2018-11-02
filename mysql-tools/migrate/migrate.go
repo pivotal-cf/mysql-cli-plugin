@@ -128,7 +128,7 @@ func (m *Migrator) MigrateData(donorInstanceName, recipientInstanceName string, 
 	}
 
 	log.Print("Started to run migration task")
-	command := fmt.Sprintf("./migrate %s %s", donorInstanceName, recipientInstanceName)
+	command := fmt.Sprintf("migrate %s %s", donorInstanceName, recipientInstanceName)
 	if err = m.client.RunTask(m.appName, command); err != nil {
 		log.Printf("Migration failed: %s", err)
 		log.Print("Fetching log output...")

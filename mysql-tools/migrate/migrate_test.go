@@ -193,7 +193,7 @@ var _ = Describe("MigrateData", func() {
 				Expect(fakeClient.RunTaskCallCount()).To(Equal(1))
 				migrateAppName, migrateTaskCmd := fakeClient.RunTaskArgsForCall(0)
 				Expect(migrateAppName).To(HavePrefix(`migrate-app-`))
-				Expect(migrateTaskCmd).To(MatchRegexp(`^\./migrate %s %s`, donorName, recipientName))
+				Expect(migrateTaskCmd).To(MatchRegexp(`^migrate %s %s`, donorName, recipientName))
 			})
 
 			By("Deleting the migration app afterwards", func() {
