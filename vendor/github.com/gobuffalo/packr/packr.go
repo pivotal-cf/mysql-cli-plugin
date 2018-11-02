@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"runtime"
+	"strings"
 	"sync"
 )
 
@@ -12,6 +14,7 @@ var data = map[string]map[string][]byte{}
 
 // PackBytes packs bytes for a file into a box.
 func PackBytes(box string, name string, bb []byte) {
+	name = strings.ToLower(name)
 	gil.Lock()
 	defer gil.Unlock()
 	if _, ok := data[box]; !ok {
@@ -45,4 +48,28 @@ func PackJSONBytes(box string, name string, jbb string) error {
 	}
 	PackBytes(box, name, bb)
 	return nil
+}
+
+// UnpackBytes unpacks bytes for specific box.
+func UnpackBytes(box string) {
+	gil.Lock()
+	defer gil.Unlock()
+	delete(data, box)
+}
+
+func osPaths(paths ...string) []string {
+	if runtime.GOOS == "windows" {
+		for i, path := range paths {
+			paths[i] = strings.Replace(path, "/", "\\", -1)
+		}
+	}
+
+	return paths
+}
+
+func osPath(path string) string {
+	if runtime.GOOS == "windows" {
+		return strings.Replace(path, "/", "\\", -1)
+	}
+	return path
 }

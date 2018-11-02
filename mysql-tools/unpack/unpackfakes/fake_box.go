@@ -4,15 +4,15 @@ package unpackfakes
 import (
 	sync "sync"
 
-	packr "github.com/gobuffalo/packr"
+	packd "github.com/gobuffalo/packd"
 	unpack "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 )
 
 type FakeBox struct {
-	WalkStub        func(packr.WalkFunc) error
+	WalkStub        func(packd.WalkFunc) error
 	walkMutex       sync.RWMutex
 	walkArgsForCall []struct {
-		arg1 packr.WalkFunc
+		arg1 packd.WalkFunc
 	}
 	walkReturns struct {
 		result1 error
@@ -24,11 +24,11 @@ type FakeBox struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeBox) Walk(arg1 packr.WalkFunc) error {
+func (fake *FakeBox) Walk(arg1 packd.WalkFunc) error {
 	fake.walkMutex.Lock()
 	ret, specificReturn := fake.walkReturnsOnCall[len(fake.walkArgsForCall)]
 	fake.walkArgsForCall = append(fake.walkArgsForCall, struct {
-		arg1 packr.WalkFunc
+		arg1 packd.WalkFunc
 	}{arg1})
 	fake.recordInvocation("Walk", []interface{}{arg1})
 	fake.walkMutex.Unlock()
@@ -48,13 +48,13 @@ func (fake *FakeBox) WalkCallCount() int {
 	return len(fake.walkArgsForCall)
 }
 
-func (fake *FakeBox) WalkCalls(stub func(packr.WalkFunc) error) {
+func (fake *FakeBox) WalkCalls(stub func(packd.WalkFunc) error) {
 	fake.walkMutex.Lock()
 	defer fake.walkMutex.Unlock()
 	fake.WalkStub = stub
 }
 
-func (fake *FakeBox) WalkArgsForCall(i int) packr.WalkFunc {
+func (fake *FakeBox) WalkArgsForCall(i int) packd.WalkFunc {
 	fake.walkMutex.RLock()
 	defer fake.walkMutex.RUnlock()
 	argsForCall := fake.walkArgsForCall[i]

@@ -2,27 +2,27 @@
 
 
 [[projects]]
-  digest = "1:4a1f87ca3a0acb6d5725233cb02c854003d0908d0c63b80d4523a6506c2d1f5e"
+  digest = "1:8925352ce055abd42792889b9a6053a7e0cf21508e0adc29cfa452e558bdbf96"
   name = "code.cloudfoundry.org/cli"
   packages = [
     "plugin",
     "plugin/models",
   ]
-  pruneopts = ""
-  revision = "bbdf81482f6cfa6281b1937f23cea3162b976351"
-  version = "v6.34.1"
+  pruneopts = "UT"
+  revision = "52c972510cf22c31819505bb4ca680493257c798"
+  version = "v6.40.1"
 
 [[projects]]
-  digest = "1:79421244ba5848aae4b0a5c41e633a04e4894cb0b164a219dc8c15ec7facb7f1"
+  digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
   name = "github.com/blang/semver"
   packages = ["."]
-  pruneopts = ""
+  pruneopts = "UT"
   revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
   version = "v3.5.1"
 
 [[projects]]
   branch = "master"
-  digest = "1:fe130655b11f0c713c387cd94e63232a42e95a103ab5d9ba82245e5cfaf781e7"
+  digest = "1:ab579da11a2e466df89f38505e4819286122b629dfb4f68d6d911a22c2fb0d69"
   name = "github.com/cloudfoundry-incubator/cf-test-helpers"
   packages = [
     "cf",
@@ -31,144 +31,187 @@
     "config",
     "generator",
     "internal",
+    "silentcommandstarter",
     "workflowhelpers",
     "workflowhelpers/internal",
   ]
-  pruneopts = ""
-  revision = "1a8c223f1cc4110cc866f7298ff622b83e274173"
+  pruneopts = "UT"
+  revision = "a410f25137fb51c2f3e0fe6a35dadd6c2fb9de5a"
 
 [[projects]]
-  digest = "1:24f8932912fd9331367d38715bb74be889dc2f94d401109c3aa3db8b3aa246c5"
+  digest = "1:adea5a94903eb4384abef30f3d878dc9ff6b6b5b0722da25b82e5169216dfb61"
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
-  pruneopts = ""
-  revision = "a0583e0143b1624142adab07e0e97fe106d99561"
-  version = "v1.3"
-
-[[projects]]
-  digest = "1:842c1acbacc80da775cfc0c412c4fe322c2d1b86c260db632987730d0d67a6bd"
-  name = "github.com/gobuffalo/packr"
-  packages = ["."]
-  pruneopts = ""
-  revision = "7f4074995d431987caaa35088199f13c44b24440"
-  version = "v1.11.0"
-
-[[projects]]
-  digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
-  name = "github.com/inconshreveable/mousetrap"
-  packages = ["."]
-  pruneopts = ""
-  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
-  version = "v1.0"
-
-[[projects]]
-  digest = "1:ca5c90960520407749b98c49650f54f5f90a667796e85c5ee1597478f702fb91"
-  name = "github.com/jessevdk/go-flags"
-  packages = ["."]
-  pruneopts = ""
-  revision = "c6ca198ec95c841fdb89fc0de7496fed11ab854e"
+  pruneopts = "UT"
+  revision = "d523deb1b23d913de5bdada721a6071e71283618"
   version = "v1.4.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:385879e1a9f54303188638e91e0f5ffa094cb8d06cab953840793da85c95e621"
-  name = "github.com/markbates/grift"
-  packages = [
-    ".",
-    "cmd",
-    "grift",
-  ]
-  pruneopts = ""
-  revision = "5499956ce4d9ef7fddc825ea7cb26744eeac3d79"
-
-[[projects]]
-  digest = "1:a7fd918fb5bd2188436785c0424f8a50b4addfedf37a2b14d796be2a927b8007"
-  name = "github.com/onsi/ginkgo"
-  packages = []
-  pruneopts = ""
-  revision = "3774a09d95489ccaa16032e0770d08ea77ba6184"
-  version = "v1.6.0"
-
-[[projects]]
-  digest = "1:44febbaa3af725dccbe3d83b21ef155f7136670a419bb24a91383bb27d6dcbd4"
-  name = "github.com/onsi/gomega"
-  packages = []
-  pruneopts = ""
-  revision = "003f63b7f4cff3fc95357005358af2de0f5fe152"
-  version = "v1.4.2"
-
-[[projects]]
-  digest = "1:63e142fc50307bcb3c57494913cfc9c12f6061160bdf97a678f78c71615f939b"
-  name = "github.com/pborman/uuid"
+  digest = "1:72139cbee5a41ff8a322681be104aa8d7e7c92a5f3ad5501ea3505042b050b57"
+  name = "github.com/gobuffalo/envy"
   packages = ["."]
-  pruneopts = ""
-  revision = "e790cca94e6cc75c7064b1332e63811d4aae1a53"
-  version = "v1.1"
+  pruneopts = "UT"
+  revision = "e0b181c424e7ca1a36f6f2db4bdfd25ef3421e77"
+  version = "v1.6.7"
 
 [[projects]]
   branch = "master"
-  digest = "1:e97c481d9810d8812577fd190f59e3a388a22b297dd46e7cf8845dac6f22de19"
-  name = "github.com/pivotal-cf/go-binmock"
+  digest = "1:39b76cbb4d531667a4f538f5aa01fb38d62fa4434a1b90aa74355c9ed114a4b4"
+  name = "github.com/gobuffalo/packd"
   packages = ["."]
-  pruneopts = ""
-  revision = "f797157c64e9615c3bf85dbb00915153f0708458"
+  pruneopts = "UT"
+  revision = "c8273487026482b912d61bdbffd54705e96d1e8e"
 
 [[projects]]
-  digest = "1:7365acd48986e205ccb8652cc746f09c8b7876030d53710ea6ef7d0bd0dcd7ca"
-  name = "github.com/pkg/errors"
+  digest = "1:922fb21e58b0af47ea195f322c119df4e6d40bf934baf82e7e3604dde5cefe03"
+  name = "github.com/gobuffalo/packr"
   packages = ["."]
-  pruneopts = ""
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  pruneopts = "UT"
+  revision = "816688b5663f5e5b1ca22fe1f14bf568058dbc05"
+  version = "v1.17.0"
 
 [[projects]]
-  digest = "1:2208a80fc3259291e43b30f42f844d18f4218036dff510f42c653ec9890d460a"
-  name = "github.com/spf13/cobra"
+  digest = "1:3a26588bc48b96825977c1b3df964f8fd842cd6860cc26370588d3563433cf11"
+  name = "github.com/google/uuid"
   packages = ["."]
-  pruneopts = ""
-  revision = "7b2c5ac9fc04fc5efafb60700713d4fa609b777b"
-  version = "v0.0.1"
-
-[[projects]]
-  digest = "1:261bc565833ef4f02121450d74eb88d5ae4bd74bfe5d0e862cddb8550ec35000"
-  name = "github.com/spf13/pflag"
-  packages = ["."]
-  pruneopts = ""
-  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
+  pruneopts = "UT"
+  revision = "d460ce9f8df2e77fb1ba55ca87fafed96c607494"
   version = "v1.0.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:b4ba046df563f56fe42b6270b20039107a37e1ab47c97aa47a16f848aa5b6d9a"
+  digest = "1:59392ed8afb901aab4287d4894df8191722e34f3957716f4350c8c133ce99046"
+  name = "github.com/hpcloud/tail"
+  packages = [
+    ".",
+    "ratelimiter",
+    "util",
+    "watch",
+    "winfile",
+  ]
+  pruneopts = "UT"
+  revision = "a1dbeea552b7c8df4b542c66073e393de198a800"
+
+[[projects]]
+  digest = "1:a2cff208d4759f6ba1b1cd228587b0a1869f95f22542ec9cd17fff64430113c7"
+  name = "github.com/jessevdk/go-flags"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c6ca198ec95c841fdb89fc0de7496fed11ab854e"
+  version = "v1.4.0"
+
+[[projects]]
+  digest = "1:ecd9aa82687cf31d1585d4ac61d0ba180e42e8a6182b85bd785fcca8dfeefc1b"
+  name = "github.com/joho/godotenv"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "23d116af351c84513e1946b527c88823e476be13"
+  version = "v1.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:598aa4555d1ea05a7b949e31e7db0e7b2df21f8772c53cc42f6543dc6bf9a35a"
+  name = "github.com/markbates/oncer"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "05fccaae8fc423476d98fd4c3e4699ba0fbbde48"
+
+[[projects]]
+  digest = "1:42e29deef12327a69123b9cb2cb45fee4af5c12c2a23c6e477338279a052703f"
+  name = "github.com/onsi/ginkgo"
+  packages = [
+    ".",
+    "config",
+    "internal/codelocation",
+    "internal/containernode",
+    "internal/failer",
+    "internal/leafnodes",
+    "internal/remote",
+    "internal/spec",
+    "internal/spec_iterator",
+    "internal/specrunner",
+    "internal/suite",
+    "internal/testingtproxy",
+    "internal/writer",
+    "reporters",
+    "reporters/stenographer",
+    "reporters/stenographer/support/go-colorable",
+    "reporters/stenographer/support/go-isatty",
+    "types",
+  ]
+  pruneopts = "UT"
+  revision = "3774a09d95489ccaa16032e0770d08ea77ba6184"
+  version = "v1.6.0"
+
+[[projects]]
+  digest = "1:d6d3014e71a3504f7fda993889cfdc09ef5b70b46b00dd6bd078943585944352"
+  name = "github.com/onsi/gomega"
+  packages = [
+    ".",
+    "format",
+    "gbytes",
+    "gexec",
+    "internal/assertion",
+    "internal/asyncassertion",
+    "internal/oraclematcher",
+    "internal/testingtsupport",
+    "matchers",
+    "matchers/support/goraph/bipartitegraph",
+    "matchers/support/goraph/edge",
+    "matchers/support/goraph/node",
+    "matchers/support/goraph/util",
+    "types",
+  ]
+  pruneopts = "UT"
+  revision = "7615b9433f86a8bdf29709bf288bc4fd0636a369"
+  version = "v1.4.2"
+
+[[projects]]
+  digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
+  name = "github.com/pborman/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1"
+  version = "v1.2"
+
+[[projects]]
+  branch = "master"
+  digest = "1:fc0fd6692a3a37a88f34e4f8bd7dbc52bf5a16cb6a295e360529f83f4a26c0f7"
+  name = "github.com/pivotal-cf/go-binmock"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f797157c64e9615c3bf85dbb00915153f0708458"
+
+[[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:5193d913046443e59093d66a97a40c51f4a5ea4ceba60f3b3ecf89694de5d16f"
   name = "golang.org/x/net"
   packages = [
-    "context",
     "html",
     "html/atom",
     "html/charset",
   ]
-  pruneopts = ""
-  revision = "cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb"
+  pruneopts = "UT"
+  revision = "c10e9556a7bc0e7c942242b606f0acf024ad5d6a"
 
 [[projects]]
   branch = "master"
-  digest = "1:8aad4e360d6645abe564e925bd6d8d3b94975e52ce68af0c28f91b5aedb0637f"
-  name = "golang.org/x/sync"
-  packages = ["errgroup"]
-  pruneopts = ""
-  revision = "fd80eb99c8f653c847d294a001bdf2a3a6f768f5"
-
-[[projects]]
-  branch = "master"
-  digest = "1:407b5f905024dd94ee08c1777fabb380fb3d380f92a7f7df2592be005337eeb3"
+  digest = "1:35560529f5721d65f36dc23aa15fbf7306c5091cdc3f29f65881af5031b80cc8"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  pruneopts = ""
-  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
+  pruneopts = "UT"
+  revision = "9b800f95dbbc54abff0acf7ee32d88ba4e328c89"
 
 [[projects]]
-  branch = "master"
-  digest = "1:31985a0ed491dba5ba7fe92e18be008acd92ca9435ed9b35b06f3e6c00fd82cb"
+  digest = "1:aa4d6967a3237f8367b6bf91503964a77183ecf696f1273e8ad3551bb4412b5f"
   name = "golang.org/x/text"
   packages = [
     "encoding",
@@ -189,24 +232,48 @@
     "transform",
     "unicode/cldr",
   ]
-  pruneopts = ""
-  revision = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1"
+  pruneopts = "UT"
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
 
 [[projects]]
-  digest = "1:4014584c076f25aaf35d9de36c79ae2d208bba32c780f405e3395dad79292e22"
+  digest = "1:c25289f43ac4a68d88b02245742347c94f1e108c534dda442188015ff80669b3"
+  name = "google.golang.org/appengine"
+  packages = ["cloudsql"]
+  pruneopts = "UT"
+  revision = "4a4468ece617fc8205e99368fa2200e9d1fad421"
+  version = "v1.3.0"
+
+[[projects]]
+  digest = "1:04aea75705cb453e24bf8c1506a24a5a9036537dbc61ddf71d20900d6c7c3ab9"
   name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
   packages = ["."]
-  pruneopts = ""
+  pruneopts = "UT"
   revision = "d76b18b42f285b792bf985118980ce9eacea9d10"
   version = "v1.3.0"
 
 [[projects]]
-  branch = "v2"
-  digest = "1:4b4e5848dfe7f316f95f754df071bebfb40cf4482da62e17e7e1aebdf11f4918"
+  digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
+  name = "gopkg.in/fsnotify/fsnotify.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
+
+[[projects]]
+  digest = "1:3c839a777de0e6da035c9de900b60cbec463b0a89351192c1ea083eaf9e0fce0"
+  name = "gopkg.in/tomb.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c131134a1947e9afd9cecfe11f4c6dff0732ae58"
+
+[[projects]]
+  digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  pruneopts = ""
-  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
+  pruneopts = "UT"
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -222,7 +289,6 @@
     "github.com/go-sql-driver/mysql",
     "github.com/gobuffalo/packr",
     "github.com/jessevdk/go-flags",
-    "github.com/markbates/grift",
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/config",
     "github.com/onsi/gomega",
@@ -231,8 +297,6 @@
     "github.com/pborman/uuid",
     "github.com/pivotal-cf/go-binmock",
     "github.com/pkg/errors",
-    "github.com/spf13/cobra",
-    "golang.org/x/sync/errgroup",
     "gopkg.in/DATA-DOG/go-sqlmock.v1",
   ]
   solver-name = "gps-cdcl"
