@@ -1,0 +1,79 @@
+{"p.mysql": [
+    {
+      "binding_name": null,
+      "credentials": {
+        "hostname": "q-n3s3y1.q-g662.bosh",
+        "jdbcUrl": "jdbc:mysql://q-n3s3y1.q-g662.bosh:3306/service_instance_db?user=6750244ed5954287990d7a255dc84d9d&password=um9bgh1ni4uajz6t&useSSL=true&requireSSL=true",
+        "name": "service_instance_db",
+        "password": "um9bgh1ni4uajz6t",
+        "port": 3306,
+        "tls": {
+          "cert": {
+            "ca": "-----BEGIN CERTIFICATE-----\nMIIDcTCCAlmgAwIBAgIUdOO5sOa14a6sjU8/3BdrH5wgY7wwDQYJKoZIhvcNAQEL\nBQAwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tMB4XDTE4\nMDEyNTE3NDI0M1oXDTE5MDEyNTE3NDI0M1owJjEkMCIGA1UEAxMbZG0tcm9vdC5k\nZWRpY2F0ZWQtbXlzcWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC\nAQEAw2f9mjCtEHnjNUrNPxk9K2GXrBEOd6FT5RQOzQ9hN64OQp2q9sqJ3sQDuxhv\nqj8H5neaKmpz9yYQERUol1j+lIcZz2XSySAIEl9gwj2Ifj7W8RZZ2zLgu2atqXjG\n0/Kx74gwT3DssktXctDmTA9qvRHggvkafUJDsqFixAVtd3vuX+73qfonn79ACnBR\n8w5/wCoh5JW449w7v7Ix1tlPEaN1PK82yUgJdW2jOSQ3FQfgwJGCt45qFQSpNYok\n1CmmZ9m0ZtMNCYThsfInU4kWPNigH6dekmrJQwO4Q84h0EmMMebUeaP6havS7gT3\nEsNpeIQvm+aUdDLXllFCx52npwIDAQABo4GWMIGTMB0GA1UdDgQWBBTSVUBoLjWu\n1axkj373gNzrq1QGuzBhBgNVHSMEWjBYgBTSVUBoLjWu1axkj373gNzrq1QGu6Eq\npCgwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tghR047mw\n5rXhrqyNTz/cF2sfnCBjvDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUA\nA4IBAQBgoGK9SOECIEssWcd0bQrJrTJGH6ZXzDLMxalpXoGockpvX0awAFNDJ654\nGezOBAJ7TPmDLdRDZFtITwP6Bjaz0HeLz5bkaFsiDyJxkULRgI2kYI9pADu9Uo74\nk6CgIaupoBHrRXR7aVGrWYeN840IFSZB1TCnrCuPne4UVEzGsTnFfUjyOgs0Mqo6\nqAkD6ZTVUPu0SwBDoY2TWD1UuH4rOIDwWzVV7u3vY6HY7rFtOGhiNHdiav7RjpsY\nXmsHnVSaa+5iOgi04VsOF3JhpxuvbdMmEe+sOfBmjv+NwNR+ngXelyCzvR7w74NQ\ndjPvEZQgEt7w6DpovGp8cwtKIMAx\n-----END CERTIFICATE-----\n"
+          }
+        },
+        "uri": "mysql://6750244ed5954287990d7a255dc84d9d:um9bgh1ni4uajz6t@q-n3s3y1.q-g662.bosh:3306/service_instance_db?reconnect=true",
+        "username": "6750244ed5954287990d7a255dc84d9d"
+      },
+      "instance_name": "source",
+      "label": "p.mysql",
+      "name": "source",
+      "plan": "db-small",
+      "provider": null,
+      "syslog_drain_url": null,
+      "tags": [
+        "mysql"
+      ],
+      "volume_mounts": []
+    },
+    {
+      "binding_name": null,
+      "credentials": {
+        "hostname": "q-n3s3y1.q-g663.bosh",
+        "jdbcUrl": "jdbc:mysql://q-n3s3y1.q-g663.bosh:3306/service_instance_db?user=aab9b3d47be84c4fa7aa7003ac3907c9&password=egs9n8bi5rzj2ego&useSSL=true&requireSSL=true",
+        "name": "service_instance_db",
+        "password": "egs9n8bi5rzj2ego",
+        "port": 3306,
+        "tls": {
+          "cert": {
+            "ca": "-----BEGIN CERTIFICATE-----\nMIIDcTCCAlmgAwIBAgIUdOO5sOa14a6sjU8/3BdrH5wgY7wwDQYJKoZIhvcNAQEL\nBQAwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tMB4XDTE4\nMDEyNTE3NDI0M1oXDTE5MDEyNTE3NDI0M1owJjEkMCIGA1UEAxMbZG0tcm9vdC5k\nZWRpY2F0ZWQtbXlzcWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC\nAQEAw2f9mjCtEHnjNUrNPxk9K2GXrBEOd6FT5RQOzQ9hN64OQp2q9sqJ3sQDuxhv\nqj8H5neaKmpz9yYQERUol1j+lIcZz2XSySAIEl9gwj2Ifj7W8RZZ2zLgu2atqXjG\n0/Kx74gwT3DssktXctDmTA9qvRHggvkafUJDsqFixAVtd3vuX+73qfonn79ACnBR\n8w5/wCoh5JW449w7v7Ix1tlPEaN1PK82yUgJdW2jOSQ3FQfgwJGCt45qFQSpNYok\n1CmmZ9m0ZtMNCYThsfInU4kWPNigH6dekmrJQwO4Q84h0EmMMebUeaP6havS7gT3\nEsNpeIQvm+aUdDLXllFCx52npwIDAQABo4GWMIGTMB0GA1UdDgQWBBTSVUBoLjWu\n1axkj373gNzrq1QGuzBhBgNVHSMEWjBYgBTSVUBoLjWu1axkj373gNzrq1QGu6Eq\npCgwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tghR047mw\n5rXhrqyNTz/cF2sfnCBjvDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUA\nA4IBAQBgoGK9SOECIEssWcd0bQrJrTJGH6ZXzDLMxalpXoGockpvX0awAFNDJ654\nGezOBAJ7TPmDLdRDZFtITwP6Bjaz0HeLz5bkaFsiDyJxkULRgI2kYI9pADu9Uo74\nk6CgIaupoBHrRXR7aVGrWYeN840IFSZB1TCnrCuPne4UVEzGsTnFfUjyOgs0Mqo6\nqAkD6ZTVUPu0SwBDoY2TWD1UuH4rOIDwWzVV7u3vY6HY7rFtOGhiNHdiav7RjpsY\nXmsHnVSaa+5iOgi04VsOF3JhpxuvbdMmEe+sOfBmjv+NwNR+ngXelyCzvR7w74NQ\ndjPvEZQgEt7w6DpovGp8cwtKIMAx\n-----END CERTIFICATE-----\n"
+          }
+        },
+        "uri": "mysql://aab9b3d47be84c4fa7aa7003ac3907c9:egs9n8bi5rzj2ego@q-n3s3y1.q-g663.bosh:3306/service_instance_db?reconnect=true",
+        "username": "aab9b3d47be84c4fa7aa7003ac3907c9"
+      },
+      "instance_name": "dest",
+      "label": "p.mysql",
+      "name": "dest",
+      "plan": "db-small",
+      "provider": null,
+      "syslog_drain_url": null,
+      "tags": [
+        "mysql"
+      ],
+      "volume_mounts": []
+    },
+    {
+      "binding_name": null,
+      "credentials": {
+        "hostname": "q-n3s3y1.q-g662.bosh",
+        "jdbcUrl": "jdbc:mysql://q-n3s3y1.q-g662.bosh:3306/service_instance_db?user=6750244ed5954287990d7a255dc84d9d&password=um9bgh1ni4uajz6t&useSSL=true&requireSSL=true",
+        "name": "service_instance_db",
+        "password": "um9bgh1ni4uajz6t",
+        "port": 3306,
+        "uri": "mysql://6750244ed5954287990d7a255dc84d9d:um9bgh1ni4uajz6t@q-n3s3y1.q-g662.bosh:3306/service_instance_db?reconnect=true",
+        "username": "6750244ed5954287990d7a255dc84d9d"
+      },
+      "instance_name": "nonTls",
+      "label": "p.mysql",
+      "name": "nonTls",
+      "plan": "db-small",
+      "provider": null,
+      "syslog_drain_url": null,
+      "tags": [
+        "mysql"
+      ],
+      "volume_mounts": []
+    }
+  ]
+}
