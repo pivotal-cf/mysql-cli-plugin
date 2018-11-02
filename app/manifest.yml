@@ -1,0 +1,7 @@
+---
+applications:
+- buildpack: "binary_buildpack"
+  health-check-type: none
+  command: "/bin/sleep infinity"
+  path: .
+  no-route: true

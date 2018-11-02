@@ -973,13 +973,9 @@ var _ = Describe("Client", func() {
 				To(Equal(
 					[]string{
 						"push",
-						"some-app-name",
-						"-b", "binary_buildpack",
-						"-u", "none",
-						"-c", "sleep infinity",
-						"-p", "some-path",
-						"--no-route",
+						"-f", "some-path/manifest.yml",
 						"--no-start",
+						"some-app-name",
 					},
 				))
 		})

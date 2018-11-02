@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -179,13 +180,9 @@ func (c *Client) ServiceExists(serviceName string) bool {
 func (c *Client) PushApp(path, appName string) error {
 	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"push",
-		appName,
-		"-b", "binary_buildpack",
-		"-u", "none",
-		"-c", "sleep infinity",
-		"-p", path,
-		"--no-route",
+		"-f", filepath.Join(path, "manifest.yml"),
 		"--no-start",
+		appName,
 	)
 
 	return errors.Wrap(err, "failed to push application")
@@ -277,7 +274,7 @@ func (c *Client) GetTaskByGUID(guid string) (*Task, error) {
 }
 
 func (c *Client) retryCfCLIRequestWithExponentialBackoff(requestFunc cliTask, requestArg string, failureMessage string) (interface{}, error) { // TODO: in an ideal world, the arguments passed in wouldn't know about Tasks
-	for attempt := 0; attempt < c.MaxAttempts; attempt ++ {
+	for attempt := 0; attempt < c.MaxAttempts; attempt++ {
 		if attempt > 0 {
 			c.Sleep(time.Second << uint(attempt))
 		}
