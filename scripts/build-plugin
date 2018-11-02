@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)
+ROOT_DIR=$(cd "${SCRIPT_DIR}/.." && pwd)
+VERSION="${VERSION:-0.0.1}"
+
+cd "${ROOT_DIR}"
+>&2 echo "Building app assets..."
+docker run --rm -v "$PWD:$PWD" -w "$PWD" -t cloudfoundry/cflinuxfs3 ./scripts/build-assets
+
+>&2 echo "Running go generate ./... to repack app assets..."
+go generate ./...
+
+>&2 echo "Building $PWD/mysql-cli-plugin"
+go build \
+    -tags forceposix \
+    -ldflags="-X 'github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin.version=${VERSION}'" \
+    -o mysql-cli-plugin \
+    .
+
+>&2 echo "Done!"
