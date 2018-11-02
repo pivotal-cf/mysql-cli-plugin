@@ -15,6 +15,7 @@ package cf_test
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"time"
 
 	"code.cloudfoundry.org/cli/plugin/models"
@@ -973,7 +974,7 @@ var _ = Describe("Client", func() {
 				To(Equal(
 					[]string{
 						"push",
-						"-f", "some-path/manifest.yml",
+						"-f", filepath.Join("some-path", "manifest.yml"),
 						"--no-start",
 						"some-app-name",
 					},
