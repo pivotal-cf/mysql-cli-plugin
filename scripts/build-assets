@@ -12,51 +12,98 @@
 # an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations under the License.
 
-set -e
+set -euo pipefail
 
-tmp_dir=$(mktemp -d)
-output_dir='app/assets'
-boost_version='1_59_0'
+bin_dir='app/bin'
+lib_dir='app/lib'
 percona_version='5.7.21-20'
 
-DEBIAN_FRONTEND=noninteractive apt-get update && \
-DEBIAN_FRONTEND=noninteractive apt-get -y install \
-  --no-install-recommends \
-  cmake g++ make \
-  libncurses5-dev \
-  libssl-dev \
-  zlib1g-dev
+function install_mysql_client_utils() {
+    local build_dir
+    local build_deps=(
+      cmake
+      g++
+      make \
+      libncurses5-dev
+      libssl-dev
+      zlib1g-dev
+    )
 
-wget -O $tmp_dir/boost.tgz http://jenkins.percona.com/downloads/boost/boost_${boost_version}.tar.gz
-wget -O $tmp_dir/percona.tgz https://www.percona.com/downloads/Percona-Server-LATEST/Percona-Server-${percona_version}/source/tarball/percona-server-${percona_version}.tar.gz
+    build_dir=$(mktemp -d)
 
-tar -xf $tmp_dir/boost.tgz -C $tmp_dir && \
-tar -xf $tmp_dir/percona.tgz -C $tmp_dir && \
+    DEBIAN_FRONTEND=noninteractive apt-get update
 
-pushd $tmp_dir/percona-server-${percona_version} >/dev/null
-CMAKE_INCLUDE_PATH=/usr/include/ cmake . \
-  -DBUILD_CONFIG=mysql_release \
-  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-  -DCMAKE_INSTALL_PREFIX=/build \
-  -DFEATURE_SET=community \
-  -DINSTALL_MYSQLTESTDIR= \
-  -DWITH_BOOST=../boost_${boost_version} \
-  -DWITH_EMBEDDED_SERVER=OFF \
-  -DWITH_EDITLINE=bundled \
-  -DWITH_SSL=system \
-  -DWITH_ZLIB=system \
-  -DIGNORE_AIO_CHECK=ON \
-  -DWITHOUT_SERVER=ON && \
-  make --jobs 4 && \
-  make install
-popd >/dev/null
+    DEBIAN_FRONTEND=noninteractive apt-get -y \
+        install --no-install-recommends "${build_deps[@]}"
 
-rm -rf ${output_dir}
-mkdir -p ${output_dir}/lib/
-mv /build/COPYING ${output_dir}
-mv /build/README.MySQL ${output_dir}
-mv /build/bin/mysql ${output_dir}
-mv /build/bin/mysqldump ${output_dir}
-cp /usr/lib/x86_64-linux-gnu/libssl.so.1.1 ${output_dir}/lib/
-cp /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 ${output_dir}/lib/
-cp /lib/x86_64-linux-gnu/libtinfo.so.5 ${output_dir}/lib/
+    curl -Ls "http://jenkins.percona.com/downloads/boost/boost_1_59_0.tar.gz" \
+        > "${build_dir}/boost.tgz" \
+        && sha256sum -c - <<< "47f11c8844e579d02691a607fbd32540104a9ac7a2534a8ddaef50daf502baac  ${build_dir}/boost.tgz"
+
+    curl -Ls "https://www.percona.com/downloads/Percona-Server-LATEST/Percona-Server-${percona_version}/source/tarball/percona-server-${percona_version}.tar.gz" \
+        > "${build_dir}/percona.tgz" \
+        && sha256sum -c - <<< "842785e9b73c606be00ea74f568615d3427362fbeed5c136d8f509f03c9d43a6  ${build_dir}/percona.tgz"
+
+    tar -xf "${build_dir}/boost.tgz" -C "${build_dir}" && \
+    tar -xf "${build_dir}/percona.tgz" -C "${build_dir}" && \
+
+    pushd "${build_dir}/percona-server-${percona_version}" >/dev/null
+    CMAKE_INCLUDE_PATH=/usr/include/ cmake . \
+      -DBUILD_CONFIG=mysql_release \
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DCMAKE_INSTALL_PREFIX=/build \
+      -DFEATURE_SET=community \
+      -DINSTALL_MYSQLTESTDIR= \
+      -DWITH_BOOST="../boost_1_59_0" \
+      -DWITH_EMBEDDED_SERVER=OFF \
+      -DWITH_EDITLINE=bundled \
+      -DWITH_SSL=system \
+      -DWITH_ZLIB=system \
+      -DIGNORE_AIO_CHECK=ON \
+      -DWITHOUT_SERVER=ON && \
+      make --jobs 4 && \
+      make install
+    popd >/dev/null
+
+    mv /build/COPYING ${bin_dir}
+    mv /build/README.MySQL ${bin_dir}
+    mv /build/bin/mysql ${bin_dir}
+    mv /build/bin/mysqldump ${bin_dir}
+    cp /usr/lib/x86_64-linux-gnu/libssl.so.1.1 ${lib_dir}
+    cp /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 ${lib_dir}
+    cp /lib/x86_64-linux-gnu/libtinfo.so.5 ${lib_dir}
+}
+
+function install_migrate_task() {
+    curl --silent https://dl.google.com/go/go1.10.4.linux-amd64.tar.gz > /tmp/golang.tgz \
+        && sha256sum -c - <<< "fa04efdb17a275a0c6e137f969a1c4eb878939e91e1da16060ce42f02c2ec5ec /tmp/golang.tgz" \
+        && tar -xf /tmp/golang.tgz -C /usr/local/
+
+    GOROOT=/usr/local/go
+    PATH="$PATH:$GOROOT/bin"
+    GOPATH="$(mktemp -d)"
+    export GOPATH GOROOT PATH
+
+    mkdir -p "${GOPATH}/src/github.com/pivotal-cf/mysql-cli-plugin/"
+    cp -a . "${GOPATH}/src/github.com/pivotal-cf/mysql-cli-plugin/"
+
+    GOBIN="$PWD/app/bin" go install github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate
+}
+
+function clean_app_directory() {
+    rm -rf ${bin_dir}
+    rm -rf ${lib_dir}
+    mkdir -p ${bin_dir}
+    mkdir -p ${lib_dir}
+}
+
+function main() {
+    >&2 echo "Cleaning app/ directory..."
+    clean_app_directory
+    >&2 echo "Installing migrate task binary into app/"
+    install_migrate_task
+    >&2 echo "Installing mysql client utilities into app/"
+    install_mysql_client_utils
+}
+
+main
