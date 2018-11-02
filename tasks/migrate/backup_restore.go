@@ -36,6 +36,7 @@ func baseCmd(cmdName string, credentials Credentials) *exec.Cmd {
 	}
 
 	cmd := exec.Command(cmdName, args...)
+	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(), "MYSQL_PWD="+credentials.Password)
 
 	return cmd
@@ -63,8 +64,8 @@ func MySQLDumpCmd(credentials Credentials, schemas ...string) *exec.Cmd {
 func MySQLCmd(credentials Credentials) *exec.Cmd {
 	cmd := baseCmd("mysql", credentials)
 
-	cmd.Args = append(cmd.Args,
-		credentials.Name)
+	cmd.Args = append(cmd.Args, credentials.Name)
+	cmd.Stdout = os.Stdout
 
 	return cmd
 }

@@ -14,6 +14,7 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
@@ -35,6 +36,17 @@ var _ = Describe("MySQLDumpCmd", func() {
 			Hostname: "some-hostname",
 			Port:     3307,
 		}
+	})
+
+	It("configures stdio", func() {
+		mysqldump := MySQLDumpCmd(credentials, schemas...)
+		By("directing stderr to os.Stderr", func() {
+			Expect(mysqldump.Stderr).To(Equal(os.Stderr))
+		})
+
+		By("not configuring stdout", func() {
+			Expect(mysqldump.Stdout).To(BeNil())
+		})
 	})
 
 	When("dumping multiple schemas", func() {
@@ -169,6 +181,17 @@ var _ = Describe("MySQLCmd", func() {
 			Hostname: "some-hostname",
 			Port:     3307,
 		}
+	})
+
+	It("configures stdio", func() {
+		mysql := MySQLCmd(credentials)
+		By("directing stderr to os.Stderr", func() {
+			Expect(mysql.Stderr).To(Equal(os.Stderr))
+		})
+
+		By("directing stdout to os.Stdout", func() {
+			Expect(mysql.Stdout).To(Equal(os.Stdout))
+		})
 	})
 
 	It("builds the mysql command", func() {
