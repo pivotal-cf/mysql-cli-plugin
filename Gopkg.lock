@@ -82,6 +82,22 @@
   revision = "5499956ce4d9ef7fddc825ea7cb26744eeac3d79"
 
 [[projects]]
+  digest = "1:a7fd918fb5bd2188436785c0424f8a50b4addfedf37a2b14d796be2a927b8007"
+  name = "github.com/onsi/ginkgo"
+  packages = []
+  pruneopts = ""
+  revision = "3774a09d95489ccaa16032e0770d08ea77ba6184"
+  version = "v1.6.0"
+
+[[projects]]
+  digest = "1:44febbaa3af725dccbe3d83b21ef155f7136670a419bb24a91383bb27d6dcbd4"
+  name = "github.com/onsi/gomega"
+  packages = []
+  pruneopts = ""
+  revision = "003f63b7f4cff3fc95357005358af2de0f5fe152"
+  version = "v1.4.2"
+
+[[projects]]
   digest = "1:63e142fc50307bcb3c57494913cfc9c12f6061160bdf97a678f78c71615f939b"
   name = "github.com/pborman/uuid"
   packages = ["."]
