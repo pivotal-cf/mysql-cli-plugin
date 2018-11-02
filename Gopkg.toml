@@ -18,14 +18,6 @@ required = [ "golang.org/x/sync/errgroup", "github.com/markbates/grift", "github
   version = "6.34.1"
 
 [[constraint]]
-  name = "github.com/onsi/ginkgo"
-  version = "1.4.0"
-
-[[constraint]]
-  name = "github.com/onsi/gomega"
-  version = "1.3.0"
-
-[[constraint]]
   name = "github.com/gobuffalo/packr"
   version = "1.10.4"
 
