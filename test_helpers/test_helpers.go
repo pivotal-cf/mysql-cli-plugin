@@ -386,6 +386,10 @@ func waitForTunnel(port int, serviceKey ServiceKey) {
 	defer db.Close()
 
 	Eventually(func() error {
-		return db.Ping()
-	}, "1m", "5s").Should(Not(HaveOccurred()))
+		err = db.Ping()
+		if err != nil {
+			fmt.Fprintf(GinkgoWriter, "db ping failed: %v", err)
+		}
+		return err
+	}, "2m", "5s").Should(Not(HaveOccurred()))
 }
