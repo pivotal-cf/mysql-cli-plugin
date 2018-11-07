@@ -32,7 +32,11 @@ var (
 	gitSHA  = "unknown"
 )
 
-const usage = `cf mysql-tools migrate [-h] [-v] [--no-cleanup] <v1-service-instance> <plan-type>`
+const (
+	usage = `cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>
+   cf mysql-tools version`
+	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>`
+)
 
 //go:generate counterfeiter . Migrator
 type Migrator interface {
@@ -59,7 +63,12 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if len(args) < 2 {
 		// Unfortunately there is no good way currently to show the usage on a plugin
 		// without having `-h` added to the command line, so we hardcode it.
-		fmt.Fprintf(os.Stderr, "Usage: %s\n", usage)
+		fmt.Fprintln(os.Stderr, `NAME:
+   mysql-tools - Plugin to migrate mysql instances
+
+USAGE:
+   cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>
+   cf mysql-tools version`)
 		os.Exit(1)
 		return
 	}
@@ -117,7 +126,7 @@ func Migrate(migrator Migrator, args []string) error {
 		if err != nil {
 			msg = err.Error()
 		}
-		return errors.Errorf("Usage: %s\n%s", usage, msg)
+		return errors.Errorf("Usage: %s\n\n%s", migrateUsage, msg)
 	}
 	donorInstanceName := opts.Args.Source
 	tempRecipientInstanceName := donorInstanceName + "-new"

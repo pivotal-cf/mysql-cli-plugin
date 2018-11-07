@@ -26,7 +26,7 @@ var _ = Describe("Plugin Commands", func() {
 		fakeMigrator *pluginfakes.FakeMigrator
 	)
 
-	const usage = `Usage: cf mysql-tools migrate [-h] [-v] [--no-cleanup] <v1-service-instance> <plan-type>`
+	const usage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>`
 
 	BeforeEach(func() {
 		fakeMigrator = new(pluginfakes.FakeMigrator)
@@ -87,19 +87,19 @@ var _ = Describe("Plugin Commands", func() {
 		It("returns an error if not enough args are passed", func() {
 			args := []string{"just-a-source"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(usage + "\nthe required argument `<plan-type>` was not provided"))
+			Expect(err).To(MatchError(usage + "\n\nthe required argument `<plan-type>` was not provided"))
 		})
 
 		It("returns an error if too many args are passed", func() {
 			args := []string{"source", "plan-type", "extra-arg"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(usage + "\nunexpected arguments: extra-arg"))
+			Expect(err).To(MatchError(usage + "\n\nunexpected arguments: extra-arg"))
 		})
 
 		It("returns an error if an invalid flag is passed", func() {
 			args := []string{"source", "plan-type", "--invalid-flag"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(usage + "\nunknown flag `invalid-flag'"))
+			Expect(err).To(MatchError(usage + "\n\nunknown flag `invalid-flag'"))
 		})
 
 		Context("when creating a service instance fails", func() {

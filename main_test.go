@@ -18,26 +18,35 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 )
 
-const shortUsage = `cf mysql-tools migrate [-h] [-v] [--no-cleanup] <v1-service-instance> <plan-type>`
-const longUsage = `NAME:
+const (
+	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>
+`
+	longUsage = `NAME:
    mysql-tools - Plugin to migrate mysql instances
 
 USAGE:
-   ` + shortUsage
+   cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>
+   cf mysql-tools version
+`
+)
 
 var _ = Describe("MysqlCliPlugin", func() {
-	It("displays short usage string with no arguments", func() {
+	BeforeEach(func() {
+		format.TruncatedDiff = false
+	})
+
+	It("displays long usage string with no arguments", func() {
 		cmd := exec.Command("cf", "mysql-tools")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
-		Expect(string(session.Err.Contents())).To(ContainSubstring(shortUsage))
-		Expect(string(session.Err.Contents())).NotTo(ContainSubstring(longUsage))
+		Expect(string(session.Err.Contents())).To(Equal(longUsage))
 	})
 
 	It("Displays long usage string when -h flag is passed to base command", func() {
@@ -65,7 +74,7 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
 
 		Expect(string(session.Err.Contents())).To(Equal(
-			"Usage: " + shortUsage +
+			"Usage: " + migrateUsage +
 				"\nthe required arguments `<v1-service-instance>` and `<plan-type>` were not provided\n"))
 	})
 
