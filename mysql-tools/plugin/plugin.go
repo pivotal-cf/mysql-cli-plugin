@@ -137,6 +137,7 @@ func Migrate(migrator Migrator, args []string) error {
 		return err
 	}
 
+	log.Printf("Warning: The mysql-tools migrate command will not migrate any triggers, routines or events.")
 	productName := os.Getenv("RECIPIENT_PRODUCT_NAME")
 	if productName == "" {
 		productName = "p.mysql"

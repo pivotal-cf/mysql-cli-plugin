@@ -81,6 +81,10 @@ var _ = Describe("Migrate Integration Tests", func() {
 	})
 
 	Context("When a valid donor service instance exists", func() {
+		BeforeEach(func() {
+			createValidMigrationState(sourceInstance)
+		})
+
 		AfterEach(func() {
 			if springAppName != "" {
 				test_helpers.DeleteApp(springAppName)
@@ -166,6 +170,10 @@ var _ = Describe("Migrate Integration Tests", func() {
 					NotTo(BeEmpty(),
 						"Expected recipient service instance to be TLS enabled, but it was not")
 			})
+
+			By("Verifying the views get migrated with invoker security type and procedures are not migrated", func() {
+				validateMigrationState(sourceInstance)
+			})
 		})
 
 		Context("when the --no-cleanup flag is specified", func() {
@@ -246,12 +254,12 @@ var _ = Describe("Migrate Integration Tests", func() {
 	})
 })
 
-func createInvalidMigrationState(sourceInstance string) {
+func validateMigrationState(instanceName string) {
 	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
-	sourceServiceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
+	serviceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
 
 	test_helpers.PushApp(appName, "../assets/spring-music")
-	test_helpers.BindAppToService(appName, sourceInstance)
+	test_helpers.BindAppToService(appName, instanceName)
 	defer func() {
 		test_helpers.DeleteApp(appName)
 		test_helpers.AssertAppIsDeleted(appName)
@@ -259,8 +267,8 @@ func createInvalidMigrationState(sourceInstance string) {
 
 	test_helpers.StartApp(appName)
 
-	serviceKeyCreds := test_helpers.GetServiceKey(sourceInstance, sourceServiceKey)
-	defer test_helpers.DeleteServiceKey(sourceInstance, sourceServiceKey)
+	serviceKeyCreds := test_helpers.GetServiceKey(instanceName, serviceKey)
+	defer test_helpers.DeleteServiceKey(instanceName, serviceKey)
 
 	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
 	defer closeTunnel()
@@ -270,6 +278,83 @@ func createInvalidMigrationState(sourceInstance string) {
 		serviceKeyCreds.Password,
 		serviceKeyCreds.Name,
 	)
+
+	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	var routineCount int
+	routineCountSQL := `SELECT COUNT(*) FROM information_schema.routines WHERE ROUTINE_SCHEMA = 'service_instance_db'`
+	Expect(db.QueryRow(routineCountSQL).Scan(&routineCount)).To(Succeed())
+	Expect(routineCount).To(BeZero())
+
+	var viewSecurityType string
+	checkViewSQL := `SELECT SECURITY_TYPE FROM information_schema.views WHERE table_schema = 'service_instance_db' and table_name = 'migrate_view'`
+	Expect(db.QueryRow(checkViewSQL).Scan(&viewSecurityType)).To(Succeed())
+	Expect(viewSecurityType).To(Equal("INVOKER"))
+}
+
+func createValidMigrationState(instanceName string) {
+	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
+	serviceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
+
+	test_helpers.PushApp(appName, "../assets/spring-music")
+	test_helpers.BindAppToService(appName, instanceName)
+	defer func() {
+		test_helpers.DeleteApp(appName)
+		test_helpers.AssertAppIsDeleted(appName)
+	}()
+
+	test_helpers.StartApp(appName)
+
+	serviceKeyCreds := test_helpers.GetServiceKey(instanceName, serviceKey)
+	defer test_helpers.DeleteServiceKey(instanceName, serviceKey)
+
+	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
+	defer closeTunnel()
+
+	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63308)/%s",
+		serviceKeyCreds.Username,
+		serviceKeyCreds.Password,
+		serviceKeyCreds.Name,
+	)
+
+	db, err := sql.Open("mysql", dsn)
+	defer db.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("CREATE VIEW migrate_view AS SELECT 1")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("CREATE PROCEDURE migrate_procedure() BEGIN END")
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func createInvalidMigrationState(instanceName string) {
+	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
+	serviceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
+
+	test_helpers.PushApp(appName, "../assets/spring-music")
+	test_helpers.BindAppToService(appName, instanceName)
+	defer func() {
+		test_helpers.DeleteApp(appName)
+		test_helpers.AssertAppIsDeleted(appName)
+	}()
+
+	test_helpers.StartApp(appName)
+
+	serviceKeyCreds := test_helpers.GetServiceKey(instanceName, serviceKey)
+	defer test_helpers.DeleteServiceKey(instanceName, serviceKey)
+
+	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
+	defer closeTunnel()
+
+	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63308)/%s",
+		serviceKeyCreds.Username,
+		serviceKeyCreds.Password,
+		serviceKeyCreds.Name,
+	)
+
 	db, err := sql.Open("mysql", dsn)
 	defer db.Close()
 	Expect(err).NotTo(HaveOccurred())
