@@ -75,8 +75,9 @@ func main() {
 
 	mySQLDumpCmd := MySQLDumpCmd(sourceCredentials, sourceSchemas...)
 	mySQLCmd := MySQLCmd(destCredentials)
+	replaceCmd := ReplaceDefinerCmd()
 
-	if err := CopyData(mySQLDumpCmd, mySQLCmd); err != nil {
+	if err := CopyData(mySQLDumpCmd, replaceCmd, mySQLCmd); err != nil {
 		log.Fatalf("Failed to copy data: %v", err)
 	}
 }

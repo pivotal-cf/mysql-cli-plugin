@@ -13,7 +13,10 @@
 package plugin_test
 
 import (
+	"bytes"
 	"errors"
+	"io"
+	"log"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -24,12 +27,17 @@ import (
 var _ = Describe("Plugin Commands", func() {
 	var (
 		fakeMigrator *pluginfakes.FakeMigrator
+		logOutput    *bytes.Buffer
 	)
 
 	const usage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>`
 
 	BeforeEach(func() {
 		fakeMigrator = new(pluginfakes.FakeMigrator)
+		logOutput = &bytes.Buffer{}
+
+		w := io.MultiWriter(GinkgoWriter, logOutput)
+		log.SetOutput(w)
 	})
 
 	Context("Migrate", func() {
@@ -38,6 +46,10 @@ var _ = Describe("Plugin Commands", func() {
 				"some-donor", "some-plan",
 			}
 			Expect(plugin.Migrate(fakeMigrator, args)).To(Succeed())
+
+			By("log a message that we don't migrate triggers, routines and events", func() {
+				Expect(logOutput.String()).To(ContainSubstring(`Warning: The mysql-tools migrate command will not migrate any triggers, routines or events`))
+			})
 
 			By("checking that donor exists", func() {
 				Expect(fakeMigrator.CheckServiceExistsCallCount()).

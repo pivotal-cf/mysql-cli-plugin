@@ -64,9 +64,10 @@ var _ = Describe("MySQLDumpCmd", func() {
 				"--port=3307",
 				"--max-allowed-packet=1G",
 				"--single-transaction",
-				"--routines",
-				"--events",
+				"--skip-routines",
+				"--skip-events",
 				"--set-gtid-purged=off",
+				"--skip-triggers",
 				"--databases",
 				"foo",
 				"bar",
@@ -98,9 +99,10 @@ var _ = Describe("MySQLDumpCmd", func() {
 					"--ssl-capath=/etc/ssl/certs",
 					"--max-allowed-packet=1G",
 					"--single-transaction",
-					"--routines",
-					"--events",
+					"--skip-routines",
+					"--skip-events",
 					"--set-gtid-purged=off",
+					"--skip-triggers",
 					"--databases",
 					"foo",
 					"bar",
@@ -126,9 +128,10 @@ var _ = Describe("MySQLDumpCmd", func() {
 				"--port=3307",
 				"--max-allowed-packet=1G",
 				"--single-transaction",
-				"--routines",
-				"--events",
+				"--skip-routines",
+				"--skip-events",
 				"--set-gtid-purged=off",
+				"--skip-triggers",
 				"one-database",
 			}))
 			Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
@@ -157,9 +160,10 @@ var _ = Describe("MySQLDumpCmd", func() {
 					"--ssl-capath=/etc/ssl/certs",
 					"--max-allowed-packet=1G",
 					"--single-transaction",
-					"--routines",
-					"--events",
+					"--skip-routines",
+					"--skip-events",
 					"--set-gtid-purged=off",
+					"--skip-triggers",
 					"one-database",
 				}))
 				Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
@@ -235,12 +239,41 @@ var _ = Describe("MySQLCmd", func() {
 	})
 })
 
+var _ = Describe("ReplaceDefinerCmd", func() {
+	var (
+		credentials Credentials
+	)
+
+	BeforeEach(func() {
+		credentials = Credentials{
+			Username: "some-user-name",
+			Name:     "some-db-name",
+			Password: "some-password",
+			Hostname: "some-hostname",
+			Port:     3307,
+		}
+	})
+
+	It("builds the sed command", func() {
+		replace := ReplaceDefinerCmd()
+		Expect(replace).ToNot(BeNil())
+		Expect(replace.Args).To(Equal([]string{
+			"sed",
+			"-e",
+			"s/DEFINER=`.*`@`%` SQL SECURITY DEFINER/SQL SECURITY INVOKER/",
+		}))
+	})
+
+})
+
 var _ = Describe("CopyData", func() {
 	var (
-		mySQLDumpMock *binmock.Mock
-		mySQLDumpCmd  *exec.Cmd
-		mySQLMock     *binmock.Mock
-		mySQLCmd      *exec.Cmd
+		mySQLDumpMock      *binmock.Mock
+		mySQLDumpCmd       *exec.Cmd
+		mySQLMock          *binmock.Mock
+		mySQLCmd           *exec.Cmd
+		replaceDefinerMock *binmock.Mock
+		replaceDefinerCmd  *exec.Cmd
 	)
 
 	BeforeEach(func() {
@@ -251,20 +284,29 @@ var _ = Describe("CopyData", func() {
 			WillExitWith(0)
 		mySQLDumpCmd = exec.Command(mySQLDumpMock.Path)
 
+		replaceDefinerMock = binmock.NewBinMock(Fail)
+		replaceDefinerMock.
+			WhenCalled().
+			WillPrintToStdOut(`replaced`).
+			WillExitWith(0)
+		replaceDefinerCmd = exec.Command(replaceDefinerMock.Path)
+
 		mySQLMock = binmock.NewBinMock(Fail)
 		mySQLMock.WhenCalled().WillExitWith(0)
 		mySQLCmd = exec.Command(mySQLMock.Path)
 	})
 
 	It("Pipes the output of the mySQLDumpCmd command into the mySQLCmd command", func() {
-		Expect(CopyData(mySQLDumpCmd, mySQLCmd)).To(Succeed())
+		Expect(CopyData(mySQLDumpCmd, replaceDefinerCmd, mySQLCmd)).To(Succeed())
 
 		Expect(mySQLDumpMock.Invocations()).To(HaveLen(1))
-
+		Expect(replaceDefinerMock.Invocations()).To(HaveLen(1))
 		Expect(mySQLMock.Invocations()).To(HaveLen(1))
 
-		Expect(mySQLMock.Invocations()[0].Stdin()).
+		Expect(replaceDefinerMock.Invocations()[0].Stdin()).
 			To(ConsistOf(`something`))
+		Expect(mySQLMock.Invocations()[0].Stdin()).
+			To(ConsistOf(`replaced`))
 	})
 
 	When("piping the output of mysqldump fails", func() {
@@ -281,7 +323,7 @@ var _ = Describe("CopyData", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(CopyData(mySQLDumpCmd, mySQLCmd)).
+			Expect(CopyData(mySQLDumpCmd, replaceDefinerCmd, mySQLCmd)).
 				To(MatchError(`mysqldump command failed: exit status 1`))
 		})
 	})
@@ -292,7 +334,7 @@ var _ = Describe("CopyData", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(CopyData(mySQLDumpCmd, mySQLCmd)).
+			Expect(CopyData(mySQLDumpCmd, replaceDefinerCmd, mySQLCmd)).
 				To(MatchError(`couldn't start mysqldump: fork/exec /invalid/path/to/mysqldump: no such file or directory`))
 		})
 	})
@@ -303,7 +345,7 @@ var _ = Describe("CopyData", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(CopyData(mySQLDumpCmd, mySQLCmd)).
+			Expect(CopyData(mySQLDumpCmd, replaceDefinerCmd, mySQLCmd)).
 				To(MatchError(`couldn't start mysql: fork/exec /invalid/path/to/mysql: no such file or directory`))
 		})
 	})
@@ -315,7 +357,7 @@ var _ = Describe("CopyData", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(CopyData(mySQLDumpCmd, mySQLCmd)).
+			Expect(CopyData(mySQLDumpCmd, replaceDefinerCmd, mySQLCmd)).
 				To(MatchError("mysqldump command failed: exit status 1"))
 		})
 	})
@@ -327,7 +369,7 @@ var _ = Describe("CopyData", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(CopyData(mySQLDumpCmd, mySQLCmd)).
+			Expect(CopyData(mySQLDumpCmd, replaceDefinerCmd, mySQLCmd)).
 				To(MatchError("mysql command failed: exit status 1"))
 		})
 	})
@@ -338,7 +380,7 @@ var _ = Describe("CopyData", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(CopyData(mySQLDumpCmd, mySQLCmd)).
+			Expect(CopyData(mySQLDumpCmd, replaceDefinerCmd, mySQLCmd)).
 				To(MatchError("couldn't pipe the output of mysqldump: exec: Stdout already set"))
 		})
 	})

@@ -48,9 +48,10 @@ func MySQLDumpCmd(credentials Credentials, schemas ...string) *exec.Cmd {
 	cmd.Args = append(cmd.Args,
 		"--max-allowed-packet=1G",
 		"--single-transaction",
-		"--routines",
-		"--events",
+		"--skip-routines",
+		"--skip-events",
 		"--set-gtid-purged=off",
+		"--skip-triggers",
 	)
 
 	if len(schemas) > 1 {
@@ -70,16 +71,38 @@ func MySQLCmd(credentials Credentials) *exec.Cmd {
 	return cmd
 }
 
-func CopyData(mysqldump, mysql *exec.Cmd) error {
+func ReplaceDefinerCmd() *exec.Cmd {
+	args := []string{
+		"-e",
+		"s/DEFINER=`.*`@`%` SQL SECURITY DEFINER/SQL SECURITY INVOKER/",
+	}
+
+	cmd := exec.Command("sed", args...)
+	cmd.Stderr = os.Stderr
+	return cmd
+}
+
+func CopyData(mysqldump, replaceDefinerCmd, mysql *exec.Cmd) error {
 	dumpOut, err := mysqldump.StdoutPipe()
 	if err != nil {
 		return errors.Wrap(err, "couldn't pipe the output of mysqldump")
 	}
 
-	mysql.Stdin = dumpOut
+	replaceDefinerCmd.Stdin = dumpOut
+
+	replaceOut, err := replaceDefinerCmd.StdoutPipe()
+	if err != nil {
+		return errors.Wrap(err, "couldn't pipe the output of sed")
+	}
+
+	mysql.Stdin = replaceOut
 
 	if err := mysqldump.Start(); err != nil {
 		return errors.Wrap(err, "couldn't start mysqldump")
+	}
+
+	if err := replaceDefinerCmd.Start(); err != nil {
+		return errors.Wrap(err, "couldn't start sed")
 	}
 
 	if err := mysql.Start(); err != nil {
@@ -88,6 +111,10 @@ func CopyData(mysqldump, mysql *exec.Cmd) error {
 
 	if err := mysql.Wait(); err != nil {
 		return errors.Wrap(err, "mysql command failed")
+	}
+
+	if err := replaceDefinerCmd.Wait(); err != nil {
+		return errors.Wrap(err, "sed command failed")
 	}
 
 	if err := mysqldump.Wait(); err != nil {

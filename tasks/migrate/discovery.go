@@ -28,17 +28,17 @@ func DiscoverDatabases(db *sql.DB) ([]string, error) {
 	var dbs []string
 
 	filterSchemas := map[string]struct{}{
-		"cf_metadata": {},
+		"cf_metadata":        {},
 		"information_schema": {},
-		"mysql": {},
+		"mysql":              {},
 		"performance_schema": {},
-		"sys": {},
+		"sys":                {},
 	}
 
 	for rows.Next() {
 		var dbName string
 		if err := rows.Scan(&dbName); err != nil {
-			return nil, errors.Wrap(err,"failed to scan the list of databases")
+			return nil, errors.Wrap(err, "failed to scan the list of databases")
 		}
 
 		if _, ok := filterSchemas[dbName]; ok {
