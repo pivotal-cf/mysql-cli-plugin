@@ -283,7 +283,10 @@ func setupStoredCodeFixtures(instanceName string) {
 	defer db.Close()
 	Expect(err).NotTo(HaveOccurred())
 
-	_, err = db.Exec("CREATE VIEW migrate_view AS SELECT 1")
+	_, err = db.Exec("CREATE SQL SECURITY INVOKER VIEW migrate_invoker_view AS SELECT 1")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("CREATE SQL SECURITY DEFINER VIEW migrate_definer_view AS SELECT 1")
 	Expect(err).NotTo(HaveOccurred())
 
 	_, err = db.Exec("CREATE PROCEDURE migrate_procedure() BEGIN END")
@@ -325,7 +328,11 @@ func validateMigratedStoredCode(instanceName string) {
 	Expect(routineCount).To(BeZero())
 
 	var viewSecurityType string
-	checkViewSQL := `SELECT SECURITY_TYPE FROM information_schema.views WHERE table_schema = 'service_instance_db' and table_name = 'migrate_view'`
+	checkViewSQL := `SELECT SECURITY_TYPE FROM information_schema.views WHERE table_schema = 'service_instance_db' and table_name = 'migrate_invoker_view'`
+	Expect(db.QueryRow(checkViewSQL).Scan(&viewSecurityType)).To(Succeed())
+	Expect(viewSecurityType).To(Equal("INVOKER"))
+
+	checkViewSQL = `SELECT SECURITY_TYPE FROM information_schema.views WHERE table_schema = 'service_instance_db' and table_name = 'migrate_definer_view'`
 	Expect(db.QueryRow(checkViewSQL).Scan(&viewSecurityType)).To(Succeed())
 	Expect(viewSecurityType).To(Equal("INVOKER"))
 }

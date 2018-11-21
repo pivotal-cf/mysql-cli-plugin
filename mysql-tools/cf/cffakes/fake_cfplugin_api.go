@@ -2,25 +2,13 @@
 package cffakes
 
 import (
-	sync "sync"
+	"sync"
 
-	plugin_models "code.cloudfoundry.org/cli/plugin/models"
-	cf "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
+	"code.cloudfoundry.org/cli/plugin/models"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 )
 
 type FakeCFPluginAPI struct {
-	AccessTokenStub        func() (string, error)
-	accessTokenMutex       sync.RWMutex
-	accessTokenArgsForCall []struct {
-	}
-	accessTokenReturns struct {
-		result1 string
-		result2 error
-	}
-	accessTokenReturnsOnCall map[int]struct {
-		result1 string
-		result2 error
-	}
 	CliCommandStub        func(...string) ([]string, error)
 	cliCommandMutex       sync.RWMutex
 	cliCommandArgsForCall []struct {
@@ -34,10 +22,10 @@ type FakeCFPluginAPI struct {
 		result1 []string
 		result2 error
 	}
-	CliCommandWithoutTerminalOutputStub        func(...string) ([]string, error)
+	CliCommandWithoutTerminalOutputStub        func(args ...string) ([]string, error)
 	cliCommandWithoutTerminalOutputMutex       sync.RWMutex
 	cliCommandWithoutTerminalOutputArgsForCall []struct {
-		arg1 []string
+		args []string
 	}
 	cliCommandWithoutTerminalOutputReturns struct {
 		result1 []string
@@ -49,9 +37,8 @@ type FakeCFPluginAPI struct {
 	}
 	GetCurrentSpaceStub        func() (plugin_models.Space, error)
 	getCurrentSpaceMutex       sync.RWMutex
-	getCurrentSpaceArgsForCall []struct {
-	}
-	getCurrentSpaceReturns struct {
+	getCurrentSpaceArgsForCall []struct{}
+	getCurrentSpaceReturns     struct {
 		result1 plugin_models.Space
 		result2 error
 	}
@@ -72,63 +59,19 @@ type FakeCFPluginAPI struct {
 		result1 plugin_models.GetService_Model
 		result2 error
 	}
+	AccessTokenStub        func() (string, error)
+	accessTokenMutex       sync.RWMutex
+	accessTokenArgsForCall []struct{}
+	accessTokenReturns     struct {
+		result1 string
+		result2 error
+	}
+	accessTokenReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeCFPluginAPI) AccessToken() (string, error) {
-	fake.accessTokenMutex.Lock()
-	ret, specificReturn := fake.accessTokenReturnsOnCall[len(fake.accessTokenArgsForCall)]
-	fake.accessTokenArgsForCall = append(fake.accessTokenArgsForCall, struct {
-	}{})
-	fake.recordInvocation("AccessToken", []interface{}{})
-	fake.accessTokenMutex.Unlock()
-	if fake.AccessTokenStub != nil {
-		return fake.AccessTokenStub()
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	fakeReturns := fake.accessTokenReturns
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *FakeCFPluginAPI) AccessTokenCallCount() int {
-	fake.accessTokenMutex.RLock()
-	defer fake.accessTokenMutex.RUnlock()
-	return len(fake.accessTokenArgsForCall)
-}
-
-func (fake *FakeCFPluginAPI) AccessTokenCalls(stub func() (string, error)) {
-	fake.accessTokenMutex.Lock()
-	defer fake.accessTokenMutex.Unlock()
-	fake.AccessTokenStub = stub
-}
-
-func (fake *FakeCFPluginAPI) AccessTokenReturns(result1 string, result2 error) {
-	fake.accessTokenMutex.Lock()
-	defer fake.accessTokenMutex.Unlock()
-	fake.AccessTokenStub = nil
-	fake.accessTokenReturns = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeCFPluginAPI) AccessTokenReturnsOnCall(i int, result1 string, result2 error) {
-	fake.accessTokenMutex.Lock()
-	defer fake.accessTokenMutex.Unlock()
-	fake.AccessTokenStub = nil
-	if fake.accessTokenReturnsOnCall == nil {
-		fake.accessTokenReturnsOnCall = make(map[int]struct {
-			result1 string
-			result2 error
-		})
-	}
-	fake.accessTokenReturnsOnCall[i] = struct {
-		result1 string
-		result2 error
-	}{result1, result2}
 }
 
 func (fake *FakeCFPluginAPI) CliCommand(arg1 ...string) ([]string, error) {
@@ -145,8 +88,7 @@ func (fake *FakeCFPluginAPI) CliCommand(arg1 ...string) ([]string, error) {
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.cliCommandReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fake.cliCommandReturns.result1, fake.cliCommandReturns.result2
 }
 
 func (fake *FakeCFPluginAPI) CliCommandCallCount() int {
@@ -155,22 +97,13 @@ func (fake *FakeCFPluginAPI) CliCommandCallCount() int {
 	return len(fake.cliCommandArgsForCall)
 }
 
-func (fake *FakeCFPluginAPI) CliCommandCalls(stub func(...string) ([]string, error)) {
-	fake.cliCommandMutex.Lock()
-	defer fake.cliCommandMutex.Unlock()
-	fake.CliCommandStub = stub
-}
-
 func (fake *FakeCFPluginAPI) CliCommandArgsForCall(i int) []string {
 	fake.cliCommandMutex.RLock()
 	defer fake.cliCommandMutex.RUnlock()
-	argsForCall := fake.cliCommandArgsForCall[i]
-	return argsForCall.arg1
+	return fake.cliCommandArgsForCall[i].arg1
 }
 
 func (fake *FakeCFPluginAPI) CliCommandReturns(result1 []string, result2 error) {
-	fake.cliCommandMutex.Lock()
-	defer fake.cliCommandMutex.Unlock()
 	fake.CliCommandStub = nil
 	fake.cliCommandReturns = struct {
 		result1 []string
@@ -179,8 +112,6 @@ func (fake *FakeCFPluginAPI) CliCommandReturns(result1 []string, result2 error) 
 }
 
 func (fake *FakeCFPluginAPI) CliCommandReturnsOnCall(i int, result1 []string, result2 error) {
-	fake.cliCommandMutex.Lock()
-	defer fake.cliCommandMutex.Unlock()
 	fake.CliCommandStub = nil
 	if fake.cliCommandReturnsOnCall == nil {
 		fake.cliCommandReturnsOnCall = make(map[int]struct {
@@ -194,22 +125,21 @@ func (fake *FakeCFPluginAPI) CliCommandReturnsOnCall(i int, result1 []string, re
 	}{result1, result2}
 }
 
-func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutput(arg1 ...string) ([]string, error) {
+func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutput(args ...string) ([]string, error) {
 	fake.cliCommandWithoutTerminalOutputMutex.Lock()
 	ret, specificReturn := fake.cliCommandWithoutTerminalOutputReturnsOnCall[len(fake.cliCommandWithoutTerminalOutputArgsForCall)]
 	fake.cliCommandWithoutTerminalOutputArgsForCall = append(fake.cliCommandWithoutTerminalOutputArgsForCall, struct {
-		arg1 []string
-	}{arg1})
-	fake.recordInvocation("CliCommandWithoutTerminalOutput", []interface{}{arg1})
+		args []string
+	}{args})
+	fake.recordInvocation("CliCommandWithoutTerminalOutput", []interface{}{args})
 	fake.cliCommandWithoutTerminalOutputMutex.Unlock()
 	if fake.CliCommandWithoutTerminalOutputStub != nil {
-		return fake.CliCommandWithoutTerminalOutputStub(arg1...)
+		return fake.CliCommandWithoutTerminalOutputStub(args...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.cliCommandWithoutTerminalOutputReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fake.cliCommandWithoutTerminalOutputReturns.result1, fake.cliCommandWithoutTerminalOutputReturns.result2
 }
 
 func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputCallCount() int {
@@ -218,22 +148,13 @@ func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputCallCount() int {
 	return len(fake.cliCommandWithoutTerminalOutputArgsForCall)
 }
 
-func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputCalls(stub func(...string) ([]string, error)) {
-	fake.cliCommandWithoutTerminalOutputMutex.Lock()
-	defer fake.cliCommandWithoutTerminalOutputMutex.Unlock()
-	fake.CliCommandWithoutTerminalOutputStub = stub
-}
-
 func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputArgsForCall(i int) []string {
 	fake.cliCommandWithoutTerminalOutputMutex.RLock()
 	defer fake.cliCommandWithoutTerminalOutputMutex.RUnlock()
-	argsForCall := fake.cliCommandWithoutTerminalOutputArgsForCall[i]
-	return argsForCall.arg1
+	return fake.cliCommandWithoutTerminalOutputArgsForCall[i].args
 }
 
 func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputReturns(result1 []string, result2 error) {
-	fake.cliCommandWithoutTerminalOutputMutex.Lock()
-	defer fake.cliCommandWithoutTerminalOutputMutex.Unlock()
 	fake.CliCommandWithoutTerminalOutputStub = nil
 	fake.cliCommandWithoutTerminalOutputReturns = struct {
 		result1 []string
@@ -242,8 +163,6 @@ func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputReturns(result1 []st
 }
 
 func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputReturnsOnCall(i int, result1 []string, result2 error) {
-	fake.cliCommandWithoutTerminalOutputMutex.Lock()
-	defer fake.cliCommandWithoutTerminalOutputMutex.Unlock()
 	fake.CliCommandWithoutTerminalOutputStub = nil
 	if fake.cliCommandWithoutTerminalOutputReturnsOnCall == nil {
 		fake.cliCommandWithoutTerminalOutputReturnsOnCall = make(map[int]struct {
@@ -260,8 +179,7 @@ func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutputReturnsOnCall(i int,
 func (fake *FakeCFPluginAPI) GetCurrentSpace() (plugin_models.Space, error) {
 	fake.getCurrentSpaceMutex.Lock()
 	ret, specificReturn := fake.getCurrentSpaceReturnsOnCall[len(fake.getCurrentSpaceArgsForCall)]
-	fake.getCurrentSpaceArgsForCall = append(fake.getCurrentSpaceArgsForCall, struct {
-	}{})
+	fake.getCurrentSpaceArgsForCall = append(fake.getCurrentSpaceArgsForCall, struct{}{})
 	fake.recordInvocation("GetCurrentSpace", []interface{}{})
 	fake.getCurrentSpaceMutex.Unlock()
 	if fake.GetCurrentSpaceStub != nil {
@@ -270,8 +188,7 @@ func (fake *FakeCFPluginAPI) GetCurrentSpace() (plugin_models.Space, error) {
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getCurrentSpaceReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fake.getCurrentSpaceReturns.result1, fake.getCurrentSpaceReturns.result2
 }
 
 func (fake *FakeCFPluginAPI) GetCurrentSpaceCallCount() int {
@@ -280,15 +197,7 @@ func (fake *FakeCFPluginAPI) GetCurrentSpaceCallCount() int {
 	return len(fake.getCurrentSpaceArgsForCall)
 }
 
-func (fake *FakeCFPluginAPI) GetCurrentSpaceCalls(stub func() (plugin_models.Space, error)) {
-	fake.getCurrentSpaceMutex.Lock()
-	defer fake.getCurrentSpaceMutex.Unlock()
-	fake.GetCurrentSpaceStub = stub
-}
-
 func (fake *FakeCFPluginAPI) GetCurrentSpaceReturns(result1 plugin_models.Space, result2 error) {
-	fake.getCurrentSpaceMutex.Lock()
-	defer fake.getCurrentSpaceMutex.Unlock()
 	fake.GetCurrentSpaceStub = nil
 	fake.getCurrentSpaceReturns = struct {
 		result1 plugin_models.Space
@@ -297,8 +206,6 @@ func (fake *FakeCFPluginAPI) GetCurrentSpaceReturns(result1 plugin_models.Space,
 }
 
 func (fake *FakeCFPluginAPI) GetCurrentSpaceReturnsOnCall(i int, result1 plugin_models.Space, result2 error) {
-	fake.getCurrentSpaceMutex.Lock()
-	defer fake.getCurrentSpaceMutex.Unlock()
 	fake.GetCurrentSpaceStub = nil
 	if fake.getCurrentSpaceReturnsOnCall == nil {
 		fake.getCurrentSpaceReturnsOnCall = make(map[int]struct {
@@ -326,8 +233,7 @@ func (fake *FakeCFPluginAPI) GetService(arg1 string) (plugin_models.GetService_M
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getServiceReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fake.getServiceReturns.result1, fake.getServiceReturns.result2
 }
 
 func (fake *FakeCFPluginAPI) GetServiceCallCount() int {
@@ -336,22 +242,13 @@ func (fake *FakeCFPluginAPI) GetServiceCallCount() int {
 	return len(fake.getServiceArgsForCall)
 }
 
-func (fake *FakeCFPluginAPI) GetServiceCalls(stub func(string) (plugin_models.GetService_Model, error)) {
-	fake.getServiceMutex.Lock()
-	defer fake.getServiceMutex.Unlock()
-	fake.GetServiceStub = stub
-}
-
 func (fake *FakeCFPluginAPI) GetServiceArgsForCall(i int) string {
 	fake.getServiceMutex.RLock()
 	defer fake.getServiceMutex.RUnlock()
-	argsForCall := fake.getServiceArgsForCall[i]
-	return argsForCall.arg1
+	return fake.getServiceArgsForCall[i].arg1
 }
 
 func (fake *FakeCFPluginAPI) GetServiceReturns(result1 plugin_models.GetService_Model, result2 error) {
-	fake.getServiceMutex.Lock()
-	defer fake.getServiceMutex.Unlock()
 	fake.GetServiceStub = nil
 	fake.getServiceReturns = struct {
 		result1 plugin_models.GetService_Model
@@ -360,8 +257,6 @@ func (fake *FakeCFPluginAPI) GetServiceReturns(result1 plugin_models.GetService_
 }
 
 func (fake *FakeCFPluginAPI) GetServiceReturnsOnCall(i int, result1 plugin_models.GetService_Model, result2 error) {
-	fake.getServiceMutex.Lock()
-	defer fake.getServiceMutex.Unlock()
 	fake.GetServiceStub = nil
 	if fake.getServiceReturnsOnCall == nil {
 		fake.getServiceReturnsOnCall = make(map[int]struct {
@@ -375,11 +270,52 @@ func (fake *FakeCFPluginAPI) GetServiceReturnsOnCall(i int, result1 plugin_model
 	}{result1, result2}
 }
 
+func (fake *FakeCFPluginAPI) AccessToken() (string, error) {
+	fake.accessTokenMutex.Lock()
+	ret, specificReturn := fake.accessTokenReturnsOnCall[len(fake.accessTokenArgsForCall)]
+	fake.accessTokenArgsForCall = append(fake.accessTokenArgsForCall, struct{}{})
+	fake.recordInvocation("AccessToken", []interface{}{})
+	fake.accessTokenMutex.Unlock()
+	if fake.AccessTokenStub != nil {
+		return fake.AccessTokenStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.accessTokenReturns.result1, fake.accessTokenReturns.result2
+}
+
+func (fake *FakeCFPluginAPI) AccessTokenCallCount() int {
+	fake.accessTokenMutex.RLock()
+	defer fake.accessTokenMutex.RUnlock()
+	return len(fake.accessTokenArgsForCall)
+}
+
+func (fake *FakeCFPluginAPI) AccessTokenReturns(result1 string, result2 error) {
+	fake.AccessTokenStub = nil
+	fake.accessTokenReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCFPluginAPI) AccessTokenReturnsOnCall(i int, result1 string, result2 error) {
+	fake.AccessTokenStub = nil
+	if fake.accessTokenReturnsOnCall == nil {
+		fake.accessTokenReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.accessTokenReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCFPluginAPI) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.accessTokenMutex.RLock()
-	defer fake.accessTokenMutex.RUnlock()
 	fake.cliCommandMutex.RLock()
 	defer fake.cliCommandMutex.RUnlock()
 	fake.cliCommandWithoutTerminalOutputMutex.RLock()
@@ -388,6 +324,8 @@ func (fake *FakeCFPluginAPI) Invocations() map[string][][]interface{} {
 	defer fake.getCurrentSpaceMutex.RUnlock()
 	fake.getServiceMutex.RLock()
 	defer fake.getServiceMutex.RUnlock()
+	fake.accessTokenMutex.RLock()
+	defer fake.accessTokenMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

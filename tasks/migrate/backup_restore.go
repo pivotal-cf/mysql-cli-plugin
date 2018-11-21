@@ -74,7 +74,7 @@ func MySQLCmd(credentials Credentials) *exec.Cmd {
 func ReplaceDefinerCmd() *exec.Cmd {
 	args := []string{
 		"-e",
-		"s/DEFINER=`.*`@`%` SQL SECURITY DEFINER/SQL SECURITY INVOKER/",
+		"s/DEFINER=.* SQL SECURITY .*/SQL SECURITY INVOKER/",
 	}
 
 	cmd := exec.Command("sed", args...)

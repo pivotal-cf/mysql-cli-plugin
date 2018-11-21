@@ -2,29 +2,28 @@
 package migratefakes
 
 import (
-	sync "sync"
+	"sync"
 
-	migrate "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
 )
 
 type FakeClient struct {
-	BindServiceStub        func(string, string) error
-	bindServiceMutex       sync.RWMutex
-	bindServiceArgsForCall []struct {
-		arg1 string
-		arg2 string
+	ServiceExistsStub        func(serviceName string) bool
+	serviceExistsMutex       sync.RWMutex
+	serviceExistsArgsForCall []struct {
+		serviceName string
 	}
-	bindServiceReturns struct {
-		result1 error
+	serviceExistsReturns struct {
+		result1 bool
 	}
-	bindServiceReturnsOnCall map[int]struct {
-		result1 error
+	serviceExistsReturnsOnCall map[int]struct {
+		result1 bool
 	}
-	CreateServiceInstanceStub        func(string, string) error
+	CreateServiceInstanceStub        func(planType, instanceName string) error
 	createServiceInstanceMutex       sync.RWMutex
 	createServiceInstanceArgsForCall []struct {
-		arg1 string
-		arg2 string
+		planType     string
+		instanceName string
 	}
 	createServiceInstanceReturns struct {
 		result1 error
@@ -32,37 +31,10 @@ type FakeClient struct {
 	createServiceInstanceReturnsOnCall map[int]struct {
 		result1 error
 	}
-	DeleteAppStub        func(string) error
-	deleteAppMutex       sync.RWMutex
-	deleteAppArgsForCall []struct {
-		arg1 string
-	}
-	deleteAppReturns struct {
-		result1 error
-	}
-	deleteAppReturnsOnCall map[int]struct {
-		result1 error
-	}
-	DeleteServiceInstanceStub        func(string) error
-	deleteServiceInstanceMutex       sync.RWMutex
-	deleteServiceInstanceArgsForCall []struct {
-		arg1 string
-	}
-	deleteServiceInstanceReturns struct {
-		result1 error
-	}
-	deleteServiceInstanceReturnsOnCall map[int]struct {
-		result1 error
-	}
-	DumpLogsStub        func(string)
-	dumpLogsMutex       sync.RWMutex
-	dumpLogsArgsForCall []struct {
-		arg1 string
-	}
-	GetHostnamesStub        func(string) ([]string, error)
+	GetHostnamesStub        func(instanceName string) ([]string, error)
 	getHostnamesMutex       sync.RWMutex
 	getHostnamesArgsForCall []struct {
-		arg1 string
+		instanceName string
 	}
 	getHostnamesReturns struct {
 		result1 []string
@@ -72,69 +44,11 @@ type FakeClient struct {
 		result1 []string
 		result2 error
 	}
-	PushAppStub        func(string, string) error
-	pushAppMutex       sync.RWMutex
-	pushAppArgsForCall []struct {
-		arg1 string
-		arg2 string
-	}
-	pushAppReturns struct {
-		result1 error
-	}
-	pushAppReturnsOnCall map[int]struct {
-		result1 error
-	}
-	RenameServiceStub        func(string, string) error
-	renameServiceMutex       sync.RWMutex
-	renameServiceArgsForCall []struct {
-		arg1 string
-		arg2 string
-	}
-	renameServiceReturns struct {
-		result1 error
-	}
-	renameServiceReturnsOnCall map[int]struct {
-		result1 error
-	}
-	RunTaskStub        func(string, string) error
-	runTaskMutex       sync.RWMutex
-	runTaskArgsForCall []struct {
-		arg1 string
-		arg2 string
-	}
-	runTaskReturns struct {
-		result1 error
-	}
-	runTaskReturnsOnCall map[int]struct {
-		result1 error
-	}
-	ServiceExistsStub        func(string) bool
-	serviceExistsMutex       sync.RWMutex
-	serviceExistsArgsForCall []struct {
-		arg1 string
-	}
-	serviceExistsReturns struct {
-		result1 bool
-	}
-	serviceExistsReturnsOnCall map[int]struct {
-		result1 bool
-	}
-	StartAppStub        func(string) error
-	startAppMutex       sync.RWMutex
-	startAppArgsForCall []struct {
-		arg1 string
-	}
-	startAppReturns struct {
-		result1 error
-	}
-	startAppReturnsOnCall map[int]struct {
-		result1 error
-	}
-	UpdateServiceConfigStub        func(string, string) error
+	UpdateServiceConfigStub        func(instanceName string, jsonParams string) error
 	updateServiceConfigMutex       sync.RWMutex
 	updateServiceConfigArgsForCall []struct {
-		arg1 string
-		arg2 string
+		instanceName string
+		jsonParams   string
 	}
 	updateServiceConfigReturns struct {
 		result1 error
@@ -142,88 +56,160 @@ type FakeClient struct {
 	updateServiceConfigReturnsOnCall map[int]struct {
 		result1 error
 	}
+	BindServiceStub        func(appName, serviceName string) error
+	bindServiceMutex       sync.RWMutex
+	bindServiceArgsForCall []struct {
+		appName     string
+		serviceName string
+	}
+	bindServiceReturns struct {
+		result1 error
+	}
+	bindServiceReturnsOnCall map[int]struct {
+		result1 error
+	}
+	DeleteAppStub        func(appName string) error
+	deleteAppMutex       sync.RWMutex
+	deleteAppArgsForCall []struct {
+		appName string
+	}
+	deleteAppReturns struct {
+		result1 error
+	}
+	deleteAppReturnsOnCall map[int]struct {
+		result1 error
+	}
+	DeleteServiceInstanceStub        func(instanceName string) error
+	deleteServiceInstanceMutex       sync.RWMutex
+	deleteServiceInstanceArgsForCall []struct {
+		instanceName string
+	}
+	deleteServiceInstanceReturns struct {
+		result1 error
+	}
+	deleteServiceInstanceReturnsOnCall map[int]struct {
+		result1 error
+	}
+	DumpLogsStub        func(appName string)
+	dumpLogsMutex       sync.RWMutex
+	dumpLogsArgsForCall []struct {
+		appName string
+	}
+	PushAppStub        func(path, appName string) error
+	pushAppMutex       sync.RWMutex
+	pushAppArgsForCall []struct {
+		path    string
+		appName string
+	}
+	pushAppReturns struct {
+		result1 error
+	}
+	pushAppReturnsOnCall map[int]struct {
+		result1 error
+	}
+	RenameServiceStub        func(oldName, newName string) error
+	renameServiceMutex       sync.RWMutex
+	renameServiceArgsForCall []struct {
+		oldName string
+		newName string
+	}
+	renameServiceReturns struct {
+		result1 error
+	}
+	renameServiceReturnsOnCall map[int]struct {
+		result1 error
+	}
+	RunTaskStub        func(appName, command string) error
+	runTaskMutex       sync.RWMutex
+	runTaskArgsForCall []struct {
+		appName string
+		command string
+	}
+	runTaskReturns struct {
+		result1 error
+	}
+	runTaskReturnsOnCall map[int]struct {
+		result1 error
+	}
+	StartAppStub        func(appName string) error
+	startAppMutex       sync.RWMutex
+	startAppArgsForCall []struct {
+		appName string
+	}
+	startAppReturns struct {
+		result1 error
+	}
+	startAppReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) BindService(arg1 string, arg2 string) error {
-	fake.bindServiceMutex.Lock()
-	ret, specificReturn := fake.bindServiceReturnsOnCall[len(fake.bindServiceArgsForCall)]
-	fake.bindServiceArgsForCall = append(fake.bindServiceArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
-	fake.recordInvocation("BindService", []interface{}{arg1, arg2})
-	fake.bindServiceMutex.Unlock()
-	if fake.BindServiceStub != nil {
-		return fake.BindServiceStub(arg1, arg2)
+func (fake *FakeClient) ServiceExists(serviceName string) bool {
+	fake.serviceExistsMutex.Lock()
+	ret, specificReturn := fake.serviceExistsReturnsOnCall[len(fake.serviceExistsArgsForCall)]
+	fake.serviceExistsArgsForCall = append(fake.serviceExistsArgsForCall, struct {
+		serviceName string
+	}{serviceName})
+	fake.recordInvocation("ServiceExists", []interface{}{serviceName})
+	fake.serviceExistsMutex.Unlock()
+	if fake.ServiceExistsStub != nil {
+		return fake.ServiceExistsStub(serviceName)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.bindServiceReturns
-	return fakeReturns.result1
+	return fake.serviceExistsReturns.result1
 }
 
-func (fake *FakeClient) BindServiceCallCount() int {
-	fake.bindServiceMutex.RLock()
-	defer fake.bindServiceMutex.RUnlock()
-	return len(fake.bindServiceArgsForCall)
+func (fake *FakeClient) ServiceExistsCallCount() int {
+	fake.serviceExistsMutex.RLock()
+	defer fake.serviceExistsMutex.RUnlock()
+	return len(fake.serviceExistsArgsForCall)
 }
 
-func (fake *FakeClient) BindServiceCalls(stub func(string, string) error) {
-	fake.bindServiceMutex.Lock()
-	defer fake.bindServiceMutex.Unlock()
-	fake.BindServiceStub = stub
+func (fake *FakeClient) ServiceExistsArgsForCall(i int) string {
+	fake.serviceExistsMutex.RLock()
+	defer fake.serviceExistsMutex.RUnlock()
+	return fake.serviceExistsArgsForCall[i].serviceName
 }
 
-func (fake *FakeClient) BindServiceArgsForCall(i int) (string, string) {
-	fake.bindServiceMutex.RLock()
-	defer fake.bindServiceMutex.RUnlock()
-	argsForCall := fake.bindServiceArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
-}
-
-func (fake *FakeClient) BindServiceReturns(result1 error) {
-	fake.bindServiceMutex.Lock()
-	defer fake.bindServiceMutex.Unlock()
-	fake.BindServiceStub = nil
-	fake.bindServiceReturns = struct {
-		result1 error
+func (fake *FakeClient) ServiceExistsReturns(result1 bool) {
+	fake.ServiceExistsStub = nil
+	fake.serviceExistsReturns = struct {
+		result1 bool
 	}{result1}
 }
 
-func (fake *FakeClient) BindServiceReturnsOnCall(i int, result1 error) {
-	fake.bindServiceMutex.Lock()
-	defer fake.bindServiceMutex.Unlock()
-	fake.BindServiceStub = nil
-	if fake.bindServiceReturnsOnCall == nil {
-		fake.bindServiceReturnsOnCall = make(map[int]struct {
-			result1 error
+func (fake *FakeClient) ServiceExistsReturnsOnCall(i int, result1 bool) {
+	fake.ServiceExistsStub = nil
+	if fake.serviceExistsReturnsOnCall == nil {
+		fake.serviceExistsReturnsOnCall = make(map[int]struct {
+			result1 bool
 		})
 	}
-	fake.bindServiceReturnsOnCall[i] = struct {
-		result1 error
+	fake.serviceExistsReturnsOnCall[i] = struct {
+		result1 bool
 	}{result1}
 }
 
-func (fake *FakeClient) CreateServiceInstance(arg1 string, arg2 string) error {
+func (fake *FakeClient) CreateServiceInstance(planType string, instanceName string) error {
 	fake.createServiceInstanceMutex.Lock()
 	ret, specificReturn := fake.createServiceInstanceReturnsOnCall[len(fake.createServiceInstanceArgsForCall)]
 	fake.createServiceInstanceArgsForCall = append(fake.createServiceInstanceArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
-	fake.recordInvocation("CreateServiceInstance", []interface{}{arg1, arg2})
+		planType     string
+		instanceName string
+	}{planType, instanceName})
+	fake.recordInvocation("CreateServiceInstance", []interface{}{planType, instanceName})
 	fake.createServiceInstanceMutex.Unlock()
 	if fake.CreateServiceInstanceStub != nil {
-		return fake.CreateServiceInstanceStub(arg1, arg2)
+		return fake.CreateServiceInstanceStub(planType, instanceName)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.createServiceInstanceReturns
-	return fakeReturns.result1
+	return fake.createServiceInstanceReturns.result1
 }
 
 func (fake *FakeClient) CreateServiceInstanceCallCount() int {
@@ -232,22 +218,13 @@ func (fake *FakeClient) CreateServiceInstanceCallCount() int {
 	return len(fake.createServiceInstanceArgsForCall)
 }
 
-func (fake *FakeClient) CreateServiceInstanceCalls(stub func(string, string) error) {
-	fake.createServiceInstanceMutex.Lock()
-	defer fake.createServiceInstanceMutex.Unlock()
-	fake.CreateServiceInstanceStub = stub
-}
-
 func (fake *FakeClient) CreateServiceInstanceArgsForCall(i int) (string, string) {
 	fake.createServiceInstanceMutex.RLock()
 	defer fake.createServiceInstanceMutex.RUnlock()
-	argsForCall := fake.createServiceInstanceArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return fake.createServiceInstanceArgsForCall[i].planType, fake.createServiceInstanceArgsForCall[i].instanceName
 }
 
 func (fake *FakeClient) CreateServiceInstanceReturns(result1 error) {
-	fake.createServiceInstanceMutex.Lock()
-	defer fake.createServiceInstanceMutex.Unlock()
 	fake.CreateServiceInstanceStub = nil
 	fake.createServiceInstanceReturns = struct {
 		result1 error
@@ -255,8 +232,6 @@ func (fake *FakeClient) CreateServiceInstanceReturns(result1 error) {
 }
 
 func (fake *FakeClient) CreateServiceInstanceReturnsOnCall(i int, result1 error) {
-	fake.createServiceInstanceMutex.Lock()
-	defer fake.createServiceInstanceMutex.Unlock()
 	fake.CreateServiceInstanceStub = nil
 	if fake.createServiceInstanceReturnsOnCall == nil {
 		fake.createServiceInstanceReturnsOnCall = make(map[int]struct {
@@ -268,173 +243,21 @@ func (fake *FakeClient) CreateServiceInstanceReturnsOnCall(i int, result1 error)
 	}{result1}
 }
 
-func (fake *FakeClient) DeleteApp(arg1 string) error {
-	fake.deleteAppMutex.Lock()
-	ret, specificReturn := fake.deleteAppReturnsOnCall[len(fake.deleteAppArgsForCall)]
-	fake.deleteAppArgsForCall = append(fake.deleteAppArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("DeleteApp", []interface{}{arg1})
-	fake.deleteAppMutex.Unlock()
-	if fake.DeleteAppStub != nil {
-		return fake.DeleteAppStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.deleteAppReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeClient) DeleteAppCallCount() int {
-	fake.deleteAppMutex.RLock()
-	defer fake.deleteAppMutex.RUnlock()
-	return len(fake.deleteAppArgsForCall)
-}
-
-func (fake *FakeClient) DeleteAppCalls(stub func(string) error) {
-	fake.deleteAppMutex.Lock()
-	defer fake.deleteAppMutex.Unlock()
-	fake.DeleteAppStub = stub
-}
-
-func (fake *FakeClient) DeleteAppArgsForCall(i int) string {
-	fake.deleteAppMutex.RLock()
-	defer fake.deleteAppMutex.RUnlock()
-	argsForCall := fake.deleteAppArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeClient) DeleteAppReturns(result1 error) {
-	fake.deleteAppMutex.Lock()
-	defer fake.deleteAppMutex.Unlock()
-	fake.DeleteAppStub = nil
-	fake.deleteAppReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) DeleteAppReturnsOnCall(i int, result1 error) {
-	fake.deleteAppMutex.Lock()
-	defer fake.deleteAppMutex.Unlock()
-	fake.DeleteAppStub = nil
-	if fake.deleteAppReturnsOnCall == nil {
-		fake.deleteAppReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.deleteAppReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) DeleteServiceInstance(arg1 string) error {
-	fake.deleteServiceInstanceMutex.Lock()
-	ret, specificReturn := fake.deleteServiceInstanceReturnsOnCall[len(fake.deleteServiceInstanceArgsForCall)]
-	fake.deleteServiceInstanceArgsForCall = append(fake.deleteServiceInstanceArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("DeleteServiceInstance", []interface{}{arg1})
-	fake.deleteServiceInstanceMutex.Unlock()
-	if fake.DeleteServiceInstanceStub != nil {
-		return fake.DeleteServiceInstanceStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.deleteServiceInstanceReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeClient) DeleteServiceInstanceCallCount() int {
-	fake.deleteServiceInstanceMutex.RLock()
-	defer fake.deleteServiceInstanceMutex.RUnlock()
-	return len(fake.deleteServiceInstanceArgsForCall)
-}
-
-func (fake *FakeClient) DeleteServiceInstanceCalls(stub func(string) error) {
-	fake.deleteServiceInstanceMutex.Lock()
-	defer fake.deleteServiceInstanceMutex.Unlock()
-	fake.DeleteServiceInstanceStub = stub
-}
-
-func (fake *FakeClient) DeleteServiceInstanceArgsForCall(i int) string {
-	fake.deleteServiceInstanceMutex.RLock()
-	defer fake.deleteServiceInstanceMutex.RUnlock()
-	argsForCall := fake.deleteServiceInstanceArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeClient) DeleteServiceInstanceReturns(result1 error) {
-	fake.deleteServiceInstanceMutex.Lock()
-	defer fake.deleteServiceInstanceMutex.Unlock()
-	fake.DeleteServiceInstanceStub = nil
-	fake.deleteServiceInstanceReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) DeleteServiceInstanceReturnsOnCall(i int, result1 error) {
-	fake.deleteServiceInstanceMutex.Lock()
-	defer fake.deleteServiceInstanceMutex.Unlock()
-	fake.DeleteServiceInstanceStub = nil
-	if fake.deleteServiceInstanceReturnsOnCall == nil {
-		fake.deleteServiceInstanceReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.deleteServiceInstanceReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) DumpLogs(arg1 string) {
-	fake.dumpLogsMutex.Lock()
-	fake.dumpLogsArgsForCall = append(fake.dumpLogsArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("DumpLogs", []interface{}{arg1})
-	fake.dumpLogsMutex.Unlock()
-	if fake.DumpLogsStub != nil {
-		fake.DumpLogsStub(arg1)
-	}
-}
-
-func (fake *FakeClient) DumpLogsCallCount() int {
-	fake.dumpLogsMutex.RLock()
-	defer fake.dumpLogsMutex.RUnlock()
-	return len(fake.dumpLogsArgsForCall)
-}
-
-func (fake *FakeClient) DumpLogsCalls(stub func(string)) {
-	fake.dumpLogsMutex.Lock()
-	defer fake.dumpLogsMutex.Unlock()
-	fake.DumpLogsStub = stub
-}
-
-func (fake *FakeClient) DumpLogsArgsForCall(i int) string {
-	fake.dumpLogsMutex.RLock()
-	defer fake.dumpLogsMutex.RUnlock()
-	argsForCall := fake.dumpLogsArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeClient) GetHostnames(arg1 string) ([]string, error) {
+func (fake *FakeClient) GetHostnames(instanceName string) ([]string, error) {
 	fake.getHostnamesMutex.Lock()
 	ret, specificReturn := fake.getHostnamesReturnsOnCall[len(fake.getHostnamesArgsForCall)]
 	fake.getHostnamesArgsForCall = append(fake.getHostnamesArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("GetHostnames", []interface{}{arg1})
+		instanceName string
+	}{instanceName})
+	fake.recordInvocation("GetHostnames", []interface{}{instanceName})
 	fake.getHostnamesMutex.Unlock()
 	if fake.GetHostnamesStub != nil {
-		return fake.GetHostnamesStub(arg1)
+		return fake.GetHostnamesStub(instanceName)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getHostnamesReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fake.getHostnamesReturns.result1, fake.getHostnamesReturns.result2
 }
 
 func (fake *FakeClient) GetHostnamesCallCount() int {
@@ -443,22 +266,13 @@ func (fake *FakeClient) GetHostnamesCallCount() int {
 	return len(fake.getHostnamesArgsForCall)
 }
 
-func (fake *FakeClient) GetHostnamesCalls(stub func(string) ([]string, error)) {
-	fake.getHostnamesMutex.Lock()
-	defer fake.getHostnamesMutex.Unlock()
-	fake.GetHostnamesStub = stub
-}
-
 func (fake *FakeClient) GetHostnamesArgsForCall(i int) string {
 	fake.getHostnamesMutex.RLock()
 	defer fake.getHostnamesMutex.RUnlock()
-	argsForCall := fake.getHostnamesArgsForCall[i]
-	return argsForCall.arg1
+	return fake.getHostnamesArgsForCall[i].instanceName
 }
 
 func (fake *FakeClient) GetHostnamesReturns(result1 []string, result2 error) {
-	fake.getHostnamesMutex.Lock()
-	defer fake.getHostnamesMutex.Unlock()
 	fake.GetHostnamesStub = nil
 	fake.getHostnamesReturns = struct {
 		result1 []string
@@ -467,8 +281,6 @@ func (fake *FakeClient) GetHostnamesReturns(result1 []string, result2 error) {
 }
 
 func (fake *FakeClient) GetHostnamesReturnsOnCall(i int, result1 []string, result2 error) {
-	fake.getHostnamesMutex.Lock()
-	defer fake.getHostnamesMutex.Unlock()
 	fake.GetHostnamesStub = nil
 	if fake.getHostnamesReturnsOnCall == nil {
 		fake.getHostnamesReturnsOnCall = make(map[int]struct {
@@ -482,326 +294,22 @@ func (fake *FakeClient) GetHostnamesReturnsOnCall(i int, result1 []string, resul
 	}{result1, result2}
 }
 
-func (fake *FakeClient) PushApp(arg1 string, arg2 string) error {
-	fake.pushAppMutex.Lock()
-	ret, specificReturn := fake.pushAppReturnsOnCall[len(fake.pushAppArgsForCall)]
-	fake.pushAppArgsForCall = append(fake.pushAppArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
-	fake.recordInvocation("PushApp", []interface{}{arg1, arg2})
-	fake.pushAppMutex.Unlock()
-	if fake.PushAppStub != nil {
-		return fake.PushAppStub(arg1, arg2)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.pushAppReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeClient) PushAppCallCount() int {
-	fake.pushAppMutex.RLock()
-	defer fake.pushAppMutex.RUnlock()
-	return len(fake.pushAppArgsForCall)
-}
-
-func (fake *FakeClient) PushAppCalls(stub func(string, string) error) {
-	fake.pushAppMutex.Lock()
-	defer fake.pushAppMutex.Unlock()
-	fake.PushAppStub = stub
-}
-
-func (fake *FakeClient) PushAppArgsForCall(i int) (string, string) {
-	fake.pushAppMutex.RLock()
-	defer fake.pushAppMutex.RUnlock()
-	argsForCall := fake.pushAppArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
-}
-
-func (fake *FakeClient) PushAppReturns(result1 error) {
-	fake.pushAppMutex.Lock()
-	defer fake.pushAppMutex.Unlock()
-	fake.PushAppStub = nil
-	fake.pushAppReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) PushAppReturnsOnCall(i int, result1 error) {
-	fake.pushAppMutex.Lock()
-	defer fake.pushAppMutex.Unlock()
-	fake.PushAppStub = nil
-	if fake.pushAppReturnsOnCall == nil {
-		fake.pushAppReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.pushAppReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) RenameService(arg1 string, arg2 string) error {
-	fake.renameServiceMutex.Lock()
-	ret, specificReturn := fake.renameServiceReturnsOnCall[len(fake.renameServiceArgsForCall)]
-	fake.renameServiceArgsForCall = append(fake.renameServiceArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
-	fake.recordInvocation("RenameService", []interface{}{arg1, arg2})
-	fake.renameServiceMutex.Unlock()
-	if fake.RenameServiceStub != nil {
-		return fake.RenameServiceStub(arg1, arg2)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.renameServiceReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeClient) RenameServiceCallCount() int {
-	fake.renameServiceMutex.RLock()
-	defer fake.renameServiceMutex.RUnlock()
-	return len(fake.renameServiceArgsForCall)
-}
-
-func (fake *FakeClient) RenameServiceCalls(stub func(string, string) error) {
-	fake.renameServiceMutex.Lock()
-	defer fake.renameServiceMutex.Unlock()
-	fake.RenameServiceStub = stub
-}
-
-func (fake *FakeClient) RenameServiceArgsForCall(i int) (string, string) {
-	fake.renameServiceMutex.RLock()
-	defer fake.renameServiceMutex.RUnlock()
-	argsForCall := fake.renameServiceArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
-}
-
-func (fake *FakeClient) RenameServiceReturns(result1 error) {
-	fake.renameServiceMutex.Lock()
-	defer fake.renameServiceMutex.Unlock()
-	fake.RenameServiceStub = nil
-	fake.renameServiceReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) RenameServiceReturnsOnCall(i int, result1 error) {
-	fake.renameServiceMutex.Lock()
-	defer fake.renameServiceMutex.Unlock()
-	fake.RenameServiceStub = nil
-	if fake.renameServiceReturnsOnCall == nil {
-		fake.renameServiceReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.renameServiceReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) RunTask(arg1 string, arg2 string) error {
-	fake.runTaskMutex.Lock()
-	ret, specificReturn := fake.runTaskReturnsOnCall[len(fake.runTaskArgsForCall)]
-	fake.runTaskArgsForCall = append(fake.runTaskArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
-	fake.recordInvocation("RunTask", []interface{}{arg1, arg2})
-	fake.runTaskMutex.Unlock()
-	if fake.RunTaskStub != nil {
-		return fake.RunTaskStub(arg1, arg2)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.runTaskReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeClient) RunTaskCallCount() int {
-	fake.runTaskMutex.RLock()
-	defer fake.runTaskMutex.RUnlock()
-	return len(fake.runTaskArgsForCall)
-}
-
-func (fake *FakeClient) RunTaskCalls(stub func(string, string) error) {
-	fake.runTaskMutex.Lock()
-	defer fake.runTaskMutex.Unlock()
-	fake.RunTaskStub = stub
-}
-
-func (fake *FakeClient) RunTaskArgsForCall(i int) (string, string) {
-	fake.runTaskMutex.RLock()
-	defer fake.runTaskMutex.RUnlock()
-	argsForCall := fake.runTaskArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
-}
-
-func (fake *FakeClient) RunTaskReturns(result1 error) {
-	fake.runTaskMutex.Lock()
-	defer fake.runTaskMutex.Unlock()
-	fake.RunTaskStub = nil
-	fake.runTaskReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) RunTaskReturnsOnCall(i int, result1 error) {
-	fake.runTaskMutex.Lock()
-	defer fake.runTaskMutex.Unlock()
-	fake.RunTaskStub = nil
-	if fake.runTaskReturnsOnCall == nil {
-		fake.runTaskReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.runTaskReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) ServiceExists(arg1 string) bool {
-	fake.serviceExistsMutex.Lock()
-	ret, specificReturn := fake.serviceExistsReturnsOnCall[len(fake.serviceExistsArgsForCall)]
-	fake.serviceExistsArgsForCall = append(fake.serviceExistsArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("ServiceExists", []interface{}{arg1})
-	fake.serviceExistsMutex.Unlock()
-	if fake.ServiceExistsStub != nil {
-		return fake.ServiceExistsStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.serviceExistsReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeClient) ServiceExistsCallCount() int {
-	fake.serviceExistsMutex.RLock()
-	defer fake.serviceExistsMutex.RUnlock()
-	return len(fake.serviceExistsArgsForCall)
-}
-
-func (fake *FakeClient) ServiceExistsCalls(stub func(string) bool) {
-	fake.serviceExistsMutex.Lock()
-	defer fake.serviceExistsMutex.Unlock()
-	fake.ServiceExistsStub = stub
-}
-
-func (fake *FakeClient) ServiceExistsArgsForCall(i int) string {
-	fake.serviceExistsMutex.RLock()
-	defer fake.serviceExistsMutex.RUnlock()
-	argsForCall := fake.serviceExistsArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeClient) ServiceExistsReturns(result1 bool) {
-	fake.serviceExistsMutex.Lock()
-	defer fake.serviceExistsMutex.Unlock()
-	fake.ServiceExistsStub = nil
-	fake.serviceExistsReturns = struct {
-		result1 bool
-	}{result1}
-}
-
-func (fake *FakeClient) ServiceExistsReturnsOnCall(i int, result1 bool) {
-	fake.serviceExistsMutex.Lock()
-	defer fake.serviceExistsMutex.Unlock()
-	fake.ServiceExistsStub = nil
-	if fake.serviceExistsReturnsOnCall == nil {
-		fake.serviceExistsReturnsOnCall = make(map[int]struct {
-			result1 bool
-		})
-	}
-	fake.serviceExistsReturnsOnCall[i] = struct {
-		result1 bool
-	}{result1}
-}
-
-func (fake *FakeClient) StartApp(arg1 string) error {
-	fake.startAppMutex.Lock()
-	ret, specificReturn := fake.startAppReturnsOnCall[len(fake.startAppArgsForCall)]
-	fake.startAppArgsForCall = append(fake.startAppArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("StartApp", []interface{}{arg1})
-	fake.startAppMutex.Unlock()
-	if fake.StartAppStub != nil {
-		return fake.StartAppStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.startAppReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeClient) StartAppCallCount() int {
-	fake.startAppMutex.RLock()
-	defer fake.startAppMutex.RUnlock()
-	return len(fake.startAppArgsForCall)
-}
-
-func (fake *FakeClient) StartAppCalls(stub func(string) error) {
-	fake.startAppMutex.Lock()
-	defer fake.startAppMutex.Unlock()
-	fake.StartAppStub = stub
-}
-
-func (fake *FakeClient) StartAppArgsForCall(i int) string {
-	fake.startAppMutex.RLock()
-	defer fake.startAppMutex.RUnlock()
-	argsForCall := fake.startAppArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeClient) StartAppReturns(result1 error) {
-	fake.startAppMutex.Lock()
-	defer fake.startAppMutex.Unlock()
-	fake.StartAppStub = nil
-	fake.startAppReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) StartAppReturnsOnCall(i int, result1 error) {
-	fake.startAppMutex.Lock()
-	defer fake.startAppMutex.Unlock()
-	fake.StartAppStub = nil
-	if fake.startAppReturnsOnCall == nil {
-		fake.startAppReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.startAppReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClient) UpdateServiceConfig(arg1 string, arg2 string) error {
+func (fake *FakeClient) UpdateServiceConfig(instanceName string, jsonParams string) error {
 	fake.updateServiceConfigMutex.Lock()
 	ret, specificReturn := fake.updateServiceConfigReturnsOnCall[len(fake.updateServiceConfigArgsForCall)]
 	fake.updateServiceConfigArgsForCall = append(fake.updateServiceConfigArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
-	fake.recordInvocation("UpdateServiceConfig", []interface{}{arg1, arg2})
+		instanceName string
+		jsonParams   string
+	}{instanceName, jsonParams})
+	fake.recordInvocation("UpdateServiceConfig", []interface{}{instanceName, jsonParams})
 	fake.updateServiceConfigMutex.Unlock()
 	if fake.UpdateServiceConfigStub != nil {
-		return fake.UpdateServiceConfigStub(arg1, arg2)
+		return fake.UpdateServiceConfigStub(instanceName, jsonParams)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.updateServiceConfigReturns
-	return fakeReturns.result1
+	return fake.updateServiceConfigReturns.result1
 }
 
 func (fake *FakeClient) UpdateServiceConfigCallCount() int {
@@ -810,22 +318,13 @@ func (fake *FakeClient) UpdateServiceConfigCallCount() int {
 	return len(fake.updateServiceConfigArgsForCall)
 }
 
-func (fake *FakeClient) UpdateServiceConfigCalls(stub func(string, string) error) {
-	fake.updateServiceConfigMutex.Lock()
-	defer fake.updateServiceConfigMutex.Unlock()
-	fake.UpdateServiceConfigStub = stub
-}
-
 func (fake *FakeClient) UpdateServiceConfigArgsForCall(i int) (string, string) {
 	fake.updateServiceConfigMutex.RLock()
 	defer fake.updateServiceConfigMutex.RUnlock()
-	argsForCall := fake.updateServiceConfigArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return fake.updateServiceConfigArgsForCall[i].instanceName, fake.updateServiceConfigArgsForCall[i].jsonParams
 }
 
 func (fake *FakeClient) UpdateServiceConfigReturns(result1 error) {
-	fake.updateServiceConfigMutex.Lock()
-	defer fake.updateServiceConfigMutex.Unlock()
 	fake.UpdateServiceConfigStub = nil
 	fake.updateServiceConfigReturns = struct {
 		result1 error
@@ -833,8 +332,6 @@ func (fake *FakeClient) UpdateServiceConfigReturns(result1 error) {
 }
 
 func (fake *FakeClient) UpdateServiceConfigReturnsOnCall(i int, result1 error) {
-	fake.updateServiceConfigMutex.Lock()
-	defer fake.updateServiceConfigMutex.Unlock()
 	fake.UpdateServiceConfigStub = nil
 	if fake.updateServiceConfigReturnsOnCall == nil {
 		fake.updateServiceConfigReturnsOnCall = make(map[int]struct {
@@ -846,33 +343,397 @@ func (fake *FakeClient) UpdateServiceConfigReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeClient) BindService(appName string, serviceName string) error {
+	fake.bindServiceMutex.Lock()
+	ret, specificReturn := fake.bindServiceReturnsOnCall[len(fake.bindServiceArgsForCall)]
+	fake.bindServiceArgsForCall = append(fake.bindServiceArgsForCall, struct {
+		appName     string
+		serviceName string
+	}{appName, serviceName})
+	fake.recordInvocation("BindService", []interface{}{appName, serviceName})
+	fake.bindServiceMutex.Unlock()
+	if fake.BindServiceStub != nil {
+		return fake.BindServiceStub(appName, serviceName)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.bindServiceReturns.result1
+}
+
+func (fake *FakeClient) BindServiceCallCount() int {
+	fake.bindServiceMutex.RLock()
+	defer fake.bindServiceMutex.RUnlock()
+	return len(fake.bindServiceArgsForCall)
+}
+
+func (fake *FakeClient) BindServiceArgsForCall(i int) (string, string) {
+	fake.bindServiceMutex.RLock()
+	defer fake.bindServiceMutex.RUnlock()
+	return fake.bindServiceArgsForCall[i].appName, fake.bindServiceArgsForCall[i].serviceName
+}
+
+func (fake *FakeClient) BindServiceReturns(result1 error) {
+	fake.BindServiceStub = nil
+	fake.bindServiceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) BindServiceReturnsOnCall(i int, result1 error) {
+	fake.BindServiceStub = nil
+	if fake.bindServiceReturnsOnCall == nil {
+		fake.bindServiceReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.bindServiceReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) DeleteApp(appName string) error {
+	fake.deleteAppMutex.Lock()
+	ret, specificReturn := fake.deleteAppReturnsOnCall[len(fake.deleteAppArgsForCall)]
+	fake.deleteAppArgsForCall = append(fake.deleteAppArgsForCall, struct {
+		appName string
+	}{appName})
+	fake.recordInvocation("DeleteApp", []interface{}{appName})
+	fake.deleteAppMutex.Unlock()
+	if fake.DeleteAppStub != nil {
+		return fake.DeleteAppStub(appName)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.deleteAppReturns.result1
+}
+
+func (fake *FakeClient) DeleteAppCallCount() int {
+	fake.deleteAppMutex.RLock()
+	defer fake.deleteAppMutex.RUnlock()
+	return len(fake.deleteAppArgsForCall)
+}
+
+func (fake *FakeClient) DeleteAppArgsForCall(i int) string {
+	fake.deleteAppMutex.RLock()
+	defer fake.deleteAppMutex.RUnlock()
+	return fake.deleteAppArgsForCall[i].appName
+}
+
+func (fake *FakeClient) DeleteAppReturns(result1 error) {
+	fake.DeleteAppStub = nil
+	fake.deleteAppReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) DeleteAppReturnsOnCall(i int, result1 error) {
+	fake.DeleteAppStub = nil
+	if fake.deleteAppReturnsOnCall == nil {
+		fake.deleteAppReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteAppReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) DeleteServiceInstance(instanceName string) error {
+	fake.deleteServiceInstanceMutex.Lock()
+	ret, specificReturn := fake.deleteServiceInstanceReturnsOnCall[len(fake.deleteServiceInstanceArgsForCall)]
+	fake.deleteServiceInstanceArgsForCall = append(fake.deleteServiceInstanceArgsForCall, struct {
+		instanceName string
+	}{instanceName})
+	fake.recordInvocation("DeleteServiceInstance", []interface{}{instanceName})
+	fake.deleteServiceInstanceMutex.Unlock()
+	if fake.DeleteServiceInstanceStub != nil {
+		return fake.DeleteServiceInstanceStub(instanceName)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.deleteServiceInstanceReturns.result1
+}
+
+func (fake *FakeClient) DeleteServiceInstanceCallCount() int {
+	fake.deleteServiceInstanceMutex.RLock()
+	defer fake.deleteServiceInstanceMutex.RUnlock()
+	return len(fake.deleteServiceInstanceArgsForCall)
+}
+
+func (fake *FakeClient) DeleteServiceInstanceArgsForCall(i int) string {
+	fake.deleteServiceInstanceMutex.RLock()
+	defer fake.deleteServiceInstanceMutex.RUnlock()
+	return fake.deleteServiceInstanceArgsForCall[i].instanceName
+}
+
+func (fake *FakeClient) DeleteServiceInstanceReturns(result1 error) {
+	fake.DeleteServiceInstanceStub = nil
+	fake.deleteServiceInstanceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) DeleteServiceInstanceReturnsOnCall(i int, result1 error) {
+	fake.DeleteServiceInstanceStub = nil
+	if fake.deleteServiceInstanceReturnsOnCall == nil {
+		fake.deleteServiceInstanceReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteServiceInstanceReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) DumpLogs(appName string) {
+	fake.dumpLogsMutex.Lock()
+	fake.dumpLogsArgsForCall = append(fake.dumpLogsArgsForCall, struct {
+		appName string
+	}{appName})
+	fake.recordInvocation("DumpLogs", []interface{}{appName})
+	fake.dumpLogsMutex.Unlock()
+	if fake.DumpLogsStub != nil {
+		fake.DumpLogsStub(appName)
+	}
+}
+
+func (fake *FakeClient) DumpLogsCallCount() int {
+	fake.dumpLogsMutex.RLock()
+	defer fake.dumpLogsMutex.RUnlock()
+	return len(fake.dumpLogsArgsForCall)
+}
+
+func (fake *FakeClient) DumpLogsArgsForCall(i int) string {
+	fake.dumpLogsMutex.RLock()
+	defer fake.dumpLogsMutex.RUnlock()
+	return fake.dumpLogsArgsForCall[i].appName
+}
+
+func (fake *FakeClient) PushApp(path string, appName string) error {
+	fake.pushAppMutex.Lock()
+	ret, specificReturn := fake.pushAppReturnsOnCall[len(fake.pushAppArgsForCall)]
+	fake.pushAppArgsForCall = append(fake.pushAppArgsForCall, struct {
+		path    string
+		appName string
+	}{path, appName})
+	fake.recordInvocation("PushApp", []interface{}{path, appName})
+	fake.pushAppMutex.Unlock()
+	if fake.PushAppStub != nil {
+		return fake.PushAppStub(path, appName)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.pushAppReturns.result1
+}
+
+func (fake *FakeClient) PushAppCallCount() int {
+	fake.pushAppMutex.RLock()
+	defer fake.pushAppMutex.RUnlock()
+	return len(fake.pushAppArgsForCall)
+}
+
+func (fake *FakeClient) PushAppArgsForCall(i int) (string, string) {
+	fake.pushAppMutex.RLock()
+	defer fake.pushAppMutex.RUnlock()
+	return fake.pushAppArgsForCall[i].path, fake.pushAppArgsForCall[i].appName
+}
+
+func (fake *FakeClient) PushAppReturns(result1 error) {
+	fake.PushAppStub = nil
+	fake.pushAppReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) PushAppReturnsOnCall(i int, result1 error) {
+	fake.PushAppStub = nil
+	if fake.pushAppReturnsOnCall == nil {
+		fake.pushAppReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.pushAppReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) RenameService(oldName string, newName string) error {
+	fake.renameServiceMutex.Lock()
+	ret, specificReturn := fake.renameServiceReturnsOnCall[len(fake.renameServiceArgsForCall)]
+	fake.renameServiceArgsForCall = append(fake.renameServiceArgsForCall, struct {
+		oldName string
+		newName string
+	}{oldName, newName})
+	fake.recordInvocation("RenameService", []interface{}{oldName, newName})
+	fake.renameServiceMutex.Unlock()
+	if fake.RenameServiceStub != nil {
+		return fake.RenameServiceStub(oldName, newName)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.renameServiceReturns.result1
+}
+
+func (fake *FakeClient) RenameServiceCallCount() int {
+	fake.renameServiceMutex.RLock()
+	defer fake.renameServiceMutex.RUnlock()
+	return len(fake.renameServiceArgsForCall)
+}
+
+func (fake *FakeClient) RenameServiceArgsForCall(i int) (string, string) {
+	fake.renameServiceMutex.RLock()
+	defer fake.renameServiceMutex.RUnlock()
+	return fake.renameServiceArgsForCall[i].oldName, fake.renameServiceArgsForCall[i].newName
+}
+
+func (fake *FakeClient) RenameServiceReturns(result1 error) {
+	fake.RenameServiceStub = nil
+	fake.renameServiceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) RenameServiceReturnsOnCall(i int, result1 error) {
+	fake.RenameServiceStub = nil
+	if fake.renameServiceReturnsOnCall == nil {
+		fake.renameServiceReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.renameServiceReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) RunTask(appName string, command string) error {
+	fake.runTaskMutex.Lock()
+	ret, specificReturn := fake.runTaskReturnsOnCall[len(fake.runTaskArgsForCall)]
+	fake.runTaskArgsForCall = append(fake.runTaskArgsForCall, struct {
+		appName string
+		command string
+	}{appName, command})
+	fake.recordInvocation("RunTask", []interface{}{appName, command})
+	fake.runTaskMutex.Unlock()
+	if fake.RunTaskStub != nil {
+		return fake.RunTaskStub(appName, command)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.runTaskReturns.result1
+}
+
+func (fake *FakeClient) RunTaskCallCount() int {
+	fake.runTaskMutex.RLock()
+	defer fake.runTaskMutex.RUnlock()
+	return len(fake.runTaskArgsForCall)
+}
+
+func (fake *FakeClient) RunTaskArgsForCall(i int) (string, string) {
+	fake.runTaskMutex.RLock()
+	defer fake.runTaskMutex.RUnlock()
+	return fake.runTaskArgsForCall[i].appName, fake.runTaskArgsForCall[i].command
+}
+
+func (fake *FakeClient) RunTaskReturns(result1 error) {
+	fake.RunTaskStub = nil
+	fake.runTaskReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) RunTaskReturnsOnCall(i int, result1 error) {
+	fake.RunTaskStub = nil
+	if fake.runTaskReturnsOnCall == nil {
+		fake.runTaskReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.runTaskReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) StartApp(appName string) error {
+	fake.startAppMutex.Lock()
+	ret, specificReturn := fake.startAppReturnsOnCall[len(fake.startAppArgsForCall)]
+	fake.startAppArgsForCall = append(fake.startAppArgsForCall, struct {
+		appName string
+	}{appName})
+	fake.recordInvocation("StartApp", []interface{}{appName})
+	fake.startAppMutex.Unlock()
+	if fake.StartAppStub != nil {
+		return fake.StartAppStub(appName)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.startAppReturns.result1
+}
+
+func (fake *FakeClient) StartAppCallCount() int {
+	fake.startAppMutex.RLock()
+	defer fake.startAppMutex.RUnlock()
+	return len(fake.startAppArgsForCall)
+}
+
+func (fake *FakeClient) StartAppArgsForCall(i int) string {
+	fake.startAppMutex.RLock()
+	defer fake.startAppMutex.RUnlock()
+	return fake.startAppArgsForCall[i].appName
+}
+
+func (fake *FakeClient) StartAppReturns(result1 error) {
+	fake.StartAppStub = nil
+	fake.startAppReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClient) StartAppReturnsOnCall(i int, result1 error) {
+	fake.StartAppStub = nil
+	if fake.startAppReturnsOnCall == nil {
+		fake.startAppReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.startAppReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.bindServiceMutex.RLock()
-	defer fake.bindServiceMutex.RUnlock()
+	fake.serviceExistsMutex.RLock()
+	defer fake.serviceExistsMutex.RUnlock()
 	fake.createServiceInstanceMutex.RLock()
 	defer fake.createServiceInstanceMutex.RUnlock()
+	fake.getHostnamesMutex.RLock()
+	defer fake.getHostnamesMutex.RUnlock()
+	fake.updateServiceConfigMutex.RLock()
+	defer fake.updateServiceConfigMutex.RUnlock()
+	fake.bindServiceMutex.RLock()
+	defer fake.bindServiceMutex.RUnlock()
 	fake.deleteAppMutex.RLock()
 	defer fake.deleteAppMutex.RUnlock()
 	fake.deleteServiceInstanceMutex.RLock()
 	defer fake.deleteServiceInstanceMutex.RUnlock()
 	fake.dumpLogsMutex.RLock()
 	defer fake.dumpLogsMutex.RUnlock()
-	fake.getHostnamesMutex.RLock()
-	defer fake.getHostnamesMutex.RUnlock()
 	fake.pushAppMutex.RLock()
 	defer fake.pushAppMutex.RUnlock()
 	fake.renameServiceMutex.RLock()
 	defer fake.renameServiceMutex.RUnlock()
 	fake.runTaskMutex.RLock()
 	defer fake.runTaskMutex.RUnlock()
-	fake.serviceExistsMutex.RLock()
-	defer fake.serviceExistsMutex.RUnlock()
 	fake.startAppMutex.RLock()
 	defer fake.startAppMutex.RUnlock()
-	fake.updateServiceConfigMutex.RLock()
-	defer fake.updateServiceConfigMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

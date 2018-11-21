@@ -260,7 +260,7 @@ var _ = Describe("ReplaceDefinerCmd", func() {
 		Expect(replace.Args).To(Equal([]string{
 			"sed",
 			"-e",
-			"s/DEFINER=`.*`@`%` SQL SECURITY DEFINER/SQL SECURITY INVOKER/",
+			"s/DEFINER=.* SQL SECURITY .*/SQL SECURITY INVOKER/",
 		}))
 	})
 
