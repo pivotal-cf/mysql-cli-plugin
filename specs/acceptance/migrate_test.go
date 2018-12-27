@@ -289,6 +289,15 @@ func setupStoredCodeFixtures(instanceName string) {
 	_, err = db.Exec("CREATE SQL SECURITY DEFINER VIEW migrate_definer_view AS SELECT 1")
 	Expect(err).NotTo(HaveOccurred())
 
+	_, err = db.Exec("CREATE TABLE view_table (id int)")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("CREATE SQL SECURITY DEFINER VIEW dropped_table_view AS SELECT id FROM view_table")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("DROP TABLE view_table")
+	Expect(err).NotTo(HaveOccurred())
+
 	_, err = db.Exec("CREATE PROCEDURE migrate_procedure() BEGIN END")
 	Expect(err).NotTo(HaveOccurred())
 }

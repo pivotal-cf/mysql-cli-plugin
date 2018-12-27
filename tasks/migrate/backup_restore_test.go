@@ -39,7 +39,7 @@ var _ = Describe("MySQLDumpCmd", func() {
 	})
 
 	It("configures stdio", func() {
-		mysqldump := MySQLDumpCmd(credentials, schemas...)
+		mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
 		By("directing stderr to os.Stderr", func() {
 			Expect(mysqldump.Stderr).To(Equal(os.Stderr))
 		})
@@ -55,7 +55,7 @@ var _ = Describe("MySQLDumpCmd", func() {
 		})
 
 		It("adds the mysqldump --databases option", func() {
-			mysqldump := MySQLDumpCmd(credentials, schemas...)
+			mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
 			Expect(mysqldump).ToNot(BeNil())
 			Expect(mysqldump.Args).To(Equal([]string{
 				"mysqldump",
@@ -88,7 +88,7 @@ var _ = Describe("MySQLDumpCmd", func() {
 			})
 
 			It("specifies the TLS options in the mysqldump command", func() {
-				mysqldump := MySQLDumpCmd(credentials, schemas...)
+				mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
 				Expect(mysqldump).ToNot(BeNil())
 				Expect(mysqldump.Args).To(Equal([]string{
 					"mysqldump",
@@ -111,6 +111,45 @@ var _ = Describe("MySQLDumpCmd", func() {
 				Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
 			})
 		})
+
+		When("views to ignore are specified", func() {
+			var (
+				invalidViews []View
+			)
+
+			BeforeEach(func() {
+				invalidViews = []View{
+					{Schema: "foo", TableName: "view1"},
+					{Schema: "bar", TableName: "view1"},
+					{Schema: "baz", TableName: "view1"},
+				}
+			})
+
+			It("add the mysqldump --ignore-table option the correct number of times", func() {
+				mysqldump := MySQLDumpCmd(credentials, invalidViews, schemas...)
+				Expect(mysqldump).ToNot(BeNil())
+				Expect(mysqldump.Args).To(Equal([]string{
+					"mysqldump",
+					"--user=some-user-name",
+					"--host=some-hostname",
+					"--port=3307",
+					"--max-allowed-packet=1G",
+					"--single-transaction",
+					"--skip-routines",
+					"--skip-events",
+					"--set-gtid-purged=off",
+					"--skip-triggers",
+					"--ignore-table=foo.view1",
+					"--ignore-table=bar.view1",
+					"--ignore-table=baz.view1",
+					"--databases",
+					"foo",
+					"bar",
+					"baz",
+				}))
+				Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
+			})
+		})
 	})
 
 	When("dumping a single schema", func() {
@@ -119,7 +158,7 @@ var _ = Describe("MySQLDumpCmd", func() {
 		})
 
 		It("dumps only a single database without the --databases option", func() {
-			mysqldump := MySQLDumpCmd(credentials, schemas...)
+			mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
 			Expect(mysqldump).ToNot(BeNil())
 			Expect(mysqldump.Args).To(Equal([]string{
 				"mysqldump",
@@ -149,7 +188,7 @@ var _ = Describe("MySQLDumpCmd", func() {
 			})
 
 			It("specifies the TLS options in the mysqldump command", func() {
-				mysqldump := MySQLDumpCmd(credentials, schemas...)
+				mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
 				Expect(mysqldump).ToNot(BeNil())
 				Expect(mysqldump.Args).To(Equal([]string{
 					"mysqldump",
@@ -240,20 +279,6 @@ var _ = Describe("MySQLCmd", func() {
 })
 
 var _ = Describe("ReplaceDefinerCmd", func() {
-	var (
-		credentials Credentials
-	)
-
-	BeforeEach(func() {
-		credentials = Credentials{
-			Username: "some-user-name",
-			Name:     "some-db-name",
-			Password: "some-password",
-			Hostname: "some-hostname",
-			Port:     3307,
-		}
-	})
-
 	It("builds the sed command", func() {
 		replace := ReplaceDefinerCmd()
 		Expect(replace).ToNot(BeNil())

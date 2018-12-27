@@ -58,3 +58,39 @@ func DiscoverDatabases(db *sql.DB) ([]string, error) {
 
 	return dbs, nil
 }
+
+type View struct {
+	Schema    string
+	TableName string
+}
+
+func (v View) String() string {
+	return fmt.Sprintf("%s.%s", v.Schema, v.TableName)
+}
+
+func DiscoverInvalidViews(db *sql.DB, schemas []string) ([]View, error) {
+	var invalidViews []View
+	for _, schema := range schemas {
+		rows, err := db.Query(`SELECT table_name from INFORMATION_SCHEMA.VIEWS WHERE table_schema = ?`, schema)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to retrieve views for %s schema", schema)
+		}
+
+		for rows.Next() {
+			var view string
+			if err := rows.Scan(&view); err != nil {
+				return nil, errors.Wrap(err, "failed to scan the list of views")
+			}
+
+			_, err := db.Exec(`SHOW FIELDS FROM ? FROM ?`, view, schema)
+			if err != nil {
+				invalidViews = append(invalidViews, View{Schema: schema, TableName: view})
+			}
+		}
+
+		if err := rows.Err(); err != nil {
+			return nil, errors.Wrap(err, "failed to prepare the list of views")
+		}
+	}
+	return invalidViews, nil
+}

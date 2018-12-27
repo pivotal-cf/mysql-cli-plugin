@@ -73,7 +73,15 @@ func main() {
 		log.Fatalf("Failed to discover schemas: %v", err)
 	}
 
-	mySQLDumpCmd := MySQLDumpCmd(sourceCredentials, sourceSchemas...)
+	invalidViews, err := DiscoverInvalidViews(db, sourceSchemas)
+	if err != nil {
+		log.Fatalf("Failed to retrieve invalid views: %v", err)
+	}
+
+	// TODO log invalid views
+	log.Printf("Not migrating the following views: %s\n", invalidViews)
+
+	mySQLDumpCmd := MySQLDumpCmd(sourceCredentials, invalidViews, sourceSchemas...)
 	mySQLCmd := MySQLCmd(destCredentials)
 	replaceCmd := ReplaceDefinerCmd()
 

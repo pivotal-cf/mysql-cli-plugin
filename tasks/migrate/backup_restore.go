@@ -42,7 +42,7 @@ func baseCmd(cmdName string, credentials Credentials) *exec.Cmd {
 	return cmd
 }
 
-func MySQLDumpCmd(credentials Credentials, schemas ...string) *exec.Cmd {
+func MySQLDumpCmd(credentials Credentials, invalidViews []View, schemas ...string) *exec.Cmd {
 	cmd := baseCmd("mysqldump", credentials)
 
 	cmd.Args = append(cmd.Args,
@@ -53,6 +53,10 @@ func MySQLDumpCmd(credentials Credentials, schemas ...string) *exec.Cmd {
 		"--set-gtid-purged=off",
 		"--skip-triggers",
 	)
+
+	for _, view := range invalidViews {
+		cmd.Args = append(cmd.Args, fmt.Sprintf("--ignore-table=%s", view))
+	}
 
 	if len(schemas) > 1 {
 		cmd.Args = append(cmd.Args, "--databases")
