@@ -2,17 +2,17 @@
 package unpackfakes
 
 import (
-	"sync"
+	sync "sync"
 
-	"github.com/gobuffalo/packr"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
+	packd "github.com/gobuffalo/packd"
+	unpack "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 )
 
 type FakeBox struct {
-	WalkStub        func(walkFunc packr.WalkFunc) error
+	WalkStub        func(packd.WalkFunc) error
 	walkMutex       sync.RWMutex
 	walkArgsForCall []struct {
-		walkFunc packr.WalkFunc
+		arg1 packd.WalkFunc
 	}
 	walkReturns struct {
 		result1 error
@@ -24,21 +24,22 @@ type FakeBox struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeBox) Walk(walkFunc packr.WalkFunc) error {
+func (fake *FakeBox) Walk(arg1 packd.WalkFunc) error {
 	fake.walkMutex.Lock()
 	ret, specificReturn := fake.walkReturnsOnCall[len(fake.walkArgsForCall)]
 	fake.walkArgsForCall = append(fake.walkArgsForCall, struct {
-		walkFunc packr.WalkFunc
-	}{walkFunc})
-	fake.recordInvocation("Walk", []interface{}{walkFunc})
+		arg1 packd.WalkFunc
+	}{arg1})
+	fake.recordInvocation("Walk", []interface{}{arg1})
 	fake.walkMutex.Unlock()
 	if fake.WalkStub != nil {
-		return fake.WalkStub(walkFunc)
+		return fake.WalkStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.walkReturns.result1
+	fakeReturns := fake.walkReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeBox) WalkCallCount() int {
@@ -47,13 +48,22 @@ func (fake *FakeBox) WalkCallCount() int {
 	return len(fake.walkArgsForCall)
 }
 
-func (fake *FakeBox) WalkArgsForCall(i int) packr.WalkFunc {
+func (fake *FakeBox) WalkCalls(stub func(packd.WalkFunc) error) {
+	fake.walkMutex.Lock()
+	defer fake.walkMutex.Unlock()
+	fake.WalkStub = stub
+}
+
+func (fake *FakeBox) WalkArgsForCall(i int) packd.WalkFunc {
 	fake.walkMutex.RLock()
 	defer fake.walkMutex.RUnlock()
-	return fake.walkArgsForCall[i].walkFunc
+	argsForCall := fake.walkArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeBox) WalkReturns(result1 error) {
+	fake.walkMutex.Lock()
+	defer fake.walkMutex.Unlock()
 	fake.WalkStub = nil
 	fake.walkReturns = struct {
 		result1 error
@@ -61,6 +71,8 @@ func (fake *FakeBox) WalkReturns(result1 error) {
 }
 
 func (fake *FakeBox) WalkReturnsOnCall(i int, result1 error) {
+	fake.walkMutex.Lock()
+	defer fake.walkMutex.Unlock()
 	fake.WalkStub = nil
 	if fake.walkReturnsOnCall == nil {
 		fake.walkReturnsOnCall = make(map[int]struct {

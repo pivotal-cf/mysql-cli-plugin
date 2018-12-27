@@ -24,6 +24,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
@@ -126,6 +127,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, "20m", "1s").Should(gexec.Exit(0))
+				Expect(session.Out).To(gbytes.Say(`The following views are invalid, and will not be migrated: \[service_instance_db.dropped_table_view\]`))
 			})
 
 			By("Verifying the destination service was renamed to the source's name", func() {
@@ -242,7 +244,11 @@ var _ = Describe("Migrate Integration Tests", func() {
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(session, "20m", "1s").Should(gexec.Exit(1))
+				Eventually(session, "20m", "1s").
+					Should(
+						gexec.Exit(1),
+						`Expected migration to fail, but it did not`,
+					)
 				test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
 
 				destinationGUID = test_helpers.InstanceUUID(destInstance)
@@ -287,6 +293,15 @@ func setupStoredCodeFixtures(instanceName string) {
 	Expect(err).NotTo(HaveOccurred())
 
 	_, err = db.Exec("CREATE SQL SECURITY DEFINER VIEW migrate_definer_view AS SELECT 1")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("CREATE TABLE view_table (id int)")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("CREATE SQL SECURITY DEFINER VIEW dropped_table_view AS SELECT id FROM view_table")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("DROP TABLE view_table")
 	Expect(err).NotTo(HaveOccurred())
 
 	_, err = db.Exec("CREATE PROCEDURE migrate_procedure() BEGIN END")
@@ -369,9 +384,7 @@ func createInvalidMigrationState(instanceName string) {
 	_, err = db.Exec("CREATE TABLE migrate_fail (id VARCHAR(1))")
 	Expect(err).NotTo(HaveOccurred())
 
-	_, err = db.Exec("CREATE VIEW migrate_fail_view AS SELECT * FROM migrate_fail")
+	_, err = db.Exec("ALTER TABLE migrate_fail DISCARD TABLESPACE")
 	Expect(err).NotTo(HaveOccurred())
 
-	_, err = db.Exec("DROP TABLE migrate_fail")
-	Expect(err).NotTo(HaveOccurred())
 }
