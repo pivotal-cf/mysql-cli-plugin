@@ -148,7 +148,7 @@ func (m *Migrator) RenameServiceInstances(donorInstanceName, recipientInstanceNa
 		renameError := `Error renaming service instance %[1]s: %[2]s.
 The migration of data from %[1]s to a newly created service instance with name: %[1]s-new has successfully completed.
 
-In order to complete the data migration, please run 'cf rename-service %[1]s %[1]s-old' and 
+In order to complete the data migration, please run 'cf rename-service %[1]s %[1]s-old' and
 'cf rename-service %[1]s-new %[1]s' to complete the migration process.`
 
 		return fmt.Errorf(renameError, donorInstanceName, err)

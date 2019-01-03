@@ -241,7 +241,7 @@ var _ = Describe("RenameServiceInstances", func() {
 			renameError := `Error renaming service instance some-donor-instance: The service instance name is taken: some-donor-instance-old.
 The migration of data from some-donor-instance to a newly created service instance with name: some-donor-instance-new has successfully completed.
 
-In order to complete the data migration, please run 'cf rename-service some-donor-instance some-donor-instance-old' and 
+In order to complete the data migration, please run 'cf rename-service some-donor-instance some-donor-instance-old' and
 'cf rename-service some-donor-instance-new some-donor-instance' to complete the migration process.`
 			Expect(err).To(MatchError(renameError))
 		})
