@@ -421,6 +421,19 @@ func (c *Client) waitForOperationCompletion(operationName, instanceName string) 
 	}
 }
 
-func (c *Client) DumpLogs(appName string) {
-	c.pluginAPI.CliCommand("logs", "--recent", appName)
+func (c *Client) GetLogs(appName, filter string) ([]string, error) {
+	var filteredOutput []string
+
+	output, err := c.pluginAPI.CliCommandWithoutTerminalOutput("logs", "--recent", appName)
+	if err != nil {
+		return nil, errors.Wrap(err, "GetLogs failed")
+	}
+
+	for _, val := range output {
+		if strings.Contains(val, filter) {
+			filteredOutput = append(filteredOutput, val)
+		}
+	}
+
+	return filteredOutput, nil
 }

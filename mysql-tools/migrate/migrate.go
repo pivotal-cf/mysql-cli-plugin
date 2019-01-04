@@ -33,7 +33,7 @@ type Client interface {
 	BindService(appName, serviceName string) error
 	DeleteApp(appName string) error
 	DeleteServiceInstance(instanceName string) error
-	DumpLogs(appName string)
+	GetLogs(appName, filter string) ([]string, error)
 	PushApp(path, appName string) error
 	RenameService(oldName, newName string) error
 	RunTask(appName, command string) error
@@ -131,14 +131,28 @@ func (m *Migrator) MigrateData(donorInstanceName, recipientInstanceName string, 
 	command := fmt.Sprintf("migrate %s %s", donorInstanceName, recipientInstanceName)
 	if err = m.client.RunTask(m.appName, command); err != nil {
 		log.Printf("Migration failed: %s", err)
-		log.Print("Fetching log output...")
-		time.Sleep(5 * time.Second)
-		m.client.DumpLogs(m.appName)
+		// Make best effort to retrieve logs in case of failure, but migration
+		// error has priorty over logging errors.
+		_ = m.outputMigrationLogs("")
+	} else {
+		log.Print("Migration completed successfully")
+		err = m.outputMigrationLogs("APP/TASK/")
+	}
+
+	return err
+}
+
+func (m *Migrator) outputMigrationLogs(filter string) error {
+	log.Print("Fetching log output...")
+	time.Sleep(5 * time.Second)
+	output, err := m.client.GetLogs(m.appName, filter)
+	if err != nil {
 		return err
 	}
 
-	log.Print("Migration completed successfully")
-
+	for _, line := range output {
+		fmt.Println(line)
+	}
 	return nil
 }
 

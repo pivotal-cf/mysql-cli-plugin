@@ -196,11 +196,46 @@ var _ = Describe("MigrateData", func() {
 				Expect(migrateTaskCmd).To(MatchRegexp(`^migrate %s %s`, donorName, recipientName))
 			})
 
+			By("filtering cf logs messages to just task output", func() {
+				Expect(fakeClient.GetLogsCallCount()).To(Equal(1))
+				migrateAppName, filter := fakeClient.GetLogsArgsForCall(0)
+				Expect(migrateAppName).To(HavePrefix(`migrate-app-`))
+				Expect(filter).To(MatchRegexp("APP/TASK/"))
+			})
+
 			By("Deleting the migration app afterwards", func() {
 				Expect(fakeClient.DeleteAppCallCount()).To(Equal(1))
 			})
 
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		Context("when retrieving logs fails", func() {
+			BeforeEach(func() {
+				fakeClient.GetLogsReturns(nil, errors.New("failed logs"))
+			})
+
+			It("returns an error", func() {
+				err := migrator.MigrateData(donorName, recipientName, true)
+				Expect(err).To(HaveOccurred())
+				Expect(fakeClient.GetLogsCallCount()).To(Equal(1))
+			})
+		})
+
+		Context("when a task fails", func() {
+			BeforeEach(func() {
+				fakeClient.RunTaskReturns(errors.New("failed"))
+			})
+
+			It("returns the full logs output of the migrate-app", func() {
+				err := migrator.MigrateData(donorName, recipientName, true)
+				Expect(err).To(HaveOccurred())
+
+				Expect(fakeClient.GetLogsCallCount()).To(Equal(1))
+				migrateAppName, filter := fakeClient.GetLogsArgsForCall(0)
+				Expect(migrateAppName).To(HavePrefix(`migrate-app-`))
+				Expect(filter).To(BeEmpty())
+			})
 		})
 
 		Context("when told to not cleanup", func() {

@@ -78,8 +78,7 @@ func main() {
 		log.Fatalf("Failed to retrieve invalid views: %v", err)
 	}
 
-	// TODO log invalid views
-	log.Printf("Not migrating the following views: %s\n", invalidViews)
+	log.Printf("The following views are invalid, and will not be migrated: %s\n", invalidViews)
 
 	mySQLDumpCmd := MySQLDumpCmd(sourceCredentials, invalidViews, sourceSchemas...)
 	mySQLCmd := MySQLCmd(destCredentials)

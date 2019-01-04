@@ -713,11 +713,43 @@ var _ = Describe("Client", func() {
 		})
 	})
 
-	Context("DumpLogs", func() {
+	Context("GetLogs", func() {
+		var cmdOutput []string
+		BeforeEach(func() {
+			cmdOutput = []string{"some sentence", "to match on", "app task logs"}
+			fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(cmdOutput, nil)
+		})
+
 		It("dumps logs for an app", func() {
-			client.DumpLogs("some-app")
-			Expect(fakeCFPluginAPI.CliCommandArgsForCall(0)).
+			output, err := client.GetLogs("some-app", "")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+			Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
 				To(Equal([]string{"logs", "--recent", "some-app"}))
+			Expect(output).To(Equal(cmdOutput))
+		})
+
+		Context("when given a filter string", func() {
+			It("only outputs log lines that match that filter", func() {
+				output, err := client.GetLogs("some-app", "app task")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
+					To(Equal([]string{"logs", "--recent", "some-app"}))
+				Expect(output).To(Equal([]string{"app task logs"}))
+			})
+		})
+
+		Context("when it encounters an error", func() {
+			It("it returns the error", func() {
+				fakeCFPluginAPI.CliCommandWithoutTerminalOutputReturns(nil, errors.New("bogus"))
+				output, err := client.GetLogs("some-app", "app task")
+				Expect(err).To(HaveOccurred())
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
+				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputArgsForCall(0)).
+					To(Equal([]string{"logs", "--recent", "some-app"}))
+				Expect(output).To(BeNil())
+			})
 		})
 	})
 

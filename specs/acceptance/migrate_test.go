@@ -24,6 +24,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
@@ -126,6 +127,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, "20m", "1s").Should(gexec.Exit(0))
+				Expect(session.Out).To(gbytes.Say("The following views are invalid, and will not be migrated:"))
 			})
 
 			By("Verifying the destination service was renamed to the source's name", func() {
