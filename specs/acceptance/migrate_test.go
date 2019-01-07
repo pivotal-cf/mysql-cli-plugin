@@ -309,10 +309,10 @@ func validateMigratedStoredCode(instanceName string) {
 	serviceKeyCreds := test_helpers.GetServiceKey(instanceName, serviceKey)
 	defer test_helpers.DeleteServiceKey(instanceName, serviceKey)
 
-	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
+	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63309, appName, serviceKeyCreds)
 	defer closeTunnel()
 
-	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63308)/%s",
+	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63309)/%s",
 		serviceKeyCreds.Username,
 		serviceKeyCreds.Password,
 		serviceKeyCreds.Name,
@@ -353,10 +353,10 @@ func createInvalidMigrationState(instanceName string) {
 	serviceKeyCreds := test_helpers.GetServiceKey(instanceName, serviceKey)
 	defer test_helpers.DeleteServiceKey(instanceName, serviceKey)
 
-	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
+	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63310, appName, serviceKeyCreds)
 	defer closeTunnel()
 
-	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63308)/%s",
+	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63310)/%s",
 		serviceKeyCreds.Username,
 		serviceKeyCreds.Password,
 		serviceKeyCreds.Name,
