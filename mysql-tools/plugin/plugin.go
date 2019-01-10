@@ -25,6 +25,7 @@ import (
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 	"github.com/pkg/errors"
+	"github.com/cloudfoundry-community/go-cfclient"
 )
 
 var (
@@ -82,6 +83,7 @@ USAGE:
 	case "version":
 		fmt.Printf("%s (%s)\n", version, gitSHA)
 		os.Exit(0)
+	case "find-bindings":
 	case "migrate":
 		c.err = Migrate(migrator, args[2:])
 	}
@@ -176,6 +178,39 @@ func Migrate(migrator Migrator, args []string) error {
 	}
 
 	return migrator.RenameServiceInstances(donorInstanceName, tempRecipientInstanceName)
+}
+
+type CFClient interface {
+	FindServiceByLabel(string) (cfclient.Service, error)
+}
+
+type ServiceBinding struct {
+	App string
+	Key string
+	Org string
+	Space string
+}
+
+func FindBindings(serviceName string) ([]ServiceBinding, error) {
+	//cf curl "/v2/services?q=label:p.mysql"
+	//	get resources entity.service_plans_url "/v2/services/9cbbd018-236f-4171-8585-594ebfde52f2/service_plans"
+	//	cf curl service_plans_url
+	//		get resources entity.service_instances_url "/v2/spaces/8b892a65-bf0e-4276-ad47-30757c4f2251/service_instances"
+	//		cf curl service_instances_url
+	//			get resources entity.service_bindings_url "/v2/service_instances/00d4ce31-bbbe-48f6-b15d-fcbd3380f50a/service_bindings"
+	//			get resources entity.service_keys_url "/v2/service_instances/00d4ce31-bbbe-48f6-b15d-fcbd3380f50a/service_keys"
+	//			cf curl service_bindings_url
+	//				get resources entity.app_guid
+	//			cf curl service_keys_url
+	//				get resources entity.name    ?
+	//				get resources metadata.guid  ?
+	//			get resources entity.space_url "/v2/spaces/8b892a65-bf0e-4276-ad47-30757c4f2251"
+	//			cf curl space_url
+	//				get resources entity.name
+	//				get resources entity.organization_url "/v2/organizations/10b9207b-1c15-46d8-9946-a2374b8c40e5"
+	//				cf curl organization_url
+	//					get resources entity.name
+	return nil, nil
 }
 
 func versionFromSemver(in string) plugin.VersionType {

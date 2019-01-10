@@ -89,6 +89,7 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+
 	Context("CreateServiceInstance", func() {
 		Context("When we create a service instance", func() {
 			var (

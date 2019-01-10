@@ -182,4 +182,24 @@ var _ = Describe("Plugin Commands", func() {
 			})
 		})
 	})
+
+	Context( "FindBindings", func() {
+		var (
+			serviceName string
+			expectedBindings []plugin.ServiceBinding
+		)
+		BeforeEach(func() {
+			expectedBindings = []plugin.ServiceBinding {
+				{App:"App",Key:"",Org:"Org",Space:"Space"},
+				//{App:"",Key:"Key",Org:"Org",Space:"Space"},
+			}
+
+		})
+
+		It( "returns a list of applications and service keys associated with the service", func() {
+			listOfBindings, err := plugin.FindBindings(serviceName)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(listOfBindings).To(Equal(expectedBindings))
+		})
+	})
 })
