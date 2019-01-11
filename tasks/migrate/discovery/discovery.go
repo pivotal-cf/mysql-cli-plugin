@@ -10,11 +10,12 @@
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-package main
+package discovery
 
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -68,29 +69,51 @@ func (v View) String() string {
 	return fmt.Sprintf("%s.%s", v.Schema, v.TableName)
 }
 
+func QuoteIdentifier(name string) string {
+	return "`" + strings.Replace(name, "`", "``", -1) + "`"
+}
+
+func discoverViews(db *sql.DB, schema string) (views []View, err error) {
+	findViewsQuery := `SELECT table_name from INFORMATION_SCHEMA.VIEWS WHERE table_schema = ?`
+	rows, err := db.Query(findViewsQuery, schema)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to retrieve views for %s schema", schema)
+	}
+
+	for rows.Next() {
+		var (
+			view View
+		)
+		if err := rows.Scan(&view.TableName); err != nil {
+			return nil, errors.Wrap(err, "failed to scan the list of views")
+		}
+		view.Schema = schema
+
+		views = append(views, view)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to prepare the list of views")
+	}
+
+	return views, nil
+}
+
 func DiscoverInvalidViews(db *sql.DB, schemas []string) ([]View, error) {
 	var invalidViews []View
 	for _, schema := range schemas {
-		rows, err := db.Query(`SELECT table_name from INFORMATION_SCHEMA.VIEWS WHERE table_schema = ?`, schema)
+		views, err := discoverViews(db, schema)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to retrieve views for %s schema", schema)
+			return nil, err
 		}
 
-		for rows.Next() {
-			var view string
-			if err := rows.Scan(&view); err != nil {
-				return nil, errors.Wrap(err, "failed to scan the list of views")
+		for _, view := range views {
+			checkInvalidViewQuery := fmt.Sprintf(`SHOW FIELDS FROM %s IN %s`, QuoteIdentifier(view.TableName), QuoteIdentifier(view.Schema))
+			if _, err := db.Exec(checkInvalidViewQuery); err != nil {
+				invalidViews = append(invalidViews, view)
 			}
-
-			_, err := db.Exec(`SHOW FIELDS FROM ? FROM ?`, view, schema)
-			if err != nil {
-				invalidViews = append(invalidViews, View{Schema: schema, TableName: view})
-			}
-		}
-
-		if err := rows.Err(); err != nil {
-			return nil, errors.Wrap(err, "failed to prepare the list of views")
 		}
 	}
+
 	return invalidViews, nil
 }

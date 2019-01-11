@@ -20,6 +20,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/go-binmock"
+	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 )
 
 var _ = Describe("MySQLDumpCmd", func() {
@@ -114,11 +115,11 @@ var _ = Describe("MySQLDumpCmd", func() {
 
 		When("views to ignore are specified", func() {
 			var (
-				invalidViews []View
+				invalidViews []discovery.View
 			)
 
 			BeforeEach(func() {
-				invalidViews = []View{
+				invalidViews = []discovery.View{
 					{Schema: "foo", TableName: "view1"},
 					{Schema: "bar", TableName: "view1"},
 					{Schema: "baz", TableName: "view1"},

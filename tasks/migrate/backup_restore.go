@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 	"github.com/pkg/errors"
 )
 
@@ -42,7 +43,7 @@ func baseCmd(cmdName string, credentials Credentials) *exec.Cmd {
 	return cmd
 }
 
-func MySQLDumpCmd(credentials Credentials, invalidViews []View, schemas ...string) *exec.Cmd {
+func MySQLDumpCmd(credentials Credentials, invalidViews []discovery.View, schemas ...string) *exec.Cmd {
 	cmd := baseCmd("mysqldump", credentials)
 
 	cmd.Args = append(cmd.Args,

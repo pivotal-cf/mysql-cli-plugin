@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 )
 
 var (
@@ -68,12 +69,12 @@ func main() {
 		log.Fatalf("Failed to initialize source connection: %v", err)
 	}
 
-	sourceSchemas, err := DiscoverDatabases(db)
+	sourceSchemas, err := discovery.DiscoverDatabases(db)
 	if err != nil {
 		log.Fatalf("Failed to discover schemas: %v", err)
 	}
 
-	invalidViews, err := DiscoverInvalidViews(db, sourceSchemas)
+	invalidViews, err := discovery.DiscoverInvalidViews(db, sourceSchemas)
 	if err != nil {
 		log.Fatalf("Failed to retrieve invalid views: %v", err)
 	}
