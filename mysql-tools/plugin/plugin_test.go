@@ -17,7 +17,9 @@ import (
 	"errors"
 	"io"
 	"log"
+	"net/url"
 
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
@@ -183,22 +185,63 @@ var _ = Describe("Plugin Commands", func() {
 		})
 	})
 
-	Context( "FindBindings", func() {
+	Context("FindBindings", func() {
 		var (
-			serviceName string
+			serviceName      string
 			expectedBindings []plugin.ServiceBinding
+			fakeCFClient     *pluginfakes.FakeCFClient
 		)
 		BeforeEach(func() {
-			expectedBindings = []plugin.ServiceBinding {
-				{App:"App",Key:"",Org:"Org",Space:"Space"},
-				//{App:"",Key:"Key",Org:"Org",Space:"Space"},
+			fakeCFClient = &pluginfakes.FakeCFClient{}
+
+			expectedBindings = []plugin.ServiceBinding{
+				{App: "app", Key: "", Org: "org-name", Space: "space-name"},
 			}
 
+			service := cfclient.Service{
+				Label: "p-mysql",
+				Guid:  "service-guid",
+			}
+			fakeCFClient.ListServicesByQueryReturns([]cfclient.Service{service}, nil)
+
+			// servicePlans := []cfclient.ServicePlan{
+			// 	{Name: "small", Guid: "small-guid", ServiceGuid: "service-guid"},
+			// 	{Name: "medium", Guid: "medium-guid", ServiceGuid: "service-guid"},
+			// 	{Name: "large", Guid: "large-guid", ServiceGuid: "service-guid"},
+			// }
+			//
+			// serviceInstances := []cfclient.ServiceInstance{
+			// 	{Name: "instance1", Guid: "instance1-guid", ServicePlanGuid: "small-guid", SpaceGuid: "space-guid"},
+			// 	{Name: "instance2", Guid: "instance2-guid", ServicePlanGuid: "small-guid", SpaceGuid: "space-guid"},
+			// 	{Name: "instance3", Guid: "instance3-guid", ServicePlanGuid: "medium-guid", SpaceGuid: "space-guid"},
+			// }
+			//
+			// space := cfclient.Space{
+			// 	Name:             "space-name",
+			// 	Guid:             "space-guid",
+			// 	OrganizationGuid: "org-guid",
+			// 	OrgData: cfclient.OrgResource{
+			// 		Entity: cfclient.Org{
+			// 			Name: "org-name",
+			// 			Guid: "org-guid",
+			// 		},
+			// 	},
+			// }
+			//
+			// serviceBinding := []cfclient.ServiceBinding{
+			// 	{Guid: "binding-guid", AppGuid: "app-guid", ServiceInstanceGuid: "instance1-guid"},
+			// }
+			//
+			// app := cfclient.App{Guid: "app-guid", Name: "app"}
 		})
 
-		It( "returns a list of applications and service keys associated with the service", func() {
-			listOfBindings, err := plugin.FindBindings(serviceName)
+		It("returns a list of applications and service keys associated with the service", func() {
+			finder := plugin.NewBindingFinder(fakeCFClient)
+			listOfBindings, err := finder.FindBindings(serviceName)
 			Expect(err).ToNot(HaveOccurred())
+
+			Expect(fakeCFClient.ListServicesByQueryCallCount()).To(Equal(1))
+			Expect(fakeCFClient.ListServicesByQueryArgsForCall(0)).To(Equal(url.Values{}))
 			Expect(listOfBindings).To(Equal(expectedBindings))
 		})
 	})
