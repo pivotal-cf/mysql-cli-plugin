@@ -16,7 +16,6 @@ import (
 	"database/sql"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -74,28 +73,6 @@ var _ = Describe("Discovery Integration Tests", func() {
 					_, err := DiscoverDatabases(db)
 					Expect(err).To(MatchError("no databases found"))
 				})
-			})
-		})
-
-		When("querying the database fails", func() {
-			BeforeEach(func() {
-				var err error
-				dsn := (&mysql.Config{
-					User:                 "invalid-user",
-					Addr:                 "localhost:" + dockertest.HostPort(mySQLDockerPort, mysqlContainer),
-					DBName:               "invalid-db",
-					AllowNativePasswords: true,
-				}).FormatDSN()
-
-				db, err = sql.Open("mysql", dsn)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("returns an error", func() {
-				_, err := DiscoverDatabases(db)
-				Expect(err).To(MatchError(
-					`failed to query the database: Error 1045: Access denied for user 'invalid-user'@'127.0.0.1' (using password: NO)`,
-				))
 			})
 		})
 	})

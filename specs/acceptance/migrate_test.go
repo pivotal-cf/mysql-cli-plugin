@@ -127,7 +127,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, "20m", "1s").Should(gexec.Exit(0))
-				Expect(session.Out).To(gbytes.Say("The following views are invalid, and will not be migrated:"))
+				Expect(session.Out).To(gbytes.Say(`The following views are invalid, and will not be migrated: \[service_instance_db.dropped_table_view\]`))
 			})
 
 			By("Verifying the destination service was renamed to the source's name", func() {
@@ -244,7 +244,11 @@ var _ = Describe("Migrate Integration Tests", func() {
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(session, "20m", "1s").Should(gexec.Exit(1))
+				Eventually(session, "20m", "1s").
+					Should(
+						gexec.Exit(1),
+						`Expected migration to fail, but it did not`,
+					)
 				test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
 
 				destinationGUID = test_helpers.InstanceUUID(destInstance)
@@ -380,9 +384,7 @@ func createInvalidMigrationState(instanceName string) {
 	_, err = db.Exec("CREATE TABLE migrate_fail (id VARCHAR(1))")
 	Expect(err).NotTo(HaveOccurred())
 
-	_, err = db.Exec("CREATE VIEW migrate_fail_view AS SELECT * FROM migrate_fail")
+	_, err = db.Exec("ALTER TABLE migrate_fail DISCARD TABLESPACE")
 	Expect(err).NotTo(HaveOccurred())
 
-	_, err = db.Exec("DROP TABLE migrate_fail")
-	Expect(err).NotTo(HaveOccurred())
 }

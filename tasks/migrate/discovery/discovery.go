@@ -15,6 +15,7 @@ package discovery
 import (
 	"database/sql"
 	"fmt"
+	"github.com/go-sql-driver/mysql"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -110,7 +111,11 @@ func DiscoverInvalidViews(db *sql.DB, schemas []string) ([]View, error) {
 		for _, view := range views {
 			checkInvalidViewQuery := fmt.Sprintf(`SHOW FIELDS FROM %s IN %s`, QuoteIdentifier(view.TableName), QuoteIdentifier(view.Schema))
 			if _, err := db.Exec(checkInvalidViewQuery); err != nil {
-				invalidViews = append(invalidViews, view)
+				if _, ok := err.(*mysql.MySQLError); ok {
+					invalidViews = append(invalidViews, view)
+				} else {
+					return nil, errors.Wrapf(err, "Unexpected error when validating view %q.%q", view.Schema, view.TableName)
+				}
 			}
 		}
 	}

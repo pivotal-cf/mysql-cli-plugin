@@ -41,6 +41,18 @@ var _ = Describe("Discovery Unit Tests", func() {
 	})
 
 	Context("DiscoverDatabases", func() {
+		When("listing databases fails", func() {
+			BeforeEach(func() {
+				mock.ExpectQuery(`SHOW DATABASES`).
+					WillReturnError(errors.New(`some database error`))
+			})
+
+			It("returns an error", func() {
+				_, err := DiscoverDatabases(mockDB)
+				Expect(err).To(MatchError("failed to query the database: some database error"))
+			})
+		})
+
 		When("we are unable to parse the list of databases", func() {
 			BeforeEach(func() {
 				mock.ExpectQuery(`SHOW DATABASES`).
@@ -143,6 +155,24 @@ var _ = Describe("Discovery Unit Tests", func() {
 				_, err := DiscoverInvalidViews(mockDB, schemasToMigrate)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to scan the list of views"))
+			})
+		})
+
+		Context("when DiscoverInvalidViews returns non MySQLError", func() {
+			BeforeEach(func() {
+				mock.ExpectQuery(`SELECT table_name from INFORMATION_SCHEMA.VIEWS WHERE table_schema = ?`).
+					WithArgs("service_instance_db").
+					WillReturnRows(sqlmock.NewRows([]string{"table_name"}).
+						AddRow(`some_view_name`))
+
+				mock.ExpectExec("SHOW FIELDS FROM `some_view_name` IN `service_instance_db`").
+					WillReturnError(errors.New(`some network error`))
+			})
+
+			It("returns the error", func() {
+				_, err := DiscoverInvalidViews(mockDB, schemasToMigrate)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(`Unexpected error when validating view "service_instance_db"."some_view_name": some network error`))
 			})
 		})
 	})
