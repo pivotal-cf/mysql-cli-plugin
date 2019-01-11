@@ -82,4 +82,8 @@
 
 [[constraint]]
   branch = "master"
-  name = "golang.org/x/sync"
+  name = "github.com/pivotal/mysql-test-utils"
+
+[[override]]
+  name = "github.com/docker/libnetwork"
+  branch = "master"
