@@ -67,7 +67,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
    mysql-tools - Plugin to migrate mysql instances
 
 USAGE:
-   cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>
+   cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
    cf mysql-tools version`)
 		os.Exit(1)
 		return
