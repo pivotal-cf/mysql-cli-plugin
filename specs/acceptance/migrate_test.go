@@ -167,7 +167,6 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 
 			By("Verifying TLS was enabled on the recipient instance", func() {
-				test_helpers.CreateServiceKey(destInstance, "tls-check")
 				serviceKey := test_helpers.GetServiceKey(destInstance, "tls-check")
 				test_helpers.DeleteServiceKey(destInstance, "tls-check")
 
