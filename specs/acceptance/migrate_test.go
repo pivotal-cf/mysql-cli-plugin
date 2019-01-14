@@ -123,11 +123,14 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 
 			By("Migrating data using the migrate command", func() {
+				serviceKey := test_helpers.GetServiceKey(sourceInstance, "database-key")
+				test_helpers.DeleteServiceKey(sourceInstance, "database-key")
+
 				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, "20m", "1s").Should(gexec.Exit(0))
-				Expect(session.Out).To(gbytes.Say(`The following views are invalid, and will not be migrated: \[service_instance_db.dropped_table_view\]`))
+				Expect(session.Out).To(gbytes.Say(`The following views are invalid, and will not be migrated: \[%s.dropped_table_view\]`, serviceKey.Name))
 			})
 
 			By("Verifying the destination service was renamed to the source's name", func() {
