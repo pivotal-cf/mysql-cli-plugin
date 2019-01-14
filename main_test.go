@@ -24,13 +24,13 @@ import (
 )
 
 const (
-	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>
+	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
 `
 	longUsage = `NAME:
    mysql-tools - Plugin to migrate mysql instances
 
 USAGE:
-   cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>
+   cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
    cf mysql-tools version
 `
 )
@@ -75,7 +75,7 @@ var _ = Describe("MysqlCliPlugin", func() {
 
 		Expect(string(session.Err.Contents())).To(Equal(
 			"Usage: " + migrateUsage +
-				"\nthe required arguments `<v1-service-instance>` and `<plan-type>` were not provided\n"))
+				"\nthe required arguments `<source-service-instance>` and `<p.mysql-plan-type>` were not provided\n"))
 	})
 
 	It("reports an error when given an unknown subcommand", func() {

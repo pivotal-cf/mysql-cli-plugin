@@ -33,9 +33,9 @@ var (
 )
 
 const (
-	usage = `cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>
+	usage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
    cf mysql-tools version`
-	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>`
+	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
 )
 
 //go:generate counterfeiter . Migrator
@@ -111,8 +111,8 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 func Migrate(migrator Migrator, args []string) error {
 	var opts struct {
 		Args struct {
-			Source   string `positional-arg-name:"<v1-service-instance>"`
-			PlanName string `positional-arg-name:"<plan-type>"`
+			Source   string `positional-arg-name:"<source-service-instance>"`
+			PlanName string `positional-arg-name:"<p.mysql-plan-type>"`
 		} `positional-args:"yes" required:"yes"`
 		NoCleanup bool `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
 	}

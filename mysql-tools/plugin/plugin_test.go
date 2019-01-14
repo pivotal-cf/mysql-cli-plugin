@@ -30,7 +30,7 @@ var _ = Describe("Plugin Commands", func() {
 		logOutput    *bytes.Buffer
 	)
 
-	const usage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] <v1-service-instance> <plan-type>`
+	const usage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
 
 	BeforeEach(func() {
 		fakeMigrator = new(pluginfakes.FakeMigrator)
@@ -99,7 +99,7 @@ var _ = Describe("Plugin Commands", func() {
 		It("returns an error if not enough args are passed", func() {
 			args := []string{"just-a-source"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(usage + "\n\nthe required argument `<plan-type>` was not provided"))
+			Expect(err).To(MatchError(usage + "\n\nthe required argument `<p.mysql-plan-type>` was not provided"))
 		})
 
 		It("returns an error if too many args are passed", func() {
