@@ -1,4 +1,4 @@
-package plugin_test
+package command_test
 
 import (
 	"log"

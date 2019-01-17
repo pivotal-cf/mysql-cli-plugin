@@ -9,33 +9,16 @@
 // Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
-
-package plugin
+// TODO: delete this package
+package command
 
 import (
 	"fmt"
+	"github.com/jessevdk/go-flags"
+	"github.com/pkg/errors"
 	"log"
 	"os"
 	"strings"
-
-	"code.cloudfoundry.org/cli/plugin"
-	"github.com/blang/semver"
-	"github.com/jessevdk/go-flags"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
-	"github.com/pkg/errors"
-)
-
-var (
-	version = "built from source"
-	gitSHA  = "unknown"
-)
-
-const (
-	usage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
-   cf mysql-tools version`
-	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
 )
 
 //go:generate counterfeiter . Migrator
@@ -45,67 +28,6 @@ type Migrator interface {
 	MigrateData(donorInstanceName, recipientInstanceName string, cleanup bool) error
 	RenameServiceInstances(donorInstanceName, recipientInstanceName string) error
 	CleanupOnError(recipientInstanceName string) error
-}
-
-type MySQLPlugin struct {
-	err error
-}
-
-func (c *MySQLPlugin) Err() error {
-	return c.err
-}
-
-func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
-	if args[0] == "CLI-MESSAGE-UNINSTALL" {
-		return
-	}
-
-	if len(args) < 2 {
-		// Unfortunately there is no good way currently to show the usage on a plugin
-		// without having `-h` added to the command line, so we hardcode it.
-		fmt.Fprintln(os.Stderr, `NAME:
-   mysql-tools - Plugin to migrate mysql instances
-
-USAGE:
-   cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
-   cf mysql-tools version`)
-		os.Exit(1)
-		return
-	}
-
-	command := args[1]
-	migrator := migrate.NewMigrator(cf.NewClient(cliConnection), unpack.NewUnpacker())
-
-	switch command {
-	default:
-		c.err = errors.Errorf("unknown command '%s'", command)
-	case "version":
-		fmt.Printf("%s (%s)\n", version, gitSHA)
-		os.Exit(0)
-	case "migrate":
-		c.err = Migrate(migrator, args[2:])
-	}
-}
-
-func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
-	return plugin.PluginMetadata{
-		Name:    "MysqlTools",
-		Version: versionFromSemver(version),
-		MinCliVersion: plugin.VersionType{
-			Major: 6,
-			Minor: 7,
-			Build: 0,
-		},
-		Commands: []plugin.Command{
-			{
-				Name:     "mysql-tools",
-				HelpText: "Plugin to migrate mysql instances",
-				UsageDetails: plugin.Usage{
-					Usage: usage,
-				},
-			},
-		},
-	}
 }
 
 func Migrate(migrator Migrator, args []string) error {
@@ -126,8 +48,12 @@ func Migrate(migrator Migrator, args []string) error {
 		if err != nil {
 			msg = err.Error()
 		}
-		return errors.Errorf("Usage: %s\n\n%s", migrateUsage, msg)
+		// show migrate usage?
+		return errors.Errorf("%s", msg)
 	}
+	///  ^^ split this out
+
+
 	donorInstanceName := opts.Args.Source
 	tempRecipientInstanceName := donorInstanceName + "-new"
 	destPlan := opts.Args.PlanName
@@ -176,27 +102,4 @@ func Migrate(migrator Migrator, args []string) error {
 	}
 
 	return migrator.RenameServiceInstances(donorInstanceName, tempRecipientInstanceName)
-}
-
-func versionFromSemver(in string) plugin.VersionType {
-	var unknownVersion = plugin.VersionType{
-		Major: 0,
-		Minor: 0,
-		Build: 1,
-	}
-
-	if in == "built from source" {
-		return unknownVersion
-	}
-
-	v, err := semver.Parse(in)
-	if err != nil {
-		return unknownVersion
-	}
-
-	return plugin.VersionType{
-		Major: int(v.Major),
-		Minor: int(v.Minor),
-		Build: int(v.Patch),
-	}
 }
