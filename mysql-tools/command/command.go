@@ -14,12 +14,9 @@ package command
 
 import (
 	"code.cloudfoundry.org/cli/plugin"
-	"fmt"
 	"github.com/blang/semver"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin_errors"
 	"github.com/pkg/errors"
-	"log"
 )
 
 var (
@@ -30,11 +27,21 @@ var (
 const (
 	usage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
    cf mysql-tools version`
-	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
 )
 
+func NewMySQLPlugin(routes map[string]interface{ CommandRunner }) *MySQLPlugin {
+
+	cmdRouter := &MySQCmdLRouter{
+		Routes: routes,
+	}
+	return &MySQLPlugin{
+		CommandRouter: cmdRouter,
+	}
+}
+
 type MySQLPlugin struct {
-	err error
+	err           error
+	CommandRouter Router
 }
 
 func (c *MySQLPlugin) Err() error {
@@ -54,30 +61,20 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		if len(args) == 1 {
 			// Unfortunately there is no good way currently to show the usage on a plugin
 			// without having `-h` added to the command line, so we hardcode it.
-			c.PrintUsage("")
+			c.err = plugin_errors.NewUsageError("")
 			return
 		}
 
 		if searchForHelpFlag(args) {
-			c.PrintUsage("")
+			c.err = plugin_errors.NewUsageError("")
 			return
 		}
 
 		command := args[1]
 
-		switch command {
-		default:
-			c.PrintUsage(fmt.Sprintf("unknown command: %q", command))
-		case "version":
-			log.Printf("%s (%s)\n", version, gitSHA)
-		case "migrate":
-			// should we instantiate the Migrator so early
-			migratorExecutor := NewMigratorExecutor(cf.NewClient(cliConnection), unpack.NewUnpacker())
-			//c.err = Migrate(Migrator, args[2:]) // Migrator.Migrate(args[2:])
-			c.err = migratorExecutor.Migrate(args[2:])
-			if c.err != nil {
-				c.PrintUsage("fix this to show the migrate usage only...") // inject dedired usage
-			}
+		err := c.CommandRouter.Match(command, cliConnection, args[2:])
+		if err != nil {
+			c.err = err
 		}
 	}
 
@@ -113,21 +110,21 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 	}
 }
 
-func (c *MySQLPlugin) PrintUsage(prefix string) {
-	var errMsg string
-	defaultErrMsg := `NAME:
-   mysql-tools - Plugin to migrate mysql instances
-
-USAGE:
-   cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
-   cf mysql-tools version`
-	if prefix != "" {
-		errMsg = fmt.Sprintf("%s\n%s", prefix, defaultErrMsg)
-	} else {
-		errMsg = defaultErrMsg
-	}
-	c.err = errors.New(errMsg)
-}
+//func (c *MySQLPlugin) PrintUsage(prefix string) {
+//	var errMsg string
+//	defaultErrMsg := `NAME:
+//   mysql-tools - Plugin to migrate mysql instances
+//
+//USAGE:
+//   cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
+//   cf mysql-tools version`
+//	if prefix != "" {
+//		errMsg = fmt.Sprintf("%s\n%s", prefix, defaultErrMsg)
+//	} else {
+//		errMsg = defaultErrMsg
+//	}
+//	c.err = errors.New(errMsg)
+//}
 
 func versionFromSemver(in string) plugin.VersionType {
 	var unknownVersion = plugin.VersionType{

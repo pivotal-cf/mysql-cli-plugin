@@ -14,13 +14,16 @@ package command_test
 
 import (
 	"bytes"
-	cliPluginFakes "code.cloudfoundry.org/cli/plugin/pluginfakes"
+	"code.cloudfoundry.org/cli/plugin/pluginfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/command"
 	"log"
+
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/command/commandfakes"
 )
 
+// TODO: What goes here?
 var _ = Describe("Plugin Commands", func() {
 
 	const usage = `NAME:
@@ -31,7 +34,25 @@ USAGE:
    cf mysql-tools version`
 
 	Describe("Run", func() {
+		var (
+			cmdRouter       *command.MySQCmdLRouter
+			fakeVersionFunc *commandfakes.FakeCommandRunner
+			fakeMigrateFunc *commandfakes.FakeCommandRunner
+			logOutput       *bytes.Buffer
+			mysqlPlugin     *command.MySQLPlugin
+		)
 
+		BeforeEach(func() {
+			routes := make(map[string]interface{ command.CommandRunner })
+			fakeVersionFunc = &commandfakes.FakeCommandRunner{}
+			fakeMigrateFunc = &commandfakes.FakeCommandRunner{}
+			routes["version"] = fakeVersionFunc
+			routes["migrate"] = fakeMigrateFunc
+			cmdRouter = &command.MySQCmdLRouter{
+				Routes: routes,
+			}
+
+		})
 		Context("usage", func() {
 
 			Context("when no commands are passed", func() {
@@ -41,7 +62,7 @@ USAGE:
 					}
 
 					mysqlPlugin := new(command.MySQLPlugin)
-					fakeCliConnection := &cliPluginFakes.FakeCliConnection{}
+					fakeCliConnection := &pluginfakes.FakeCliConnection{}
 					mysqlPlugin.Run(fakeCliConnection, args)
 					Expect(mysqlPlugin.Err().Error()).To(ContainSubstring(usage))
 				})
@@ -54,7 +75,7 @@ USAGE:
 					}
 
 					mysqlPlugin := new(command.MySQLPlugin)
-					fakeCliConnection := &cliPluginFakes.FakeCliConnection{}
+					fakeCliConnection := &pluginfakes.FakeCliConnection{}
 					mysqlPlugin.Run(fakeCliConnection, args)
 					Expect(mysqlPlugin.Err().Error()).To(ContainSubstring(usage))
 				})
@@ -66,7 +87,7 @@ USAGE:
 						}
 
 						mysqlPlugin := new(command.MySQLPlugin)
-						fakeCliConnection := &cliPluginFakes.FakeCliConnection{}
+						fakeCliConnection := &pluginfakes.FakeCliConnection{}
 						mysqlPlugin.Run(fakeCliConnection, args)
 						Expect(mysqlPlugin.Err().Error()).To(ContainSubstring(usage))
 					})
@@ -78,7 +99,7 @@ USAGE:
 					args := []string{}
 
 					mysqlPlugin := new(command.MySQLPlugin)
-					fakeCliConnection := &cliPluginFakes.FakeCliConnection{}
+					fakeCliConnection := &pluginfakes.FakeCliConnection{}
 					mysqlPlugin.Run(fakeCliConnection, args)
 
 					Expect(mysqlPlugin.Err().Error()).To(ContainSubstring("Error: plugin did not receive the expected input from the CLI"))
@@ -93,7 +114,7 @@ USAGE:
 					}
 
 					mysqlPlugin := new(command.MySQLPlugin)
-					fakeCliConnection := &cliPluginFakes.FakeCliConnection{}
+					fakeCliConnection := &pluginfakes.FakeCliConnection{}
 					mysqlPlugin.Run(fakeCliConnection, args)
 
 					Expect(mysqlPlugin.Err()).To(BeNil())
@@ -102,12 +123,13 @@ USAGE:
 		})
 
 		Context("version", func() {
-			var (
-				logOutput *bytes.Buffer
-			)
+
 			BeforeEach(func() {
 				logOutput = &bytes.Buffer{}
 				log.SetOutput(logOutput)
+				mysqlPlugin = &command.MySQLPlugin{
+					CommandRouter: cmdRouter,
+				}
 			})
 
 			It("outputs the version to the user", func() {
@@ -115,21 +137,28 @@ USAGE:
 					"mysql-tools", "version",
 				}
 
-				mysqlPlugin := new(command.MySQLPlugin)
-				fakeCliConnection := &cliPluginFakes.FakeCliConnection{}
+				//mysqlPlugin := new(command.MySQLPlugin)
+				fakeCliConnection := &pluginfakes.FakeCliConnection{}
 				mysqlPlugin.Run(fakeCliConnection, args)
-				Expect(logOutput.String()).To(ContainSubstring(`built from source (unknown)`))
+				Expect(fakeVersionFunc.ExecuteCallCount()).To(Equal(1))
 			})
 		})
 
 		Context("unknown command", func() {
+			BeforeEach(func() {
+				logOutput = &bytes.Buffer{}
+				log.SetOutput(logOutput)
+				mysqlPlugin = &command.MySQLPlugin{
+					CommandRouter: cmdRouter,
+				}
+			})
+
 			It("adds the usage to the Err method", func() {
 				args := []string{
 					"mysql-tools", "foo",
 				}
 
-				mysqlPlugin := new(command.MySQLPlugin)
-				fakeCliConnection := &cliPluginFakes.FakeCliConnection{}
+				fakeCliConnection := &pluginfakes.FakeCliConnection{}
 				mysqlPlugin.Run(fakeCliConnection, args)
 				Expect(mysqlPlugin.Err().Error()).To(ContainSubstring("unknown command: \"foo\""))
 				Expect(mysqlPlugin.Err().Error()).To(ContainSubstring(usage))
@@ -137,18 +166,27 @@ USAGE:
 		})
 
 		Context("migrate", func() {
-			//FIt("calls the migrate command", func(){
-			//	migrateCmd := &commandfakes.FakeCommand{}
-			//	args := []string{
-			//		"mysql-tools", "migrate", "arg1", "arg2",
-			//	}
-			//
-			//	mysqlPlugin := new(command.MySQLPlugin)
-			//	fakeCliConnection := &cliPluginFakes.FakeCliConnection{}
-			//	mysqlPlugin.Run(fakeCliConnection, args)
-			//	Expect(migrateCmd.RunCallCount()).To(Equal(1))
-			//	Expect(migrateCmd.RunArgsForCall(0)).To(Equal([]string{"arg1", "arg2"}))
-			//})
+			BeforeEach(func() {
+				logOutput = &bytes.Buffer{}
+				log.SetOutput(logOutput)
+				mysqlPlugin = &command.MySQLPlugin{
+					CommandRouter: cmdRouter,
+				}
+			})
+
+			It("calls the migrate command", func() {
+				//migrateCmd := &commandfakes.FakeCommand{}
+				args := []string{
+					"mysql-tools", "migrate", "arg1", "arg2",
+				}
+
+				fakeCliConnection := &pluginfakes.FakeCliConnection{}
+				mysqlPlugin.Run(fakeCliConnection, args)
+				Expect(fakeMigrateFunc.ExecuteCallCount()).To(Equal(1))
+
+				//Expect(migrateCmd.RunCallCount()).To(Equal(1))
+				//Expect(migrateCmd.RunArgsForCall(0)).To(Equal([]string{"arg1", "arg2"}))
+			})
 		})
 	})
 })

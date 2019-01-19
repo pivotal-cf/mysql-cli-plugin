@@ -24,7 +24,12 @@ func main() {
 	//commands := map[string]command.Command{
 	//	"migrate": command.NewMigrateCommand(migrator),
 	//}
-	mysqlPlugin := &command.MySQLPlugin{}
+	//mysqlPlugin := &command.MySQLPlugin{}
+	routes := make(map[string]interface{ command.CommandRunner })
+	routes["migrate"] = &command.MigratorExecutor{}
+	routes["version"] = &command.VersionExecutor{}
+
+	mysqlPlugin := command.NewMySQLPlugin(routes)
 	cliplugin.Start(mysqlPlugin)
 
 	if err := mysqlPlugin.Err(); err != nil {

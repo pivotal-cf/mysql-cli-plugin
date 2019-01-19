@@ -1,3 +1,14 @@
+// Copyright (C) 2018-Present Pivotal Software, Inc. All rights reserved.
+//
+// This program and the accompanying materials are made available under the terms of the under the Apache License,
+// Version 2.0 (the "License”); you may not use this file except in compliance with the License. You may obtain a copy
+// of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+// an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
 package command
 
 import (
@@ -15,19 +26,22 @@ func NewMigratorExecutor(client migrate.Client, unpacker migrate.Unpacker) *Migr
 	return &MigratorExecutor{
 		Migrator: migrator,
 	}
-
 }
 
-
+//go:generate counterfeiter . Migrator
+type Migrator interface {
+	CheckServiceExists(donorInstanceName string) error
+	CreateAndConfigureServiceInstance(planType, serviceName string) error
+	MigrateData(donorInstanceName, recipientInstanceName string, cleanup bool) error
+	RenameServiceInstances(donorInstanceName, recipientInstanceName string) error
+	CleanupOnError(recipientInstanceName string) error
+}
 
 type MigratorExecutor struct {
 	Migrator Migrator
 }
 
-
-
-func (me *MigratorExecutor) Migrate(args []string) error {
-
+func (me *MigratorExecutor) Execute(client migrate.Client, args []string) error {
 	var opts struct {
 		Args struct {
 			Source   string `positional-arg-name:"<source-service-instance>"`
@@ -48,9 +62,18 @@ func (me *MigratorExecutor) Migrate(args []string) error {
 		return errors.Errorf("%s", msg)
 	}
 	donorInstanceName := opts.Args.Source
-	tempRecipientInstanceName := donorInstanceName + "-new"
+
 	destPlan := opts.Args.PlanName
 	cleanup := !opts.NoCleanup
+
+	//unpacker := unpack.NewUnpacker()
+	//me.Migrator = migrate.NewMigrator(client, unpacker)
+
+	return me.Migrate(donorInstanceName, destPlan, cleanup)
+}
+
+func (me *MigratorExecutor) Migrate(donorInstanceName, destPlan string, cleanup bool) error {
+	tempRecipientInstanceName := donorInstanceName + "-new"
 
 	if err := me.Migrator.CheckServiceExists(donorInstanceName); err != nil {
 		return err
