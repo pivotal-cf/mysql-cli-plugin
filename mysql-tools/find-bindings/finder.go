@@ -1,3 +1,15 @@
+// Copyright (C) 2018-Present Pivotal Software, Inc. All rights reserved.
+//
+// This program and the accompanying materials are made available under the terms of the under the Apache License,
+// Version 2.0 (the "License”); you may not use this file except in compliance with the License. You may obtain a copy
+// of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+// an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
+
 package find_bindings
 
 import (
@@ -40,30 +52,6 @@ func NewBindingFinder(cfClient CFClient) *bindingFinder {
 }
 
 func (bf *bindingFinder) FindBindings(serviceLabel string) ([]Binding, error) {
-	//cf curl " /v2/services?q=label:p.mysql"
-	//	get resources entity.service_plans_url "/v2/services/9cbbd018-236f-4171-8585-594ebfde52f2/service_plans"
-	//	cf curl service_plans_url
-	//		get resources entity.service_instances_url "/v2/spaces/8b892a65-bf0e-4276-ad47-30757c4f2251/service_instances"
-	//		cf curl service_instances_url
-	//			get resources entity.service_bindings_url "/v2/service_instances/00d4ce31-bbbe-48f6-b15d-fcbd3380f50a/service_bindings"
-	//			get resources entity.service_keys_url "/v2/service_instances/00d4ce31-bbbe-48f6-b15d-fcbd3380f50a/service_keys"
-	//			cf curl service_bindings_url
-	//				get resources entity.app_guid
-	//			cf curl service_keys_url
-	//				get resources entity.name    ?
-	//				get resources metadata.guid  ?
-	//			get resources entity.space_url "/v2/spaces/8b892a65-bf0e-4276-ad47-30757c4f2251"
-	//			cf curl space_url
-	//				get resources entity.name
-	//				get resources entity.organization_url "/v2/organizations/10b9207b-1c15-46d8-9946-a2374b8c40e5"
-	//				cf curl organization_url
-	//					get resources entity.name
-	//u := url.Values{}
-	//u.Set("q", fmt.Sprintf("label:%s", serviceLabel))
-	//services, _ := bf.cfClient.ListServicesByQuery(u)
-	//return []ServiceBinding{
-	//	{App: "app", Key: "", Org: "org-name", Space: "space-name"},
-	//}, nil
 	serviceGUID, err := bf.serviceGUIDForLabel(serviceLabel)
 	if err != nil {
 		return nil, errors.Wrapf(err, `failed to lookup service matching label %q`, serviceLabel)

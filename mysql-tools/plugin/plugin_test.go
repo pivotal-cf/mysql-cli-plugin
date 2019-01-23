@@ -18,19 +18,24 @@ import (
 	"io"
 	"log"
 
+	cfpluginfake "code.cloudfoundry.org/cli/plugin/pluginfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings/find-bindingsfakes"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin/pluginfakes"
 )
 
 var _ = Describe("Plugin Commands", func() {
 	var (
-		fakeMigrator *pluginfakes.FakeMigrator
-		logOutput    *bytes.Buffer
+		fakeMigrator      *pluginfakes.FakeMigrator
+		fakeCliConnection *cfpluginfake.FakeCliConnection
+		fakeCFClient      *findbindingsfakes.FakeCFClient
+		logOutput         *bytes.Buffer
 	)
 
-	const usage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
+	const migrateUsage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
+	const findUsage = `Usage: cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 
 	BeforeEach(func() {
 		fakeMigrator = new(pluginfakes.FakeMigrator)
@@ -99,19 +104,19 @@ var _ = Describe("Plugin Commands", func() {
 		It("returns an error if not enough args are passed", func() {
 			args := []string{"just-a-source"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(usage + "\n\nthe required argument `<p.mysql-plan-type>` was not provided"))
+			Expect(err).To(MatchError(migrateUsage + "\n\nthe required argument `<p.mysql-plan-type>` was not provided"))
 		})
 
 		It("returns an error if too many args are passed", func() {
 			args := []string{"source", "plan-type", "extra-arg"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(usage + "\n\nunexpected arguments: extra-arg"))
+			Expect(err).To(MatchError(migrateUsage + "\n\nunexpected arguments: extra-arg"))
 		})
 
 		It("returns an error if an invalid flag is passed", func() {
 			args := []string{"source", "plan-type", "--invalid-flag"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(usage + "\n\nunknown flag `invalid-flag'"))
+			Expect(err).To(MatchError(migrateUsage + "\n\nunknown flag `invalid-flag'"))
 		})
 
 		Context("when creating a service instance fails", func() {
@@ -182,4 +187,26 @@ var _ = Describe("Plugin Commands", func() {
 			})
 		})
 	})
+
+	Context("FindBindings", func() {
+		It("returns an error if not enough args are passed", func() {
+			args := []string{}
+			err := plugin.FindBinding(fakeCFClient, args)
+			Expect(err).To(MatchError(findUsage + "\n\nthe required argument `<mysql-v1-service-name>` was not provided"))
+		})
+
+		It("returns an error if too many args are passed", func() {
+			args := []string{"p.mysql", "somethingelse"}
+			err := plugin.FindBinding(fakeCFClient, args)
+			Expect(err).To(MatchError(findUsage + "\n\nunexpected arguments: somethingelse"))
+		})
+
+		It("returns an error if an invalid flag is passed", func() {
+			args := []string{"p.mysql", "--invalid-flag"}
+			err := plugin.FindBinding(fakeCFClient, args)
+			Expect(err).To(MatchError(findUsage + "\n\nunknown flag `invalid-flag'"))
+		})
+
+	})
+
 })

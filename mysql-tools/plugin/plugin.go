@@ -22,6 +22,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 	"github.com/pkg/errors"
@@ -36,6 +37,7 @@ const (
 	usage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
    cf mysql-tools version`
 	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
+	findUsage    = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 )
 
 //go:generate counterfeiter . Migrator
@@ -68,6 +70,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 
 USAGE:
    cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
+   cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
    cf mysql-tools version`)
 		os.Exit(1)
 		return
@@ -82,7 +85,13 @@ USAGE:
 	case "version":
 		fmt.Printf("%s (%s)\n", version, gitSHA)
 		os.Exit(0)
-	// case "find-bindings":
+	case "find-bindings":
+		cfClient, err := CreateCfClientWithPlugin(cliConnection)
+		if err != nil {
+			c.err = err
+			return
+		}
+		c.err = FindBinding(cfClient, args[2:])
 	case "migrate":
 		c.err = Migrate(migrator, args[2:])
 	}
@@ -107,6 +116,63 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 			},
 		},
 	}
+}
+
+func CreateCfClientWithPlugin(cliConnection plugin.CliConnection) (find_bindings.CFClient, error) {
+	return nil, nil
+}
+
+func FindBinding(cfClient find_bindings.CFClient, args []string) error {
+	var opts struct {
+		Args struct {
+			ServiceName string `positional-arg-name:"<mysql-v1-service-name>"`
+		} `positional-args:"yes" required:"yes"`
+	}
+
+	parser := flags.NewParser(&opts, flags.None)
+	parser.Name = "cf mysql-tools find-bindings"
+	parser.Args()
+	args, err := parser.ParseArgs(args)
+	if err != nil || len(args) != 0 {
+		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
+		if err != nil {
+			msg = err.Error()
+		}
+		return errors.Errorf("Usage: %s\n\n%s", findUsage, msg)
+	}
+
+	// serviceName := opts.Args.ServiceName
+
+	//	api, err := cliConnection.ApiEndpoint()
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	bearToken, err := cliConnection.AccessToken()
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	tokens := strings.Fields(bearToken)
+	//	cc := &cfclient.Config{
+	//		ApiAddress: api,
+	//		Token:      tokens[1],
+	//	}
+	//
+	//	client, err := cfclient.NewClient(cc)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	bf := find_bindings.NewBindingFinder(client)
+	//	binding, err := bf.FindBindings(serviceName)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	//TODO: format and output nicely.
+	//	fmt.Println(binding)
+
+	return nil
 }
 
 func Migrate(migrator Migrator, args []string) error {
