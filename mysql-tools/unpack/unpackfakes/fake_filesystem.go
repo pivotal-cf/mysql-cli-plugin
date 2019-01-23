@@ -2,10 +2,10 @@
 package unpackfakes
 
 import (
-	os "os"
-	sync "sync"
+	"os"
+	"sync"
 
-	unpack "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 )
 
 type FakeFilesystem struct {

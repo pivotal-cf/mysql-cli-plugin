@@ -2,9 +2,9 @@
 package pluginfakes
 
 import (
-	sync "sync"
+	"sync"
 
-	plugin "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 )
 
 type FakeMigrator struct {

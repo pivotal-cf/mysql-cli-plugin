@@ -2,10 +2,10 @@
 package cffakes
 
 import (
-	sync "sync"
+	"sync"
 
 	plugin_models "code.cloudfoundry.org/cli/plugin/models"
-	cf "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 )
 
 type FakeCFPluginAPI struct {
