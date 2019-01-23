@@ -58,6 +58,12 @@ type Migrator struct {
 	unpacker Unpacker
 }
 
+type MigrateOptions struct {
+	DonorInstanceName     string
+	RecipientInstanceName string
+	Cleanup               bool
+}
+
 func (m *Migrator) CheckServiceExists(donorInstanceName string) error {
 	if !m.client.ServiceExists(donorInstanceName) {
 		return fmt.Errorf("Service instance %s not found", donorInstanceName)
@@ -87,7 +93,11 @@ func (m *Migrator) CreateAndConfigureServiceInstance(planType, serviceName strin
 	return nil
 }
 
-func (m *Migrator) MigrateData(donorInstanceName, recipientInstanceName string, cleanup bool) error {
+func (m *Migrator) MigrateData(opts MigrateOptions) error {
+	cleanup := opts.Cleanup
+	donorInstanceName := opts.DonorInstanceName
+	recipientInstanceName := opts.RecipientInstanceName
+
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
 
 	if err != nil {

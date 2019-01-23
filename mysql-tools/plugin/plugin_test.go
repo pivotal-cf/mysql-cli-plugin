@@ -75,10 +75,10 @@ var _ = Describe("Plugin Commands", func() {
 
 			By("migrating data from the donor to the recipient", func() {
 				Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
-				migratedDonorName, migratedRecipientname, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
-				Expect(migratedDonorName).To(Equal("some-donor"))
-				Expect(migratedRecipientname).To(Equal("some-donor-new"))
-				Expect(cleanup).To(BeTrue())
+				opts := fakeMigrator.MigrateDataArgsForCall(0)
+				Expect(opts.DonorInstanceName).To(Equal("some-donor"))
+				Expect(opts.RecipientInstanceName).To(Equal("some-donor-new"))
+				Expect(opts.Cleanup).To(BeTrue())
 			})
 
 			By("renaming the service instances", func() {
@@ -151,8 +151,8 @@ var _ = Describe("Plugin Commands", func() {
 				args := []string{"some-donor", "some-plan"}
 				err := plugin.Migrate(fakeMigrator, args)
 				Expect(err).To(MatchError(MatchRegexp("error migrating data: some-cf-error. Attempting to clean up service some-donor-new")))
-				_, _, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
-				Expect(cleanup).To(BeTrue())
+				opts := fakeMigrator.MigrateDataArgsForCall(0)
+				Expect(opts.Cleanup).To(BeTrue())
 				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(1))
 			})
 
@@ -165,8 +165,8 @@ var _ = Describe("Plugin Commands", func() {
 
 				Expect(err).To(MatchError("error migrating data: some-cf-error. Not cleaning up service some-donor-new"))
 				Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
-				_, _, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
-				Expect(cleanup).To(BeFalse())
+				opts := fakeMigrator.MigrateDataArgsForCall(0)
+				Expect(opts.Cleanup).To(BeFalse())
 				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
 			})
 		})
@@ -181,8 +181,8 @@ var _ = Describe("Plugin Commands", func() {
 				err := plugin.Migrate(fakeMigrator, args)
 				Expect(err).To(MatchError("some-cf-error"))
 				Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
-				_, _, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
-				Expect(cleanup).To(BeTrue())
+				opts := fakeMigrator.MigrateDataArgsForCall(0)
+				Expect(opts.Cleanup).To(BeTrue())
 				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
 			})
 		})

@@ -152,11 +152,17 @@ var _ = Describe("MigrateData", func() {
 		fakeClient    *migratefakes.FakeClient
 		fakeUnpacker  *migratefakes.FakeUnpacker
 		migrator      *Migrator
+		migrateOptions MigrateOptions
 	)
 
 	BeforeEach(func() {
 		donorName = "some-donor-instance"
 		recipientName = "some-recipient-instance"
+		migrateOptions = MigrateOptions{
+			DonorInstanceName:     donorName,
+			RecipientInstanceName: recipientName,
+			Cleanup:               true,
+		}
 		fakeClient = new(migratefakes.FakeClient)
 		fakeUnpacker = new(migratefakes.FakeUnpacker)
 		migrator = NewMigrator(fakeClient, fakeUnpacker)
@@ -171,7 +177,7 @@ var _ = Describe("MigrateData", func() {
 		})
 
 		It("Migrates data from the donor instance to the recipient instance", func() {
-			err := migrator.MigrateData(donorName, recipientName, true)
+			err := migrator.MigrateData(migrateOptions)
 
 			By("Unpacking the migration app", func() {
 				Expect(fakeUnpacker.UnpackCallCount()).To(Equal(1))
@@ -216,7 +222,7 @@ var _ = Describe("MigrateData", func() {
 			})
 
 			It("returns an error", func() {
-				err := migrator.MigrateData(donorName, recipientName, true)
+				err := migrator.MigrateData(migrateOptions)
 				Expect(err).To(HaveOccurred())
 				Expect(fakeClient.GetLogsCallCount()).To(Equal(1))
 			})
@@ -228,7 +234,7 @@ var _ = Describe("MigrateData", func() {
 			})
 
 			It("returns the full logs output of the migrate-app", func() {
-				err := migrator.MigrateData(donorName, recipientName, true)
+				err := migrator.MigrateData(migrateOptions)
 				Expect(err).To(HaveOccurred())
 
 				Expect(fakeClient.GetLogsCallCount()).To(Equal(1))
@@ -239,8 +245,12 @@ var _ = Describe("MigrateData", func() {
 		})
 
 		Context("when told to not cleanup", func() {
+			BeforeEach(func() {
+				migrateOptions.Cleanup = false
+			})
+
 			It("keeps the application around for inspection", func() {
-				err := migrator.MigrateData(donorName, recipientName, false)
+				err := migrator.MigrateData(migrateOptions)
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(fakeClient.DeleteAppCallCount()).To(BeZero())

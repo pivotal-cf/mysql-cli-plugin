@@ -4,6 +4,7 @@ package pluginfakes
 import (
 	"sync"
 
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 )
 
@@ -42,12 +43,10 @@ type FakeMigrator struct {
 	createAndConfigureServiceInstanceReturnsOnCall map[int]struct {
 		result1 error
 	}
-	MigrateDataStub        func(string, string, bool) error
+	MigrateDataStub        func(migrate.MigrateOptions) error
 	migrateDataMutex       sync.RWMutex
 	migrateDataArgsForCall []struct {
-		arg1 string
-		arg2 string
-		arg3 bool
+		arg1 migrate.MigrateOptions
 	}
 	migrateDataReturns struct {
 		result1 error
@@ -252,18 +251,16 @@ func (fake *FakeMigrator) CreateAndConfigureServiceInstanceReturnsOnCall(i int, 
 	}{result1}
 }
 
-func (fake *FakeMigrator) MigrateData(arg1 string, arg2 string, arg3 bool) error {
+func (fake *FakeMigrator) MigrateData(arg1 migrate.MigrateOptions) error {
 	fake.migrateDataMutex.Lock()
 	ret, specificReturn := fake.migrateDataReturnsOnCall[len(fake.migrateDataArgsForCall)]
 	fake.migrateDataArgsForCall = append(fake.migrateDataArgsForCall, struct {
-		arg1 string
-		arg2 string
-		arg3 bool
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("MigrateData", []interface{}{arg1, arg2, arg3})
+		arg1 migrate.MigrateOptions
+	}{arg1})
+	fake.recordInvocation("MigrateData", []interface{}{arg1})
 	fake.migrateDataMutex.Unlock()
 	if fake.MigrateDataStub != nil {
-		return fake.MigrateDataStub(arg1, arg2, arg3)
+		return fake.MigrateDataStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -278,17 +275,17 @@ func (fake *FakeMigrator) MigrateDataCallCount() int {
 	return len(fake.migrateDataArgsForCall)
 }
 
-func (fake *FakeMigrator) MigrateDataCalls(stub func(string, string, bool) error) {
+func (fake *FakeMigrator) MigrateDataCalls(stub func(migrate.MigrateOptions) error) {
 	fake.migrateDataMutex.Lock()
 	defer fake.migrateDataMutex.Unlock()
 	fake.MigrateDataStub = stub
 }
 
-func (fake *FakeMigrator) MigrateDataArgsForCall(i int) (string, string, bool) {
+func (fake *FakeMigrator) MigrateDataArgsForCall(i int) migrate.MigrateOptions {
 	fake.migrateDataMutex.RLock()
 	defer fake.migrateDataMutex.RUnlock()
 	argsForCall := fake.migrateDataArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1
 }
 
 func (fake *FakeMigrator) MigrateDataReturns(result1 error) {

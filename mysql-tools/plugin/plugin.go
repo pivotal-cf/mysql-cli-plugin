@@ -51,7 +51,7 @@ type BindingFinder interface {
 type Migrator interface {
 	CheckServiceExists(donorInstanceName string) error
 	CreateAndConfigureServiceInstance(planType, serviceName string) error
-	MigrateData(donorInstanceName, recipientInstanceName string, cleanup bool) error
+	MigrateData(options migrate.MigrateOptions) error
 	RenameServiceInstances(donorInstanceName, recipientInstanceName string) error
 	CleanupOnError(recipientInstanceName string) error
 }
@@ -203,7 +203,13 @@ func Migrate(migrator Migrator, args []string) error {
 		)
 	}
 
-	if err := migrator.MigrateData(donorInstanceName, tempRecipientInstanceName, cleanup); err != nil {
+	var migrationOptions = migrate.MigrateOptions{
+		DonorInstanceName:     donorInstanceName,
+		RecipientInstanceName: tempRecipientInstanceName,
+		Cleanup:               cleanup,
+	}
+
+	if err := migrator.MigrateData(migrationOptions); err != nil {
 		if cleanup {
 			migrator.CleanupOnError(tempRecipientInstanceName)
 
