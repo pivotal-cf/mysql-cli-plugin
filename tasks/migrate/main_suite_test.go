@@ -13,13 +13,55 @@
 package main_test
 
 import (
+	"log"
 	"testing"
 
+	"github.com/fsouza/go-dockerclient"
+	"github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/pivotal/mysql-test-utils/dockertest"
 )
 
 func TestMigrate(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Migrate Suite")
+}
+
+const (
+	mysqlDockerImage             = "mariadb:10.1"
+	mySQLDockerPort  docker.Port = "3306/tcp"
+)
+
+var (
+	dockerClient *docker.Client
+	sessionID    string
+)
+
+var _ = BeforeSuite(func() {
+	log.SetOutput(GinkgoWriter)
+	_ = mysql.SetLogger(log.New(GinkgoWriter, "[mysql] ", log.Ldate|log.Ltime|log.Lshortfile))
+
+	var err error
+	dockerClient, err = docker.NewClientFromEnv()
+	Expect(err).NotTo(HaveOccurred())
+	Expect(PullImage(dockerClient, mysqlDockerImage)).To(Succeed())
+
+})
+
+var _ = BeforeEach(func() {
+	sessionID = uuid.New().String()
+})
+
+func createMySQLContainer(name string) (*docker.Container, error) {
+	return RunContainer(
+		dockerClient,
+		name+"."+sessionID,
+		AddExposedPorts(mySQLDockerPort),
+		WithImage(mysqlDockerImage),
+		AddEnvVars(
+			"MYSQL_ALLOW_EMPTY_PASSWORD=1",
+		),
+	)
 }

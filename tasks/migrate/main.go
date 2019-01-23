@@ -16,6 +16,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
+	"flag"
 	"log"
 	"os"
 
@@ -43,14 +44,19 @@ func main() {
 	var (
 		sourceInstance string
 		destInstance   string
+		skipTLSValidation bool
 	)
 
-	if len(os.Args) < 3 {
+	flag.BoolVar(&skipTLSValidation, "skip-tls-validation", false, "Skip certificate validation of the MySQL server certificate.  Not recommended!")
+	flag.Parse()
+	args := flag.Args()
+
+	if len(args) != 2 {
 		log.Fatal("Usage: migrate <source service> <target service>")
 	}
 
-	sourceInstance = os.Args[1]
-	destInstance = os.Args[2]
+	sourceInstance = args[0]
+	destInstance = args[1]
 
 	sourceCredentials, err := InstanceCredentials(sourceInstance, VcapCredentials)
 	if err != nil {
