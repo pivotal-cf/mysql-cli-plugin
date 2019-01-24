@@ -24,6 +24,14 @@
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
+  digest = "1:55388fd080150b9a072912f97b1f5891eb0b50df43401f8b75fb4273d3fec9fc"
+  name = "github.com/Masterminds/semver"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "c7af12943936e8c39859482e61f0574c2fd7fc75"
+  version = "v1.4.2"
+
+[[projects]]
   digest = "1:680f32d99ff8bfce2d6a934ba1e168f559bd9c94b69a500f1019c21ff5756429"
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
@@ -49,6 +57,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:a01ce9b7dbca7c0210434fcb001880971d4fde87a52a3af0e077319dae045e3d"
+  name = "github.com/cloudfoundry-community/go-cfclient"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "22d02065b53fafff0657b4f53471f640c59e3164"
+
+[[projects]]
+  branch = "master"
   digest = "1:921d8efd468fd8dc1d9e9ba3867f52e5a05d8413423439b26f5200e8f742e305"
   name = "github.com/cloudfoundry-incubator/cf-test-helpers"
   packages = [
@@ -64,6 +80,14 @@
   ]
   pruneopts = "T"
   revision = "a410f25137fb51c2f3e0fe6a35dadd6c2fb9de5a"
+
+[[projects]]
+  branch = "master"
+  digest = "1:0bc155f35930abe482069eeefd681b46093b9aa9b884dcfe4803c125612212a5"
+  name = "github.com/cloudfoundry/gofileutils"
+  packages = ["fileutils"]
+  pruneopts = "T"
+  revision = "4d0c80011a0f37da1711c184028bc40137cd45af"
 
 [[projects]]
   branch = "master"
@@ -182,6 +206,14 @@
   version = "v1.2.0"
 
 [[projects]]
+  digest = "1:a2ecb56e5053d942aafc86738915fb94c9131bac848c543b8b6764365fd69080"
+  name = "github.com/golang/protobuf"
+  packages = ["proto"]
+  pruneopts = "T"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:3a26588bc48b96825977c1b3df964f8fd842cd6860cc26370588d3563433cf11"
   name = "github.com/google/uuid"
   packages = ["."]
@@ -250,6 +282,22 @@
   packages = ["."]
   pruneopts = "T"
   revision = "05fccaae8fc423476d98fd4c3e4699ba0fbbde48"
+
+[[projects]]
+  digest = "1:0356f3312c9bd1cbeda81505b7fd437501d8e778ab66998ef69f00d7f9b3a0d7"
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "3ee7d812e62a0804a7d0a324e0249ca2db3476d3"
+  version = "v0.0.4"
+
+[[projects]]
+  digest = "1:fdebb97e48632ac30219f21751077937ab345e33e7eddb11f8bb44c9e6080065"
+  name = "github.com/olekukonko/tablewriter"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "e6d60cf7ba1f42d86d54cdf5508611c4aafb3970"
+  version = "v0.0.1"
 
 [[projects]]
   digest = "1:99ec7b4370b05816679fe9ae77f1f8af4eae3df0abaeef8c3d2d42d86f55f549"
@@ -381,12 +429,26 @@
   digest = "1:b95533da43001491177d19d4d389a9b635d38e724dab783626e7177b0aec3d19"
   name = "golang.org/x/net"
   packages = [
+    "context",
+    "context/ctxhttp",
     "html",
     "html/atom",
     "html/charset",
   ]
   pruneopts = "T"
   revision = "c10e9556a7bc0e7c942242b606f0acf024ad5d6a"
+
+[[projects]]
+  branch = "master"
+  digest = "1:5d4a7027851c079c926b9d49f260b9e24c4de7e79337efd3126b8279ca08a2e5"
+  name = "golang.org/x/oauth2"
+  packages = [
+    ".",
+    "clientcredentials",
+    "internal",
+  ]
+  pruneopts = "T"
+  revision = "5dab4167f31cbd76b407f1486c86b40748bc5073"
 
 [[projects]]
   branch = "master"
@@ -428,7 +490,16 @@
 [[projects]]
   digest = "1:fb4ee7f835110d238c58366cfa442da7dfa62cec87d42da2d8049000f4330758"
   name = "google.golang.org/appengine"
-  packages = ["cloudsql"]
+  packages = [
+    "cloudsql",
+    "internal",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch",
+  ]
   pruneopts = "T"
   revision = "4a4468ece617fc8205e99368fa2200e9d1fad421"
   version = "v1.3.0"
@@ -457,12 +528,12 @@
   revision = "c131134a1947e9afd9cecfe11f4c6dff0732ae58"
 
 [[projects]]
-  digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
+  branch = "v2"
+  digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "T"
-  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
-  version = "v2.2.1"
+  revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -471,6 +542,7 @@
     "code.cloudfoundry.org/cli/plugin",
     "code.cloudfoundry.org/cli/plugin/models",
     "github.com/blang/semver",
+    "github.com/cloudfoundry-community/go-cfclient",
     "github.com/cloudfoundry-incubator/cf-test-helpers/cf",
     "github.com/cloudfoundry-incubator/cf-test-helpers/config",
     "github.com/cloudfoundry-incubator/cf-test-helpers/generator",
@@ -482,6 +554,7 @@
     "github.com/google/uuid",
     "github.com/hashicorp/go-multierror",
     "github.com/jessevdk/go-flags",
+    "github.com/olekukonko/tablewriter",
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/config",
     "github.com/onsi/gomega",

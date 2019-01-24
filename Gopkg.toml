@@ -38,6 +38,10 @@
   name = "github.com/cloudfoundry-incubator/cf-test-helpers"
 
 [[constraint]]
+  branch = "master"
+  name = "github.com/cloudfoundry-community/go-cfclient"
+
+[[constraint]]
   name = "github.com/go-sql-driver/mysql"
   version = "1.4.0"
 
