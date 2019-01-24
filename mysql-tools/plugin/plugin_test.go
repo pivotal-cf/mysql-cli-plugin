@@ -18,9 +18,9 @@ import (
 	"io"
 	"log"
 
-	cfpluginfake "code.cloudfoundry.org/cli/plugin/pluginfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings/find-bindingsfakes"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin/pluginfakes"
@@ -28,10 +28,9 @@ import (
 
 var _ = Describe("Plugin Commands", func() {
 	var (
-		fakeMigrator      *pluginfakes.FakeMigrator
-		fakeCliConnection *cfpluginfake.FakeCliConnection
-		fakeCFClient      *findbindingsfakes.FakeCFClient
-		logOutput         *bytes.Buffer
+		fakeMigrator *pluginfakes.FakeMigrator
+		fakeFinder   *findbindingsfakes.FakeBindingFinder
+		logOutput    *bytes.Buffer
 	)
 
 	const migrateUsage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
@@ -39,6 +38,8 @@ var _ = Describe("Plugin Commands", func() {
 
 	BeforeEach(func() {
 		fakeMigrator = new(pluginfakes.FakeMigrator)
+		fakeFinder = new(findbindingsfakes.FakeBindingFinder)
+
 		logOutput = &bytes.Buffer{}
 
 		w := io.MultiWriter(GinkgoWriter, logOutput)
@@ -191,22 +192,41 @@ var _ = Describe("Plugin Commands", func() {
 	Context("FindBindings", func() {
 		It("returns an error if not enough args are passed", func() {
 			args := []string{}
-			err := plugin.FindBinding(fakeCFClient, args)
+			err := plugin.FindBinding(fakeFinder, args)
 			Expect(err).To(MatchError(findUsage + "\n\nthe required argument `<mysql-v1-service-name>` was not provided"))
 		})
 
 		It("returns an error if too many args are passed", func() {
 			args := []string{"p.mysql", "somethingelse"}
-			err := plugin.FindBinding(fakeCFClient, args)
+			err := plugin.FindBinding(fakeFinder, args)
 			Expect(err).To(MatchError(findUsage + "\n\nunexpected arguments: somethingelse"))
 		})
 
 		It("returns an error if an invalid flag is passed", func() {
 			args := []string{"p.mysql", "--invalid-flag"}
-			err := plugin.FindBinding(fakeCFClient, args)
+			err := plugin.FindBinding(fakeFinder, args)
 			Expect(err).To(MatchError(findUsage + "\n\nunknown flag `invalid-flag'"))
 		})
 
-	})
+		Context("When find binding runs successfully", func() {
+			It("succeed", func() {
+				args := []string{"p.mysql"}
+				err := plugin.FindBinding(fakeFinder, args)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(fakeFinder.FindBindingsCallCount()).To(Equal(1))
+				Expect(fakeFinder.FindBindingsArgsForCall(0)).To(Equal("p.mysql"))
+			})
+		})
 
+		Context("When find binding returns an error", func() {
+			It("fails", func() {
+				args := []string{"p.mysql"}
+				fakeFinder.FindBindingsReturns([]find_bindings.Binding{}, errors.New("some-error"))
+				err := plugin.FindBinding(fakeFinder, args)
+				Expect(err).To(MatchError("some-error"))
+				Expect(fakeFinder.FindBindingsCallCount()).To(Equal(1))
+				Expect(fakeFinder.FindBindingsArgsForCall(0)).To(Equal("p.mysql"))
+			})
+		})
+	})
 })

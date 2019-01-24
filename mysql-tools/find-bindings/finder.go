@@ -41,11 +41,16 @@ type Binding struct {
 	Type                string
 }
 
+//go:generate counterfeiter . BindingFinder
+type BindingFinder interface {
+	FindBindings(serviceLabel string) ([]Binding, error)
+}
+
 type bindingFinder struct {
 	cfClient CFClient
 }
 
-func NewBindingFinder(cfClient CFClient) *bindingFinder {
+func NewBindingFinder(cfClient CFClient) BindingFinder {
 	return &bindingFinder{
 		cfClient: cfClient,
 	}

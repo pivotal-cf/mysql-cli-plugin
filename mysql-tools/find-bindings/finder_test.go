@@ -1,6 +1,19 @@
+// Copyright (C) 2018-Present Pivotal Software, Inc. All rights reserved.
+//
+// This program and the accompanying materials are made available under the terms of the under the Apache License,
+// Version 2.0 (the "License”); you may not use this file except in compliance with the License. You may obtain a copy
+// of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+// an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
+
 package find_bindings_test
 
 import (
+	"errors"
 	"net/url"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
@@ -227,6 +240,72 @@ var _ = Describe("BindingFinder", func() {
 			Expect(fakeCFClient.GetOrgByGuidArgsForCall(1)).To(Equal("app3-org-guid"))
 
 			Expect(listOfBindings).To(Equal(expectedBindings))
+		})
+
+		//TODO: add failure cases here
+		Context("when ListService fails", func() {
+			BeforeEach(func() {
+				fakeCFClient.ListServicesByQueryReturns([]cfclient.Service{}, errors.New("listServicesByQueryError"))
+			})
+
+			It("returns an error", func() {
+				finder := find_bindings.NewBindingFinder(fakeCFClient)
+				_, err := finder.FindBindings(serviceName)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("listServicesByQueryError"))
+			})
+		})
+
+		Context("when ListServicePlan fails", func() {
+			BeforeEach(func() {
+				fakeCFClient.ListServicePlansByQueryReturns([]cfclient.ServicePlan{}, errors.New("listServicePlansByQueryError"))
+			})
+
+			It("returns an error", func() {
+				finder := find_bindings.NewBindingFinder(fakeCFClient)
+				_, err := finder.FindBindings(serviceName)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("listServicePlansByQueryError"))
+			})
+		})
+
+		Context("when ListServiceInstances fails", func() {
+			BeforeEach(func() {
+				fakeCFClient.ListServiceInstancesByQueryReturnsOnCall(0, []cfclient.ServiceInstance{}, errors.New("listServiceInstancesByQueryError"))
+			})
+
+			It("returns an error", func() {
+				finder := find_bindings.NewBindingFinder(fakeCFClient)
+				_, err := finder.FindBindings(serviceName)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("listServiceInstancesByQueryError"))
+			})
+		})
+
+		Context("when ListServiceBindings fails", func() {
+			BeforeEach(func() {
+				fakeCFClient.ListServiceBindingsByQueryReturnsOnCall(0, []cfclient.ServiceBinding{}, errors.New("listServiceBindingsByQueryError"))
+			})
+
+			It("returns an error", func() {
+				finder := find_bindings.NewBindingFinder(fakeCFClient)
+				_, err := finder.FindBindings(serviceName)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("listServiceBindingsByQueryError"))
+			})
+		})
+
+		Context("when ListServiceKeys fails", func() {
+			BeforeEach(func() {
+				fakeCFClient.ListServiceKeysByQueryReturnsOnCall(0, []cfclient.ServiceKey{}, errors.New("listServiceKeysByQueryError"))
+			})
+
+			It("returns an error", func() {
+				finder := find_bindings.NewBindingFinder(fakeCFClient)
+				_, err := finder.FindBindings(serviceName)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("listServiceKeysByQueryError"))
+			})
 		})
 	})
 })

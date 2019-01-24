@@ -20,6 +20,7 @@ import (
 
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/blang/semver"
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
@@ -86,12 +87,14 @@ USAGE:
 		fmt.Printf("%s (%s)\n", version, gitSHA)
 		os.Exit(0)
 	case "find-bindings":
-		cfClient, err := CreateCfClientWithPlugin(cliConnection)
+		cfClient, err := createCfClientWithPlugin(cliConnection)
 		if err != nil {
 			c.err = err
 			return
 		}
-		c.err = FindBinding(cfClient, args[2:])
+
+		finder := find_bindings.NewBindingFinder(cfClient)
+		c.err = FindBinding(finder, args[2:])
 	case "migrate":
 		c.err = Migrate(migrator, args[2:])
 	}
@@ -118,11 +121,31 @@ func (c *MySQLPlugin) GetMetadata() plugin.PluginMetadata {
 	}
 }
 
-func CreateCfClientWithPlugin(cliConnection plugin.CliConnection) (find_bindings.CFClient, error) {
-	return nil, nil
+func createCfClientWithPlugin(cliConnection plugin.CliConnection) (find_bindings.CFClient, error) {
+	api, err := cliConnection.ApiEndpoint()
+	if err != nil {
+		return nil, err
+	}
+
+	bearToken, err := cliConnection.AccessToken()
+	if err != nil {
+		return nil, err
+	}
+
+	tokens := strings.Fields(bearToken)
+	cc := &cfclient.Config{
+		ApiAddress: api,
+		Token:      tokens[1],
+	}
+
+	client, err := cfclient.NewClient(cc)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
-func FindBinding(cfClient find_bindings.CFClient, args []string) error {
+func FindBinding(bf find_bindings.BindingFinder, args []string) error {
 	var opts struct {
 		Args struct {
 			ServiceName string `positional-arg-name:"<mysql-v1-service-name>"`
@@ -141,36 +164,15 @@ func FindBinding(cfClient find_bindings.CFClient, args []string) error {
 		return errors.Errorf("Usage: %s\n\n%s", findUsage, msg)
 	}
 
-	// serviceName := opts.Args.ServiceName
+	serviceName := opts.Args.ServiceName
 
-	//	api, err := cliConnection.ApiEndpoint()
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	bearToken, err := cliConnection.AccessToken()
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	tokens := strings.Fields(bearToken)
-	//	cc := &cfclient.Config{
-	//		ApiAddress: api,
-	//		Token:      tokens[1],
-	//	}
-	//
-	//	client, err := cfclient.NewClient(cc)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	bf := find_bindings.NewBindingFinder(client)
-	//	binding, err := bf.FindBindings(serviceName)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	//TODO: format and output nicely.
-	//	fmt.Println(binding)
+	binding, err := bf.FindBindings(serviceName)
+	if err != nil {
+		return err
+	}
+
+	//TODO: format and output nicely.
+	fmt.Println(binding)
 
 	return nil
 }
