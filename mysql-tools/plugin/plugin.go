@@ -94,7 +94,7 @@ USAGE:
 		}
 
 		finder := find_bindings.NewBindingFinder(cfClient)
-		c.err = FindBinding(finder, args[2:])
+		c.err = FindBindings(finder, args[2:])
 	case "migrate":
 		c.err = Migrate(migrator, args[2:])
 	}
@@ -145,7 +145,7 @@ func createCfClientWithPlugin(cliConnection plugin.CliConnection) (find_bindings
 	return client, nil
 }
 
-func FindBinding(bf find_bindings.BindingFinder, args []string) error {
+func FindBindings(bf find_bindings.BindingFinder, args []string) error {
 	var opts struct {
 		Args struct {
 			ServiceName string `positional-arg-name:"<mysql-v1-service-name>"`

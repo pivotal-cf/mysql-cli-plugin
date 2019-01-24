@@ -16,7 +16,7 @@ import (
 	"errors"
 	"net/url"
 
-	cfclient "github.com/cloudfoundry-community/go-cfclient"
+	"github.com/cloudfoundry-community/go-cfclient"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"

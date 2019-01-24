@@ -192,26 +192,26 @@ var _ = Describe("Plugin Commands", func() {
 	Context("FindBindings", func() {
 		It("returns an error if not enough args are passed", func() {
 			args := []string{}
-			err := plugin.FindBinding(fakeFinder, args)
+			err := plugin.FindBindings(fakeFinder, args)
 			Expect(err).To(MatchError(findUsage + "\n\nthe required argument `<mysql-v1-service-name>` was not provided"))
 		})
 
 		It("returns an error if too many args are passed", func() {
 			args := []string{"p.mysql", "somethingelse"}
-			err := plugin.FindBinding(fakeFinder, args)
+			err := plugin.FindBindings(fakeFinder, args)
 			Expect(err).To(MatchError(findUsage + "\n\nunexpected arguments: somethingelse"))
 		})
 
 		It("returns an error if an invalid flag is passed", func() {
 			args := []string{"p.mysql", "--invalid-flag"}
-			err := plugin.FindBinding(fakeFinder, args)
+			err := plugin.FindBindings(fakeFinder, args)
 			Expect(err).To(MatchError(findUsage + "\n\nunknown flag `invalid-flag'"))
 		})
 
 		Context("When find binding runs successfully", func() {
 			It("succeed", func() {
 				args := []string{"p.mysql"}
-				err := plugin.FindBinding(fakeFinder, args)
+				err := plugin.FindBindings(fakeFinder, args)
 				Expect(err).To(Not(HaveOccurred()))
 				Expect(fakeFinder.FindBindingsCallCount()).To(Equal(1))
 				Expect(fakeFinder.FindBindingsArgsForCall(0)).To(Equal("p.mysql"))
@@ -222,7 +222,7 @@ var _ = Describe("Plugin Commands", func() {
 			It("fails", func() {
 				args := []string{"p.mysql"}
 				fakeFinder.FindBindingsReturns([]find_bindings.Binding{}, errors.New("some-error"))
-				err := plugin.FindBinding(fakeFinder, args)
+				err := plugin.FindBindings(fakeFinder, args)
 				Expect(err).To(MatchError("some-error"))
 				Expect(fakeFinder.FindBindingsCallCount()).To(Equal(1))
 				Expect(fakeFinder.FindBindingsArgsForCall(0)).To(Equal("p.mysql"))
