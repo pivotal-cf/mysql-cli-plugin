@@ -209,7 +209,7 @@ var _ = Describe("Plugin Commands", func() {
 		})
 
 		Context("When find binding runs successfully", func() {
-			It("succeed", func() {
+			It("succeeds", func() {
 				args := []string{"p.mysql"}
 				err := plugin.FindBindings(fakeFinder, args)
 				Expect(err).To(Not(HaveOccurred()))

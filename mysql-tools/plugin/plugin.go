@@ -20,11 +20,12 @@ import (
 
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/blang/semver"
-	cfclient "github.com/cloudfoundry-community/go-cfclient"
+	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/presentation"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 	"github.com/pkg/errors"
 )
@@ -171,8 +172,7 @@ func FindBindings(bf find_bindings.BindingFinder, args []string) error {
 		return err
 	}
 
-	//TODO: format and output nicely.
-	fmt.Println(binding)
+	presentation.Report(os.Stdout, binding)
 
 	return nil
 }
