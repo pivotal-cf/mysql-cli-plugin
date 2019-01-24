@@ -26,11 +26,14 @@ import (
 const (
 	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
 `
+	findBindingUsage = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
+`
 	longUsage = `NAME:
    mysql-tools - Plugin to migrate mysql instances
 
 USAGE:
    cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
+   cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
    cf mysql-tools version
 `
 )
@@ -67,6 +70,15 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Expect(string(session.Out.Contents())).To(ContainSubstring(longUsage))
 	})
 
+	It("Displays long usage string when -h flag is passed to find-binding command", func() {
+		cmd := exec.Command("cf", "mysql-tools", "find-bindings", "-h")
+		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "60s", "1s").Should(gexec.Exit(0))
+
+		Expect(string(session.Out.Contents())).To(ContainSubstring(longUsage))
+	})
+
 	It("migrate requires exactly 4 arguments", func() {
 		cmd := exec.Command("cf", "mysql-tools", "migrate")
 		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -76,6 +88,17 @@ var _ = Describe("MysqlCliPlugin", func() {
 		Expect(string(session.Err.Contents())).To(Equal(
 			"Usage: " + migrateUsage +
 				"\nthe required arguments `<source-service-instance>` and `<p.mysql-plan-type>` were not provided\n"))
+	})
+
+	It("find-binding requires exactly 1 arguments", func() {
+		cmd := exec.Command("cf", "mysql-tools", "find-bindings")
+		session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, "60s", "1s").Should(gexec.Exit(1))
+
+		Expect(string(session.Err.Contents())).To(Equal(
+			"Usage: " + findBindingUsage +
+				"\nthe required argument `<mysql-v1-service-name>` was not provided\n"))
 	})
 
 	It("reports an error when given an unknown subcommand", func() {

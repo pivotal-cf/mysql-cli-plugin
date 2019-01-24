@@ -37,10 +37,13 @@ var _ = BeforeSuite(func() {
 	test_helpers.CheckForRequiredEnvVars([]string{
 		"DONOR_PLAN_NAME",
 		"DONOR_SERVICE_NAME",
+		"FIND_BINDING_PLAN_NAME",
+		"FIND_BINDING_SERVICE_NAME",
 		"RECIPIENT_PLAN_NAME",
 		"RECIPIENT_SERVICE_NAME",
 		"V2_DONOR_SERVICE_NAME",
 		"V2_DONOR_PLAN_NAME",
+
 	})
 
 	Config = config.LoadConfig()

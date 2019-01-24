@@ -2,10 +2,10 @@
 package unpackfakes
 
 import (
-	sync "sync"
+	"sync"
 
-	packd "github.com/gobuffalo/packd"
-	unpack "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
+	"github.com/gobuffalo/packd"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 )
 
 type FakeBox struct {

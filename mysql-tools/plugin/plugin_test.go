@@ -20,6 +20,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings/find-bindingsfakes"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin/pluginfakes"
 )
@@ -27,13 +29,17 @@ import (
 var _ = Describe("Plugin Commands", func() {
 	var (
 		fakeMigrator *pluginfakes.FakeMigrator
+		fakeFinder   *findbindingsfakes.FakeBindingFinder
 		logOutput    *bytes.Buffer
 	)
 
-	const usage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
+	const migrateUsage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
+	const findUsage = `Usage: cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 
 	BeforeEach(func() {
 		fakeMigrator = new(pluginfakes.FakeMigrator)
+		fakeFinder = new(findbindingsfakes.FakeBindingFinder)
+
 		logOutput = &bytes.Buffer{}
 
 		w := io.MultiWriter(GinkgoWriter, logOutput)
@@ -99,19 +105,19 @@ var _ = Describe("Plugin Commands", func() {
 		It("returns an error if not enough args are passed", func() {
 			args := []string{"just-a-source"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(usage + "\n\nthe required argument `<p.mysql-plan-type>` was not provided"))
+			Expect(err).To(MatchError(migrateUsage + "\n\nthe required argument `<p.mysql-plan-type>` was not provided"))
 		})
 
 		It("returns an error if too many args are passed", func() {
 			args := []string{"source", "plan-type", "extra-arg"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(usage + "\n\nunexpected arguments: extra-arg"))
+			Expect(err).To(MatchError(migrateUsage + "\n\nunexpected arguments: extra-arg"))
 		})
 
 		It("returns an error if an invalid flag is passed", func() {
 			args := []string{"source", "plan-type", "--invalid-flag"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(usage + "\n\nunknown flag `invalid-flag'"))
+			Expect(err).To(MatchError(migrateUsage + "\n\nunknown flag `invalid-flag'"))
 		})
 
 		Context("when creating a service instance fails", func() {
@@ -179,6 +185,47 @@ var _ = Describe("Plugin Commands", func() {
 				_, _, cleanup := fakeMigrator.MigrateDataArgsForCall(0)
 				Expect(cleanup).To(BeTrue())
 				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
+			})
+		})
+	})
+
+	Context("FindBindings", func() {
+		It("returns an error if not enough args are passed", func() {
+			args := []string{}
+			err := plugin.FindBindings(fakeFinder, args)
+			Expect(err).To(MatchError(findUsage + "\n\nthe required argument `<mysql-v1-service-name>` was not provided"))
+		})
+
+		It("returns an error if too many args are passed", func() {
+			args := []string{"p.mysql", "somethingelse"}
+			err := plugin.FindBindings(fakeFinder, args)
+			Expect(err).To(MatchError(findUsage + "\n\nunexpected arguments: somethingelse"))
+		})
+
+		It("returns an error if an invalid flag is passed", func() {
+			args := []string{"p.mysql", "--invalid-flag"}
+			err := plugin.FindBindings(fakeFinder, args)
+			Expect(err).To(MatchError(findUsage + "\n\nunknown flag `invalid-flag'"))
+		})
+
+		Context("When find binding runs successfully", func() {
+			It("succeeds", func() {
+				args := []string{"p.mysql"}
+				err := plugin.FindBindings(fakeFinder, args)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(fakeFinder.FindBindingsCallCount()).To(Equal(1))
+				Expect(fakeFinder.FindBindingsArgsForCall(0)).To(Equal("p.mysql"))
+			})
+		})
+
+		Context("When find binding returns an error", func() {
+			It("fails", func() {
+				args := []string{"p.mysql"}
+				fakeFinder.FindBindingsReturns([]find_bindings.Binding{}, errors.New("some-error"))
+				err := plugin.FindBindings(fakeFinder, args)
+				Expect(err).To(MatchError("some-error"))
+				Expect(fakeFinder.FindBindingsCallCount()).To(Equal(1))
+				Expect(fakeFinder.FindBindingsArgsForCall(0)).To(Equal("p.mysql"))
 			})
 		})
 	})

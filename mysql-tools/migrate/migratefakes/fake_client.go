@@ -2,9 +2,9 @@
 package migratefakes
 
 import (
-	sync "sync"
+	"sync"
 
-	migrate "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
 )
 
 type FakeClient struct {
