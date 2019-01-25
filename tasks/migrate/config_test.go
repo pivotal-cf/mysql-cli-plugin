@@ -65,7 +65,7 @@ var _ = Describe("InstanceCredentials", func() {
 		})
 	})
 
-	When("TLS is enabled in the binding", func() {
+	When("TLS is enabled in the credentials", func() {
 		Specify("The connection string enables the default tls profile in the mysql connector", func() {
 			creds, err := InstanceCredentials("dest", vcapServices)
 			Expect(err).NotTo(HaveOccurred())
@@ -76,6 +76,17 @@ var _ = Describe("InstanceCredentials", func() {
 			creds, err := InstanceCredentials("dest", vcapServices)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(creds.HasTLS()).To(BeTrue())
+		})
+
+		When("Credentials have been flagged with SkipTLSValidation", func() {
+			Specify("The connection string skips tls verification", func() {
+				creds, err := InstanceCredentials("dest", vcapServices)
+				Expect(err).NotTo(HaveOccurred())
+
+				creds.SkipTLSValidation = true
+
+				Expect(creds.DSN()).To(HaveSuffix(`?tls=skip-verify`))
+			})
 		})
 	})
 

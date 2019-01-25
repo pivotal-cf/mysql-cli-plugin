@@ -28,7 +28,7 @@ func baseCmd(cmdName string, credentials Credentials) *exec.Cmd {
 		fmt.Sprintf("--port=%d", credentials.Port),
 	}
 
-	if credentials.HasTLS() {
+	if credentials.HasTLS() && !credentials.SkipTLSValidation {
 		tlsArgs := []string{
 			"--ssl-mode=VERIFY_IDENTITY",
 			"--ssl-capath=/etc/ssl/certs",

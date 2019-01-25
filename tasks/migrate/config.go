@@ -20,12 +20,13 @@ import (
 )
 
 type Credentials struct {
-	Hostname string
-	Name     string
-	Password string
-	Port     int
-	Username string
-	CA       string
+	Hostname          string
+	Name              string
+	Password          string
+	Port              int
+	Username          string
+	CA                string
+	SkipTLSValidation bool
 }
 
 func (d Credentials) HasTLS() bool {
@@ -35,7 +36,9 @@ func (d Credentials) HasTLS() bool {
 func (d Credentials) DSN() string {
 	var tlsConfig = "false"
 
-	if d.HasTLS() {
+	if d.HasTLS() && d.SkipTLSValidation {
+		tlsConfig = "skip-verify"
+	} else if d.HasTLS() && !d.SkipTLSValidation {
 		tlsConfig = "true"
 	}
 
