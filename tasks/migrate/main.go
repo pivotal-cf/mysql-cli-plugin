@@ -13,14 +13,11 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"database/sql"
 	"flag"
 	"log"
 	"os"
 
-	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 )
@@ -29,21 +26,10 @@ var (
 	VcapCredentials = os.Getenv("VCAP_SERVICES")
 )
 
-func RegisterTLSConfig(key, ca string) {
-	var rootCAs *x509.CertPool
-	if ca != "" {
-		rootCAs = x509.NewCertPool()
-		rootCAs.AppendCertsFromPEM([]byte(ca))
-	}
-	mysql.RegisterTLSConfig(key, &tls.Config{
-		RootCAs: rootCAs,
-	})
-}
-
 func main() {
 	var (
-		sourceInstance string
-		destInstance   string
+		sourceInstance    string
+		destInstance      string
 		skipTLSValidation bool
 	)
 
@@ -67,8 +53,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to lookup destination credentials: %v", err)
 	}
-
-	RegisterTLSConfig("default", sourceCredentials.TLS.Cert.CA)
 
 	db, err := sql.Open("mysql", sourceCredentials.DSN())
 	if err != nil {

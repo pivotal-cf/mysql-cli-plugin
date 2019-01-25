@@ -19,47 +19,52 @@ import (
 	"github.com/pkg/errors"
 )
 
-type TLSInfo struct {
-	Cert struct {
-		CA string `json:"ca"`
-	} `json:"cert"`
-}
-
 type Credentials struct {
-	Hostname string  `json:"hostname"`
-	Name     string  `json:"name"`
-	Password string  `json:"password"`
-	Port     int     `json:"port"`
-	Username string  `json:"username"`
-	TLS      TLSInfo `json:"tls"`
+	Hostname string
+	Name     string
+	Password string
+	Port     int
+	Username string
+	CA       string
 }
 
-func (c Credentials) HasTLS() bool {
-	return c.TLS.Cert.CA != ""
+func (d Credentials) HasTLS() bool {
+	return d.CA != ""
 }
 
-func (c Credentials) DSN() string {
+func (d Credentials) DSN() string {
 	var tlsConfig = "false"
 
-	if c.HasTLS() {
-		tlsConfig = "default"
+	if d.HasTLS() {
+		tlsConfig = "true"
 	}
 
 	return fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?tls=%s",
-		c.Username,
-		c.Password,
-		c.Hostname,
-		c.Port,
-		c.Name,
+		d.Username,
+		d.Password,
+		d.Hostname,
+		d.Port,
+		d.Name,
 		tlsConfig,
 	)
 }
 
 func InstanceCredentials(instanceName, vcapCredentials string) (Credentials, error) {
 	var vcapServices map[string][]struct {
-		InstanceName string      `json:"instance_name"`
-		Credentials  Credentials `json:"credentials"`
+		InstanceName string `json:"instance_name"`
+		Credentials  struct {
+			Hostname string `json:"hostname"`
+			Name     string `json:"name"`
+			Password string `json:"password"`
+			Port     int    `json:"port"`
+			Username string `json:"username"`
+			TLS      struct {
+				Cert struct {
+					CA string `json:"ca"`
+				} `json:"cert"`
+			} `json:"tls"`
+		} `json:"credentials"`
 	}
 
 	if err := json.Unmarshal([]byte(vcapCredentials), &vcapServices); err != nil {
@@ -73,7 +78,14 @@ func InstanceCredentials(instanceName, vcapCredentials string) (Credentials, err
 	for _, svc := range vcapServices {
 		for _, binding := range svc {
 			if binding.InstanceName == instanceName {
-				return binding.Credentials, nil
+				return Credentials{
+					Hostname: binding.Credentials.Hostname,
+					Name:     binding.Credentials.Name,
+					Password: binding.Credentials.Password,
+					Port:     binding.Credentials.Port,
+					Username: binding.Credentials.Username,
+					CA:       binding.Credentials.TLS.Cert.CA,
+				}, nil
 			}
 		}
 	}
