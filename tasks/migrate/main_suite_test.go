@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 	. "github.com/pivotal/mysql-test-utils/dockertest"
 )
 
@@ -30,13 +31,14 @@ func TestMigrate(t *testing.T) {
 }
 
 const (
-	mysqlDockerImage             = "mariadb:10.1"
+	mysqlDockerImage             = "percona:5.7"
 	mySQLDockerPort  docker.Port = "3306/tcp"
 )
 
 var (
-	dockerClient *docker.Client
-	sessionID    string
+	migrateTaskBinPath string
+	dockerClient       *docker.Client
+	sessionID          string
 )
 
 var _ = BeforeSuite(func() {
@@ -48,6 +50,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(PullImage(dockerClient, mysqlDockerImage)).To(Succeed())
 
+	migrateTaskBinPath, err = gexec.Build("github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate")
+	Expect(err).NotTo(HaveOccurred())
+})
+
+var _ = AfterSuite(func() {
+	gexec.CleanupBuildArtifacts()
 })
 
 var _ = BeforeEach(func() {

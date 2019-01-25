@@ -21,7 +21,6 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal/mysql-test-utils/dockertest"
 )
 
@@ -85,6 +84,9 @@ var _ = Describe("Migrate Task", func() {
 
 		_, err = db.Exec(`CREATE DATABASE foo`)
 		Expect(err).NotTo(HaveOccurred())
+
+		_, err = db.Exec(`CREATE DATABASE service_instance_db`)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -93,18 +95,8 @@ var _ = Describe("Migrate Task", func() {
 		}
 	})
 
-	It("compiles", func() {
-		compiledPath, err := gexec.Build("github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(os.Remove(compiledPath)).To(Succeed())
-	})
-
 	It("accepts a --skip-tls-validation option", func() {
-		compiledPath, err := gexec.Build("github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate")
-		Expect(err).NotTo(HaveOccurred())
-		defer os.Remove(compiledPath)
-
-		cmd := exec.Command(compiledPath, "--skip-tls-validation", "source", "dest")
+		cmd := exec.Command(migrateTaskBinPath, "-skip-tls-validation", "source", "dest")
 		cmd.Env = append(os.Environ(), "VCAP_SERVICES="+vcapServices)
 		cmd.Stdout = GinkgoWriter
 		cmd.Stderr = GinkgoWriter

@@ -54,6 +54,9 @@ func main() {
 		log.Fatalf("Failed to lookup destination credentials: %v", err)
 	}
 
+	sourceCredentials.SkipTLSValidation = skipTLSValidation
+	destCredentials.SkipTLSValidation = skipTLSValidation
+
 	db, err := sql.Open("mysql", sourceCredentials.DSN())
 	if err != nil {
 		log.Fatalf("Failed to initialize source connection: %v", err)
