@@ -21,7 +21,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings/find-bindingsfakes"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin/pluginfakes"
 )
@@ -29,7 +28,7 @@ import (
 var _ = Describe("Plugin Commands", func() {
 	var (
 		fakeMigrator *pluginfakes.FakeMigrator
-		fakeFinder   *findbindingsfakes.FakeBindingFinder
+		fakeFinder   *pluginfakes.FakeBindingFinder
 		logOutput    *bytes.Buffer
 	)
 
@@ -38,7 +37,7 @@ var _ = Describe("Plugin Commands", func() {
 
 	BeforeEach(func() {
 		fakeMigrator = new(pluginfakes.FakeMigrator)
-		fakeFinder = new(findbindingsfakes.FakeBindingFinder)
+		fakeFinder = new(pluginfakes.FakeBindingFinder)
 
 		logOutput = &bytes.Buffer{}
 

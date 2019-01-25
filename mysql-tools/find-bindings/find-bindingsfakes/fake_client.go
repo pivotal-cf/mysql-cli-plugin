@@ -9,7 +9,7 @@ import (
 	find_bindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 )
 
-type FakeCFClient struct {
+type FakeClient struct {
 	GetAppByGuidStub        func(string) (cfclient.App, error)
 	getAppByGuidMutex       sync.RWMutex
 	getAppByGuidArgsForCall []struct {
@@ -118,7 +118,7 @@ type FakeCFClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCFClient) GetAppByGuid(arg1 string) (cfclient.App, error) {
+func (fake *FakeClient) GetAppByGuid(arg1 string) (cfclient.App, error) {
 	fake.getAppByGuidMutex.Lock()
 	ret, specificReturn := fake.getAppByGuidReturnsOnCall[len(fake.getAppByGuidArgsForCall)]
 	fake.getAppByGuidArgsForCall = append(fake.getAppByGuidArgsForCall, struct {
@@ -136,26 +136,26 @@ func (fake *FakeCFClient) GetAppByGuid(arg1 string) (cfclient.App, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCFClient) GetAppByGuidCallCount() int {
+func (fake *FakeClient) GetAppByGuidCallCount() int {
 	fake.getAppByGuidMutex.RLock()
 	defer fake.getAppByGuidMutex.RUnlock()
 	return len(fake.getAppByGuidArgsForCall)
 }
 
-func (fake *FakeCFClient) GetAppByGuidCalls(stub func(string) (cfclient.App, error)) {
+func (fake *FakeClient) GetAppByGuidCalls(stub func(string) (cfclient.App, error)) {
 	fake.getAppByGuidMutex.Lock()
 	defer fake.getAppByGuidMutex.Unlock()
 	fake.GetAppByGuidStub = stub
 }
 
-func (fake *FakeCFClient) GetAppByGuidArgsForCall(i int) string {
+func (fake *FakeClient) GetAppByGuidArgsForCall(i int) string {
 	fake.getAppByGuidMutex.RLock()
 	defer fake.getAppByGuidMutex.RUnlock()
 	argsForCall := fake.getAppByGuidArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCFClient) GetAppByGuidReturns(result1 cfclient.App, result2 error) {
+func (fake *FakeClient) GetAppByGuidReturns(result1 cfclient.App, result2 error) {
 	fake.getAppByGuidMutex.Lock()
 	defer fake.getAppByGuidMutex.Unlock()
 	fake.GetAppByGuidStub = nil
@@ -165,7 +165,7 @@ func (fake *FakeCFClient) GetAppByGuidReturns(result1 cfclient.App, result2 erro
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) GetAppByGuidReturnsOnCall(i int, result1 cfclient.App, result2 error) {
+func (fake *FakeClient) GetAppByGuidReturnsOnCall(i int, result1 cfclient.App, result2 error) {
 	fake.getAppByGuidMutex.Lock()
 	defer fake.getAppByGuidMutex.Unlock()
 	fake.GetAppByGuidStub = nil
@@ -181,7 +181,7 @@ func (fake *FakeCFClient) GetAppByGuidReturnsOnCall(i int, result1 cfclient.App,
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) GetOrgByGuid(arg1 string) (cfclient.Org, error) {
+func (fake *FakeClient) GetOrgByGuid(arg1 string) (cfclient.Org, error) {
 	fake.getOrgByGuidMutex.Lock()
 	ret, specificReturn := fake.getOrgByGuidReturnsOnCall[len(fake.getOrgByGuidArgsForCall)]
 	fake.getOrgByGuidArgsForCall = append(fake.getOrgByGuidArgsForCall, struct {
@@ -199,26 +199,26 @@ func (fake *FakeCFClient) GetOrgByGuid(arg1 string) (cfclient.Org, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCFClient) GetOrgByGuidCallCount() int {
+func (fake *FakeClient) GetOrgByGuidCallCount() int {
 	fake.getOrgByGuidMutex.RLock()
 	defer fake.getOrgByGuidMutex.RUnlock()
 	return len(fake.getOrgByGuidArgsForCall)
 }
 
-func (fake *FakeCFClient) GetOrgByGuidCalls(stub func(string) (cfclient.Org, error)) {
+func (fake *FakeClient) GetOrgByGuidCalls(stub func(string) (cfclient.Org, error)) {
 	fake.getOrgByGuidMutex.Lock()
 	defer fake.getOrgByGuidMutex.Unlock()
 	fake.GetOrgByGuidStub = stub
 }
 
-func (fake *FakeCFClient) GetOrgByGuidArgsForCall(i int) string {
+func (fake *FakeClient) GetOrgByGuidArgsForCall(i int) string {
 	fake.getOrgByGuidMutex.RLock()
 	defer fake.getOrgByGuidMutex.RUnlock()
 	argsForCall := fake.getOrgByGuidArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCFClient) GetOrgByGuidReturns(result1 cfclient.Org, result2 error) {
+func (fake *FakeClient) GetOrgByGuidReturns(result1 cfclient.Org, result2 error) {
 	fake.getOrgByGuidMutex.Lock()
 	defer fake.getOrgByGuidMutex.Unlock()
 	fake.GetOrgByGuidStub = nil
@@ -228,7 +228,7 @@ func (fake *FakeCFClient) GetOrgByGuidReturns(result1 cfclient.Org, result2 erro
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) GetOrgByGuidReturnsOnCall(i int, result1 cfclient.Org, result2 error) {
+func (fake *FakeClient) GetOrgByGuidReturnsOnCall(i int, result1 cfclient.Org, result2 error) {
 	fake.getOrgByGuidMutex.Lock()
 	defer fake.getOrgByGuidMutex.Unlock()
 	fake.GetOrgByGuidStub = nil
@@ -244,7 +244,7 @@ func (fake *FakeCFClient) GetOrgByGuidReturnsOnCall(i int, result1 cfclient.Org,
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) GetSpaceByGuid(arg1 string) (cfclient.Space, error) {
+func (fake *FakeClient) GetSpaceByGuid(arg1 string) (cfclient.Space, error) {
 	fake.getSpaceByGuidMutex.Lock()
 	ret, specificReturn := fake.getSpaceByGuidReturnsOnCall[len(fake.getSpaceByGuidArgsForCall)]
 	fake.getSpaceByGuidArgsForCall = append(fake.getSpaceByGuidArgsForCall, struct {
@@ -262,26 +262,26 @@ func (fake *FakeCFClient) GetSpaceByGuid(arg1 string) (cfclient.Space, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCFClient) GetSpaceByGuidCallCount() int {
+func (fake *FakeClient) GetSpaceByGuidCallCount() int {
 	fake.getSpaceByGuidMutex.RLock()
 	defer fake.getSpaceByGuidMutex.RUnlock()
 	return len(fake.getSpaceByGuidArgsForCall)
 }
 
-func (fake *FakeCFClient) GetSpaceByGuidCalls(stub func(string) (cfclient.Space, error)) {
+func (fake *FakeClient) GetSpaceByGuidCalls(stub func(string) (cfclient.Space, error)) {
 	fake.getSpaceByGuidMutex.Lock()
 	defer fake.getSpaceByGuidMutex.Unlock()
 	fake.GetSpaceByGuidStub = stub
 }
 
-func (fake *FakeCFClient) GetSpaceByGuidArgsForCall(i int) string {
+func (fake *FakeClient) GetSpaceByGuidArgsForCall(i int) string {
 	fake.getSpaceByGuidMutex.RLock()
 	defer fake.getSpaceByGuidMutex.RUnlock()
 	argsForCall := fake.getSpaceByGuidArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCFClient) GetSpaceByGuidReturns(result1 cfclient.Space, result2 error) {
+func (fake *FakeClient) GetSpaceByGuidReturns(result1 cfclient.Space, result2 error) {
 	fake.getSpaceByGuidMutex.Lock()
 	defer fake.getSpaceByGuidMutex.Unlock()
 	fake.GetSpaceByGuidStub = nil
@@ -291,7 +291,7 @@ func (fake *FakeCFClient) GetSpaceByGuidReturns(result1 cfclient.Space, result2 
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) GetSpaceByGuidReturnsOnCall(i int, result1 cfclient.Space, result2 error) {
+func (fake *FakeClient) GetSpaceByGuidReturnsOnCall(i int, result1 cfclient.Space, result2 error) {
 	fake.getSpaceByGuidMutex.Lock()
 	defer fake.getSpaceByGuidMutex.Unlock()
 	fake.GetSpaceByGuidStub = nil
@@ -307,7 +307,7 @@ func (fake *FakeCFClient) GetSpaceByGuidReturnsOnCall(i int, result1 cfclient.Sp
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) ListServiceBindingsByQuery(arg1 url.Values) ([]cfclient.ServiceBinding, error) {
+func (fake *FakeClient) ListServiceBindingsByQuery(arg1 url.Values) ([]cfclient.ServiceBinding, error) {
 	fake.listServiceBindingsByQueryMutex.Lock()
 	ret, specificReturn := fake.listServiceBindingsByQueryReturnsOnCall[len(fake.listServiceBindingsByQueryArgsForCall)]
 	fake.listServiceBindingsByQueryArgsForCall = append(fake.listServiceBindingsByQueryArgsForCall, struct {
@@ -325,26 +325,26 @@ func (fake *FakeCFClient) ListServiceBindingsByQuery(arg1 url.Values) ([]cfclien
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCFClient) ListServiceBindingsByQueryCallCount() int {
+func (fake *FakeClient) ListServiceBindingsByQueryCallCount() int {
 	fake.listServiceBindingsByQueryMutex.RLock()
 	defer fake.listServiceBindingsByQueryMutex.RUnlock()
 	return len(fake.listServiceBindingsByQueryArgsForCall)
 }
 
-func (fake *FakeCFClient) ListServiceBindingsByQueryCalls(stub func(url.Values) ([]cfclient.ServiceBinding, error)) {
+func (fake *FakeClient) ListServiceBindingsByQueryCalls(stub func(url.Values) ([]cfclient.ServiceBinding, error)) {
 	fake.listServiceBindingsByQueryMutex.Lock()
 	defer fake.listServiceBindingsByQueryMutex.Unlock()
 	fake.ListServiceBindingsByQueryStub = stub
 }
 
-func (fake *FakeCFClient) ListServiceBindingsByQueryArgsForCall(i int) url.Values {
+func (fake *FakeClient) ListServiceBindingsByQueryArgsForCall(i int) url.Values {
 	fake.listServiceBindingsByQueryMutex.RLock()
 	defer fake.listServiceBindingsByQueryMutex.RUnlock()
 	argsForCall := fake.listServiceBindingsByQueryArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCFClient) ListServiceBindingsByQueryReturns(result1 []cfclient.ServiceBinding, result2 error) {
+func (fake *FakeClient) ListServiceBindingsByQueryReturns(result1 []cfclient.ServiceBinding, result2 error) {
 	fake.listServiceBindingsByQueryMutex.Lock()
 	defer fake.listServiceBindingsByQueryMutex.Unlock()
 	fake.ListServiceBindingsByQueryStub = nil
@@ -354,7 +354,7 @@ func (fake *FakeCFClient) ListServiceBindingsByQueryReturns(result1 []cfclient.S
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) ListServiceBindingsByQueryReturnsOnCall(i int, result1 []cfclient.ServiceBinding, result2 error) {
+func (fake *FakeClient) ListServiceBindingsByQueryReturnsOnCall(i int, result1 []cfclient.ServiceBinding, result2 error) {
 	fake.listServiceBindingsByQueryMutex.Lock()
 	defer fake.listServiceBindingsByQueryMutex.Unlock()
 	fake.ListServiceBindingsByQueryStub = nil
@@ -370,7 +370,7 @@ func (fake *FakeCFClient) ListServiceBindingsByQueryReturnsOnCall(i int, result1
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) ListServiceInstancesByQuery(arg1 url.Values) ([]cfclient.ServiceInstance, error) {
+func (fake *FakeClient) ListServiceInstancesByQuery(arg1 url.Values) ([]cfclient.ServiceInstance, error) {
 	fake.listServiceInstancesByQueryMutex.Lock()
 	ret, specificReturn := fake.listServiceInstancesByQueryReturnsOnCall[len(fake.listServiceInstancesByQueryArgsForCall)]
 	fake.listServiceInstancesByQueryArgsForCall = append(fake.listServiceInstancesByQueryArgsForCall, struct {
@@ -388,26 +388,26 @@ func (fake *FakeCFClient) ListServiceInstancesByQuery(arg1 url.Values) ([]cfclie
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCFClient) ListServiceInstancesByQueryCallCount() int {
+func (fake *FakeClient) ListServiceInstancesByQueryCallCount() int {
 	fake.listServiceInstancesByQueryMutex.RLock()
 	defer fake.listServiceInstancesByQueryMutex.RUnlock()
 	return len(fake.listServiceInstancesByQueryArgsForCall)
 }
 
-func (fake *FakeCFClient) ListServiceInstancesByQueryCalls(stub func(url.Values) ([]cfclient.ServiceInstance, error)) {
+func (fake *FakeClient) ListServiceInstancesByQueryCalls(stub func(url.Values) ([]cfclient.ServiceInstance, error)) {
 	fake.listServiceInstancesByQueryMutex.Lock()
 	defer fake.listServiceInstancesByQueryMutex.Unlock()
 	fake.ListServiceInstancesByQueryStub = stub
 }
 
-func (fake *FakeCFClient) ListServiceInstancesByQueryArgsForCall(i int) url.Values {
+func (fake *FakeClient) ListServiceInstancesByQueryArgsForCall(i int) url.Values {
 	fake.listServiceInstancesByQueryMutex.RLock()
 	defer fake.listServiceInstancesByQueryMutex.RUnlock()
 	argsForCall := fake.listServiceInstancesByQueryArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCFClient) ListServiceInstancesByQueryReturns(result1 []cfclient.ServiceInstance, result2 error) {
+func (fake *FakeClient) ListServiceInstancesByQueryReturns(result1 []cfclient.ServiceInstance, result2 error) {
 	fake.listServiceInstancesByQueryMutex.Lock()
 	defer fake.listServiceInstancesByQueryMutex.Unlock()
 	fake.ListServiceInstancesByQueryStub = nil
@@ -417,7 +417,7 @@ func (fake *FakeCFClient) ListServiceInstancesByQueryReturns(result1 []cfclient.
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) ListServiceInstancesByQueryReturnsOnCall(i int, result1 []cfclient.ServiceInstance, result2 error) {
+func (fake *FakeClient) ListServiceInstancesByQueryReturnsOnCall(i int, result1 []cfclient.ServiceInstance, result2 error) {
 	fake.listServiceInstancesByQueryMutex.Lock()
 	defer fake.listServiceInstancesByQueryMutex.Unlock()
 	fake.ListServiceInstancesByQueryStub = nil
@@ -433,7 +433,7 @@ func (fake *FakeCFClient) ListServiceInstancesByQueryReturnsOnCall(i int, result
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) ListServiceKeysByQuery(arg1 url.Values) ([]cfclient.ServiceKey, error) {
+func (fake *FakeClient) ListServiceKeysByQuery(arg1 url.Values) ([]cfclient.ServiceKey, error) {
 	fake.listServiceKeysByQueryMutex.Lock()
 	ret, specificReturn := fake.listServiceKeysByQueryReturnsOnCall[len(fake.listServiceKeysByQueryArgsForCall)]
 	fake.listServiceKeysByQueryArgsForCall = append(fake.listServiceKeysByQueryArgsForCall, struct {
@@ -451,26 +451,26 @@ func (fake *FakeCFClient) ListServiceKeysByQuery(arg1 url.Values) ([]cfclient.Se
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCFClient) ListServiceKeysByQueryCallCount() int {
+func (fake *FakeClient) ListServiceKeysByQueryCallCount() int {
 	fake.listServiceKeysByQueryMutex.RLock()
 	defer fake.listServiceKeysByQueryMutex.RUnlock()
 	return len(fake.listServiceKeysByQueryArgsForCall)
 }
 
-func (fake *FakeCFClient) ListServiceKeysByQueryCalls(stub func(url.Values) ([]cfclient.ServiceKey, error)) {
+func (fake *FakeClient) ListServiceKeysByQueryCalls(stub func(url.Values) ([]cfclient.ServiceKey, error)) {
 	fake.listServiceKeysByQueryMutex.Lock()
 	defer fake.listServiceKeysByQueryMutex.Unlock()
 	fake.ListServiceKeysByQueryStub = stub
 }
 
-func (fake *FakeCFClient) ListServiceKeysByQueryArgsForCall(i int) url.Values {
+func (fake *FakeClient) ListServiceKeysByQueryArgsForCall(i int) url.Values {
 	fake.listServiceKeysByQueryMutex.RLock()
 	defer fake.listServiceKeysByQueryMutex.RUnlock()
 	argsForCall := fake.listServiceKeysByQueryArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCFClient) ListServiceKeysByQueryReturns(result1 []cfclient.ServiceKey, result2 error) {
+func (fake *FakeClient) ListServiceKeysByQueryReturns(result1 []cfclient.ServiceKey, result2 error) {
 	fake.listServiceKeysByQueryMutex.Lock()
 	defer fake.listServiceKeysByQueryMutex.Unlock()
 	fake.ListServiceKeysByQueryStub = nil
@@ -480,7 +480,7 @@ func (fake *FakeCFClient) ListServiceKeysByQueryReturns(result1 []cfclient.Servi
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) ListServiceKeysByQueryReturnsOnCall(i int, result1 []cfclient.ServiceKey, result2 error) {
+func (fake *FakeClient) ListServiceKeysByQueryReturnsOnCall(i int, result1 []cfclient.ServiceKey, result2 error) {
 	fake.listServiceKeysByQueryMutex.Lock()
 	defer fake.listServiceKeysByQueryMutex.Unlock()
 	fake.ListServiceKeysByQueryStub = nil
@@ -496,7 +496,7 @@ func (fake *FakeCFClient) ListServiceKeysByQueryReturnsOnCall(i int, result1 []c
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) ListServicePlansByQuery(arg1 url.Values) ([]cfclient.ServicePlan, error) {
+func (fake *FakeClient) ListServicePlansByQuery(arg1 url.Values) ([]cfclient.ServicePlan, error) {
 	fake.listServicePlansByQueryMutex.Lock()
 	ret, specificReturn := fake.listServicePlansByQueryReturnsOnCall[len(fake.listServicePlansByQueryArgsForCall)]
 	fake.listServicePlansByQueryArgsForCall = append(fake.listServicePlansByQueryArgsForCall, struct {
@@ -514,26 +514,26 @@ func (fake *FakeCFClient) ListServicePlansByQuery(arg1 url.Values) ([]cfclient.S
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCFClient) ListServicePlansByQueryCallCount() int {
+func (fake *FakeClient) ListServicePlansByQueryCallCount() int {
 	fake.listServicePlansByQueryMutex.RLock()
 	defer fake.listServicePlansByQueryMutex.RUnlock()
 	return len(fake.listServicePlansByQueryArgsForCall)
 }
 
-func (fake *FakeCFClient) ListServicePlansByQueryCalls(stub func(url.Values) ([]cfclient.ServicePlan, error)) {
+func (fake *FakeClient) ListServicePlansByQueryCalls(stub func(url.Values) ([]cfclient.ServicePlan, error)) {
 	fake.listServicePlansByQueryMutex.Lock()
 	defer fake.listServicePlansByQueryMutex.Unlock()
 	fake.ListServicePlansByQueryStub = stub
 }
 
-func (fake *FakeCFClient) ListServicePlansByQueryArgsForCall(i int) url.Values {
+func (fake *FakeClient) ListServicePlansByQueryArgsForCall(i int) url.Values {
 	fake.listServicePlansByQueryMutex.RLock()
 	defer fake.listServicePlansByQueryMutex.RUnlock()
 	argsForCall := fake.listServicePlansByQueryArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCFClient) ListServicePlansByQueryReturns(result1 []cfclient.ServicePlan, result2 error) {
+func (fake *FakeClient) ListServicePlansByQueryReturns(result1 []cfclient.ServicePlan, result2 error) {
 	fake.listServicePlansByQueryMutex.Lock()
 	defer fake.listServicePlansByQueryMutex.Unlock()
 	fake.ListServicePlansByQueryStub = nil
@@ -543,7 +543,7 @@ func (fake *FakeCFClient) ListServicePlansByQueryReturns(result1 []cfclient.Serv
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) ListServicePlansByQueryReturnsOnCall(i int, result1 []cfclient.ServicePlan, result2 error) {
+func (fake *FakeClient) ListServicePlansByQueryReturnsOnCall(i int, result1 []cfclient.ServicePlan, result2 error) {
 	fake.listServicePlansByQueryMutex.Lock()
 	defer fake.listServicePlansByQueryMutex.Unlock()
 	fake.ListServicePlansByQueryStub = nil
@@ -559,7 +559,7 @@ func (fake *FakeCFClient) ListServicePlansByQueryReturnsOnCall(i int, result1 []
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) ListServicesByQuery(arg1 url.Values) ([]cfclient.Service, error) {
+func (fake *FakeClient) ListServicesByQuery(arg1 url.Values) ([]cfclient.Service, error) {
 	fake.listServicesByQueryMutex.Lock()
 	ret, specificReturn := fake.listServicesByQueryReturnsOnCall[len(fake.listServicesByQueryArgsForCall)]
 	fake.listServicesByQueryArgsForCall = append(fake.listServicesByQueryArgsForCall, struct {
@@ -577,26 +577,26 @@ func (fake *FakeCFClient) ListServicesByQuery(arg1 url.Values) ([]cfclient.Servi
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCFClient) ListServicesByQueryCallCount() int {
+func (fake *FakeClient) ListServicesByQueryCallCount() int {
 	fake.listServicesByQueryMutex.RLock()
 	defer fake.listServicesByQueryMutex.RUnlock()
 	return len(fake.listServicesByQueryArgsForCall)
 }
 
-func (fake *FakeCFClient) ListServicesByQueryCalls(stub func(url.Values) ([]cfclient.Service, error)) {
+func (fake *FakeClient) ListServicesByQueryCalls(stub func(url.Values) ([]cfclient.Service, error)) {
 	fake.listServicesByQueryMutex.Lock()
 	defer fake.listServicesByQueryMutex.Unlock()
 	fake.ListServicesByQueryStub = stub
 }
 
-func (fake *FakeCFClient) ListServicesByQueryArgsForCall(i int) url.Values {
+func (fake *FakeClient) ListServicesByQueryArgsForCall(i int) url.Values {
 	fake.listServicesByQueryMutex.RLock()
 	defer fake.listServicesByQueryMutex.RUnlock()
 	argsForCall := fake.listServicesByQueryArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCFClient) ListServicesByQueryReturns(result1 []cfclient.Service, result2 error) {
+func (fake *FakeClient) ListServicesByQueryReturns(result1 []cfclient.Service, result2 error) {
 	fake.listServicesByQueryMutex.Lock()
 	defer fake.listServicesByQueryMutex.Unlock()
 	fake.ListServicesByQueryStub = nil
@@ -606,7 +606,7 @@ func (fake *FakeCFClient) ListServicesByQueryReturns(result1 []cfclient.Service,
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) ListServicesByQueryReturnsOnCall(i int, result1 []cfclient.Service, result2 error) {
+func (fake *FakeClient) ListServicesByQueryReturnsOnCall(i int, result1 []cfclient.Service, result2 error) {
 	fake.listServicesByQueryMutex.Lock()
 	defer fake.listServicesByQueryMutex.Unlock()
 	fake.ListServicesByQueryStub = nil
@@ -622,7 +622,7 @@ func (fake *FakeCFClient) ListServicesByQueryReturnsOnCall(i int, result1 []cfcl
 	}{result1, result2}
 }
 
-func (fake *FakeCFClient) Invocations() map[string][][]interface{} {
+func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getAppByGuidMutex.RLock()
@@ -648,7 +648,7 @@ func (fake *FakeCFClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeCFClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -660,4 +660,4 @@ func (fake *FakeCFClient) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ find_bindings.CFClient = new(FakeCFClient)
+var _ find_bindings.Client = new(FakeClient)

@@ -44,9 +44,9 @@ func (c *FakeClock) SleepCallArgs(i int) time.Duration {
 	return c.sleepCallArgs[i]
 }
 
-var _ = Describe("Client", func() {
+var _ = Describe("MigratorClient", func() {
 	var (
-		client          *cf.Client
+		client          *cf.MigratorClient
 		fakeCFPluginAPI *cffakes.FakeCFPluginAPI
 		fakeClock       *FakeClock
 		buffer          *gbytes.Buffer
@@ -54,7 +54,7 @@ var _ = Describe("Client", func() {
 
 	BeforeEach(func() {
 		fakeCFPluginAPI = new(cffakes.FakeCFPluginAPI)
-		client = cf.NewClient(fakeCFPluginAPI)
+		client = cf.NewMigratorClient(fakeCFPluginAPI)
 		fakeClock = &FakeClock{}
 		client.Sleep = fakeClock.Sleep
 		buffer = gbytes.NewBuffer()
@@ -88,7 +88,6 @@ var _ = Describe("Client", func() {
 			Expect(err).To(MatchError(`failed to bind-service "some-service" to application "some-app": some-error`))
 		})
 	})
-
 
 	Context("CreateServiceInstance", func() {
 		Context("When we create a service instance", func() {

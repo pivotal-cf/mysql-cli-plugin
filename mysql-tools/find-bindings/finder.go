@@ -20,12 +20,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate counterfeiter . CFClient
-type CFClient interface {
+//go:generate counterfeiter . Client
+type Client interface {
 	GetAppByGuid(guid string) (cfclient.App, error)
 	GetOrgByGuid(spaceGUID string) (cfclient.Org, error)
 	GetSpaceByGuid(spaceGUID string) (cfclient.Space, error)
-	ListServicesByQuery(url.Values) ([]cfclient.Service, error)
+	ListServicesByQuery(query url.Values) ([]cfclient.Service, error)
 	ListServiceBindingsByQuery(query url.Values) ([]cfclient.ServiceBinding, error)
 	ListServicePlansByQuery(query url.Values) ([]cfclient.ServicePlan, error)
 	ListServiceKeysByQuery(query url.Values) ([]cfclient.ServiceKey, error)
@@ -41,22 +41,17 @@ type Binding struct {
 	Type                string
 }
 
-//go:generate counterfeiter . BindingFinder
-type BindingFinder interface {
-	FindBindings(serviceLabel string) ([]Binding, error)
+type BindingFinder struct {
+	cfClient Client
 }
 
-type bindingFinder struct {
-	cfClient CFClient
-}
-
-func NewBindingFinder(cfClient CFClient) BindingFinder {
-	return &bindingFinder{
+func NewBindingFinder(cfClient Client) *BindingFinder {
+	return &BindingFinder{
 		cfClient: cfClient,
 	}
 }
 
-func (bf *bindingFinder) FindBindings(serviceLabel string) ([]Binding, error) {
+func (bf *BindingFinder) FindBindings(serviceLabel string) ([]Binding, error) {
 	serviceGUID, err := bf.serviceGUIDForLabel(serviceLabel)
 	if err != nil {
 		return nil, errors.Wrapf(err, `failed to lookup service matching label %q`, serviceLabel)
@@ -94,7 +89,7 @@ func (bf *bindingFinder) FindBindings(serviceLabel string) ([]Binding, error) {
 	return result, errs
 }
 
-func (bf *bindingFinder) serviceGUIDForLabel(serviceLabel string) (serviceGUID string, err error) {
+func (bf *BindingFinder) serviceGUIDForLabel(serviceLabel string) (serviceGUID string, err error) {
 	query := url.Values{}
 	query.Set("q", "label:"+serviceLabel)
 	services, err := bf.cfClient.ListServicesByQuery(query)
@@ -112,13 +107,13 @@ func (bf *bindingFinder) serviceGUIDForLabel(serviceLabel string) (serviceGUID s
 	}
 }
 
-func (bf *bindingFinder) servicePlansForServiceGUID(serviceGUID string) (servicePlans []cfclient.ServicePlan, err error) {
+func (bf *BindingFinder) servicePlansForServiceGUID(serviceGUID string) (servicePlans []cfclient.ServicePlan, err error) {
 	query := url.Values{}
 	query.Set("q", "service_guid:"+serviceGUID)
 	return bf.cfClient.ListServicePlansByQuery(query)
 }
 
-func (bf *bindingFinder) serviceInstancesForServicePlans(servicePlans []cfclient.ServicePlan) ([]cfclient.ServiceInstance, error) {
+func (bf *BindingFinder) serviceInstancesForServicePlans(servicePlans []cfclient.ServicePlan) ([]cfclient.ServiceInstance, error) {
 	var (
 		result []cfclient.ServiceInstance
 		errs   error
@@ -143,7 +138,7 @@ func (bf *bindingFinder) serviceInstancesForServicePlans(servicePlans []cfclient
 	return result, errs
 }
 
-func (bf *bindingFinder) listServiceBindingsForInstance(instance cfclient.ServiceInstance) ([]Binding, error) {
+func (bf *BindingFinder) listServiceBindingsForInstance(instance cfclient.ServiceInstance) ([]Binding, error) {
 	query := url.Values{}
 	query.Set("q", "service_instance_guid:"+instance.Guid)
 	serviceBindings, err := bf.cfClient.ListServiceBindingsByQuery(query)
@@ -181,7 +176,7 @@ func (bf *bindingFinder) listServiceBindingsForInstance(instance cfclient.Servic
 	return result, errs
 }
 
-func (bf *bindingFinder) listServiceKeysForInstance(instance cfclient.ServiceInstance) ([]Binding, error) {
+func (bf *BindingFinder) listServiceKeysForInstance(instance cfclient.ServiceInstance) ([]Binding, error) {
 	query := url.Values{}
 	query.Set("q", "service_instance_guid:"+instance.Guid)
 	serviceKeys, err := bf.cfClient.ListServiceKeysByQuery(query)
@@ -215,7 +210,7 @@ func (bf *bindingFinder) listServiceKeysForInstance(instance cfclient.ServiceIns
 	return result, errs
 }
 
-func (bf *bindingFinder) spaceDataForGUID(spaceGUID string) (cfclient.Space, error) {
+func (bf *BindingFinder) spaceDataForGUID(spaceGUID string) (cfclient.Space, error) {
 	space, err := bf.cfClient.GetSpaceByGuid(spaceGUID)
 	if err != nil {
 		return space, err

@@ -28,7 +28,7 @@ var _ = Describe("BindingFinder", func() {
 		var (
 			serviceName            string
 			expectedBindings       []find_bindings.Binding
-			fakeCFClient           *findbindingsfakes.FakeCFClient
+			fakeClient           *findbindingsfakes.FakeClient
 			service                cfclient.Service
 			servicePlans           []cfclient.ServicePlan
 			smallServiceInstances  []cfclient.ServiceInstance
@@ -42,7 +42,7 @@ var _ = Describe("BindingFinder", func() {
 		)
 
 		BeforeEach(func() {
-			fakeCFClient = &findbindingsfakes.FakeCFClient{}
+			fakeClient = &findbindingsfakes.FakeClient{}
 			serviceName = "p.mysql"
 
 			expectedBindings = []find_bindings.Binding{
@@ -85,7 +85,7 @@ var _ = Describe("BindingFinder", func() {
 				Guid:  "service-guid",
 			}
 
-			fakeCFClient.ListServicesByQueryReturns([]cfclient.Service{service}, nil)
+			fakeClient.ListServicesByQueryReturns([]cfclient.Service{service}, nil)
 
 			servicePlans = []cfclient.ServicePlan{
 				{Name: "small", Guid: "small-guid", ServiceGuid: "service-guid"},
@@ -93,21 +93,21 @@ var _ = Describe("BindingFinder", func() {
 				{Name: "large", Guid: "large-guid", ServiceGuid: "service-guid"},
 			}
 
-			fakeCFClient.ListServicePlansByQueryReturns(servicePlans, nil)
+			fakeClient.ListServicePlansByQueryReturns(servicePlans, nil)
 
 			smallServiceInstances = []cfclient.ServiceInstance{
 				{Name: "instance1", Guid: "instance1-guid", ServicePlanGuid: "small-guid", SpaceGuid: "space1-guid"},
 				{Name: "instance2", Guid: "instance2-guid", ServicePlanGuid: "small-guid", SpaceGuid: "space2-guid"},
 			}
 
-			fakeCFClient.ListServiceInstancesByQueryReturnsOnCall(0, smallServiceInstances, nil)
+			fakeClient.ListServiceInstancesByQueryReturnsOnCall(0, smallServiceInstances, nil)
 
 			mediumServiceInstances = []cfclient.ServiceInstance{
 				{Name: "instance3", Guid: "instance3-guid", ServicePlanGuid: "medium-guid", SpaceGuid: "space3-guid"},
 			}
 
-			fakeCFClient.ListServiceInstancesByQueryReturnsOnCall(1, mediumServiceInstances, nil)
-			fakeCFClient.ListServiceInstancesByQueryReturnsOnCall(2, []cfclient.ServiceInstance{}, nil)
+			fakeClient.ListServiceInstancesByQueryReturnsOnCall(1, mediumServiceInstances, nil)
+			fakeClient.ListServiceInstancesByQueryReturnsOnCall(2, []cfclient.ServiceInstance{}, nil)
 
 			smallServiceBindings = []cfclient.ServiceBinding{
 				{Guid: "binding1-guid", AppGuid: "app1-guid", ServiceInstanceGuid: "instance1-guid"},
@@ -116,9 +116,9 @@ var _ = Describe("BindingFinder", func() {
 				{Guid: "binding3-guid", AppGuid: "app3-guid", ServiceInstanceGuid: "instance3-guid"},
 			}
 
-			fakeCFClient.ListServiceBindingsByQueryReturnsOnCall(0, smallServiceBindings, nil)
-			fakeCFClient.ListServiceBindingsByQueryReturnsOnCall(1, []cfclient.ServiceBinding{}, nil)
-			fakeCFClient.ListServiceBindingsByQueryReturnsOnCall(2, mediumServiceBindings, nil)
+			fakeClient.ListServiceBindingsByQueryReturnsOnCall(0, smallServiceBindings, nil)
+			fakeClient.ListServiceBindingsByQueryReturnsOnCall(1, []cfclient.ServiceBinding{}, nil)
+			fakeClient.ListServiceBindingsByQueryReturnsOnCall(2, mediumServiceBindings, nil)
 
 			smallServiceKey = []cfclient.ServiceKey{
 				{Name: "key1"},
@@ -127,9 +127,9 @@ var _ = Describe("BindingFinder", func() {
 			mediumServiceKey = []cfclient.ServiceKey{
 				{Name: "key3"},
 			}
-			fakeCFClient.ListServiceKeysByQueryReturnsOnCall(0, smallServiceKey, nil)
-			fakeCFClient.ListServiceKeysByQueryReturnsOnCall(1, []cfclient.ServiceKey{}, nil)
-			fakeCFClient.ListServiceKeysByQueryReturnsOnCall(2, mediumServiceKey, nil)
+			fakeClient.ListServiceKeysByQueryReturnsOnCall(0, smallServiceKey, nil)
+			fakeClient.ListServiceKeysByQueryReturnsOnCall(1, []cfclient.ServiceKey{}, nil)
+			fakeClient.ListServiceKeysByQueryReturnsOnCall(2, mediumServiceKey, nil)
 
 			smallApp = cfclient.App{
 				Guid: "app1-guid",
@@ -163,81 +163,81 @@ var _ = Describe("BindingFinder", func() {
 				},
 			}
 
-			fakeCFClient.GetAppByGuidReturnsOnCall(0, smallApp, nil)
-			fakeCFClient.GetAppByGuidReturnsOnCall(1, mediumApp, nil)
+			fakeClient.GetAppByGuidReturnsOnCall(0, smallApp, nil)
+			fakeClient.GetAppByGuidReturnsOnCall(1, mediumApp, nil)
 
-			fakeCFClient.GetSpaceByGuidReturnsOnCall(0, smallApp.SpaceData.Entity, nil)
-			fakeCFClient.GetSpaceByGuidReturnsOnCall(1, mediumApp.SpaceData.Entity, nil)
+			fakeClient.GetSpaceByGuidReturnsOnCall(0, smallApp.SpaceData.Entity, nil)
+			fakeClient.GetSpaceByGuidReturnsOnCall(1, mediumApp.SpaceData.Entity, nil)
 
-			fakeCFClient.GetOrgByGuidReturnsOnCall(0, smallApp.SpaceData.Entity.OrgData.Entity, nil)
-			fakeCFClient.GetOrgByGuidReturnsOnCall(1, mediumApp.SpaceData.Entity.OrgData.Entity, nil)
+			fakeClient.GetOrgByGuidReturnsOnCall(0, smallApp.SpaceData.Entity.OrgData.Entity, nil)
+			fakeClient.GetOrgByGuidReturnsOnCall(1, mediumApp.SpaceData.Entity.OrgData.Entity, nil)
 		})
 
 		It("returns a list of applications and service keys associated with the service", func() {
-			finder := find_bindings.NewBindingFinder(fakeCFClient)
+			finder := find_bindings.NewBindingFinder(fakeClient)
 			listOfBindings, err := finder.FindBindings(serviceName)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(fakeCFClient.ListServicesByQueryCallCount()).To(Equal(1))
+			Expect(fakeClient.ListServicesByQueryCallCount()).To(Equal(1))
 			query := url.Values{}
 			query.Set("q", "label:p.mysql")
-			Expect(fakeCFClient.ListServicesByQueryArgsForCall(0)).To(Equal(query))
+			Expect(fakeClient.ListServicesByQueryArgsForCall(0)).To(Equal(query))
 
-			Expect(fakeCFClient.ListServicePlansByQueryCallCount()).To(Equal(1))
+			Expect(fakeClient.ListServicePlansByQueryCallCount()).To(Equal(1))
 			query = url.Values{}
 			query.Set("q", "service_guid:service-guid")
-			Expect(fakeCFClient.ListServicePlansByQueryArgsForCall(0)).To(Equal(query))
+			Expect(fakeClient.ListServicePlansByQueryArgsForCall(0)).To(Equal(query))
 
-			Expect(fakeCFClient.ListServiceInstancesByQueryCallCount()).To(Equal(3))
+			Expect(fakeClient.ListServiceInstancesByQueryCallCount()).To(Equal(3))
 			query = url.Values{}
 			query.Set("q", "service_plan_guid:small-guid")
-			Expect(fakeCFClient.ListServiceInstancesByQueryArgsForCall(0)).To(Equal(query))
+			Expect(fakeClient.ListServiceInstancesByQueryArgsForCall(0)).To(Equal(query))
 
 			query = url.Values{}
 			query.Set("q", "service_plan_guid:medium-guid")
-			Expect(fakeCFClient.ListServiceInstancesByQueryArgsForCall(1)).To(Equal(query))
+			Expect(fakeClient.ListServiceInstancesByQueryArgsForCall(1)).To(Equal(query))
 
 			query = url.Values{}
 			query.Set("q", "service_plan_guid:large-guid")
-			Expect(fakeCFClient.ListServiceInstancesByQueryArgsForCall(2)).To(Equal(query))
+			Expect(fakeClient.ListServiceInstancesByQueryArgsForCall(2)).To(Equal(query))
 
-			Expect(fakeCFClient.ListServiceBindingsByQueryCallCount()).To(Equal(3))
+			Expect(fakeClient.ListServiceBindingsByQueryCallCount()).To(Equal(3))
 			query = url.Values{}
 			query.Set("q", "service_instance_guid:instance1-guid")
-			Expect(fakeCFClient.ListServiceBindingsByQueryArgsForCall(0)).To(Equal(query))
+			Expect(fakeClient.ListServiceBindingsByQueryArgsForCall(0)).To(Equal(query))
 
 			query = url.Values{}
 			query.Set("q", "service_instance_guid:instance2-guid")
-			Expect(fakeCFClient.ListServiceBindingsByQueryArgsForCall(1)).To(Equal(query))
+			Expect(fakeClient.ListServiceBindingsByQueryArgsForCall(1)).To(Equal(query))
 
 			query = url.Values{}
 			query.Set("q", "service_instance_guid:instance3-guid")
-			Expect(fakeCFClient.ListServiceBindingsByQueryArgsForCall(2)).To(Equal(query))
+			Expect(fakeClient.ListServiceBindingsByQueryArgsForCall(2)).To(Equal(query))
 
-			Expect(fakeCFClient.GetAppByGuidCallCount()).To(Equal(2))
-			Expect(fakeCFClient.GetAppByGuidArgsForCall(0)).To(Equal("app1-guid"))
-			Expect(fakeCFClient.GetAppByGuidArgsForCall(1)).To(Equal("app3-guid"))
+			Expect(fakeClient.GetAppByGuidCallCount()).To(Equal(2))
+			Expect(fakeClient.GetAppByGuidArgsForCall(0)).To(Equal("app1-guid"))
+			Expect(fakeClient.GetAppByGuidArgsForCall(1)).To(Equal("app3-guid"))
 
-			Expect(fakeCFClient.ListServiceKeysByQueryCallCount()).To(Equal(3))
+			Expect(fakeClient.ListServiceKeysByQueryCallCount()).To(Equal(3))
 			query = url.Values{}
 			query.Set("q", "service_instance_guid:instance1-guid")
-			Expect(fakeCFClient.ListServiceKeysByQueryArgsForCall(0)).To(Equal(query))
+			Expect(fakeClient.ListServiceKeysByQueryArgsForCall(0)).To(Equal(query))
 
 			query = url.Values{}
 			query.Set("q", "service_instance_guid:instance2-guid")
-			Expect(fakeCFClient.ListServiceKeysByQueryArgsForCall(1)).To(Equal(query))
+			Expect(fakeClient.ListServiceKeysByQueryArgsForCall(1)).To(Equal(query))
 
 			query = url.Values{}
 			query.Set("q", "service_instance_guid:instance3-guid")
-			Expect(fakeCFClient.ListServiceKeysByQueryArgsForCall(2)).To(Equal(query))
+			Expect(fakeClient.ListServiceKeysByQueryArgsForCall(2)).To(Equal(query))
 
-			Expect(fakeCFClient.GetSpaceByGuidCallCount()).To(Equal(2))
-			Expect(fakeCFClient.GetSpaceByGuidArgsForCall(0)).To(Equal("space1-guid"))
-			Expect(fakeCFClient.GetSpaceByGuidArgsForCall(1)).To(Equal("space3-guid"))
+			Expect(fakeClient.GetSpaceByGuidCallCount()).To(Equal(2))
+			Expect(fakeClient.GetSpaceByGuidArgsForCall(0)).To(Equal("space1-guid"))
+			Expect(fakeClient.GetSpaceByGuidArgsForCall(1)).To(Equal("space3-guid"))
 
-			Expect(fakeCFClient.GetOrgByGuidCallCount()).To(Equal(2))
-			Expect(fakeCFClient.GetOrgByGuidArgsForCall(0)).To(Equal("app1-org-guid"))
-			Expect(fakeCFClient.GetOrgByGuidArgsForCall(1)).To(Equal("app3-org-guid"))
+			Expect(fakeClient.GetOrgByGuidCallCount()).To(Equal(2))
+			Expect(fakeClient.GetOrgByGuidArgsForCall(0)).To(Equal("app1-org-guid"))
+			Expect(fakeClient.GetOrgByGuidArgsForCall(1)).To(Equal("app3-org-guid"))
 
 			Expect(listOfBindings).To(Equal(expectedBindings))
 		})
@@ -245,11 +245,11 @@ var _ = Describe("BindingFinder", func() {
 		//TODO: add failure cases here
 		Context("when ListService fails", func() {
 			BeforeEach(func() {
-				fakeCFClient.ListServicesByQueryReturns([]cfclient.Service{}, errors.New("listServicesByQueryError"))
+				fakeClient.ListServicesByQueryReturns([]cfclient.Service{}, errors.New("listServicesByQueryError"))
 			})
 
 			It("returns an error", func() {
-				finder := find_bindings.NewBindingFinder(fakeCFClient)
+				finder := find_bindings.NewBindingFinder(fakeClient)
 				_, err := finder.FindBindings(serviceName)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("listServicesByQueryError"))
@@ -258,11 +258,11 @@ var _ = Describe("BindingFinder", func() {
 
 		Context("when ListServicePlan fails", func() {
 			BeforeEach(func() {
-				fakeCFClient.ListServicePlansByQueryReturns([]cfclient.ServicePlan{}, errors.New("listServicePlansByQueryError"))
+				fakeClient.ListServicePlansByQueryReturns([]cfclient.ServicePlan{}, errors.New("listServicePlansByQueryError"))
 			})
 
 			It("returns an error", func() {
-				finder := find_bindings.NewBindingFinder(fakeCFClient)
+				finder := find_bindings.NewBindingFinder(fakeClient)
 				_, err := finder.FindBindings(serviceName)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("listServicePlansByQueryError"))
@@ -271,11 +271,11 @@ var _ = Describe("BindingFinder", func() {
 
 		Context("when ListServiceInstances fails", func() {
 			BeforeEach(func() {
-				fakeCFClient.ListServiceInstancesByQueryReturnsOnCall(0, []cfclient.ServiceInstance{}, errors.New("listServiceInstancesByQueryError"))
+				fakeClient.ListServiceInstancesByQueryReturnsOnCall(0, []cfclient.ServiceInstance{}, errors.New("listServiceInstancesByQueryError"))
 			})
 
 			It("returns an error", func() {
-				finder := find_bindings.NewBindingFinder(fakeCFClient)
+				finder := find_bindings.NewBindingFinder(fakeClient)
 				_, err := finder.FindBindings(serviceName)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("listServiceInstancesByQueryError"))
@@ -284,11 +284,11 @@ var _ = Describe("BindingFinder", func() {
 
 		Context("when ListServiceBindings fails", func() {
 			BeforeEach(func() {
-				fakeCFClient.ListServiceBindingsByQueryReturnsOnCall(0, []cfclient.ServiceBinding{}, errors.New("listServiceBindingsByQueryError"))
+				fakeClient.ListServiceBindingsByQueryReturnsOnCall(0, []cfclient.ServiceBinding{}, errors.New("listServiceBindingsByQueryError"))
 			})
 
 			It("returns an error", func() {
-				finder := find_bindings.NewBindingFinder(fakeCFClient)
+				finder := find_bindings.NewBindingFinder(fakeClient)
 				_, err := finder.FindBindings(serviceName)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("listServiceBindingsByQueryError"))
@@ -297,11 +297,11 @@ var _ = Describe("BindingFinder", func() {
 
 		Context("when ListServiceKeys fails", func() {
 			BeforeEach(func() {
-				fakeCFClient.ListServiceKeysByQueryReturnsOnCall(0, []cfclient.ServiceKey{}, errors.New("listServiceKeysByQueryError"))
+				fakeClient.ListServiceKeysByQueryReturnsOnCall(0, []cfclient.ServiceKey{}, errors.New("listServiceKeysByQueryError"))
 			})
 
 			It("returns an error", func() {
-				finder := find_bindings.NewBindingFinder(fakeCFClient)
+				finder := find_bindings.NewBindingFinder(fakeClient)
 				_, err := finder.FindBindings(serviceName)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("listServiceKeysByQueryError"))
