@@ -32,7 +32,7 @@ var _ = Describe("Plugin Commands", func() {
 		logOutput    *bytes.Buffer
 	)
 
-	const migrateUsage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>`
+	const migrateUsage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>`
 	const findUsage = `Usage: cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 
 	BeforeEach(func() {
@@ -79,6 +79,7 @@ var _ = Describe("Plugin Commands", func() {
 				Expect(opts.DonorInstanceName).To(Equal("some-donor"))
 				Expect(opts.RecipientInstanceName).To(Equal("some-donor-new"))
 				Expect(opts.Cleanup).To(BeTrue())
+				Expect(opts.SkipTLSValidation).To(BeFalse())
 			})
 
 			By("renaming the service instances", func() {
@@ -90,6 +91,21 @@ var _ = Describe("Plugin Commands", func() {
 			})
 
 			Expect(fakeMigrator.CleanupOnErrorCallCount()).To(BeZero())
+		})
+
+		Context("when skip-tls-validation is specified", func() {
+			It("Requests that the data be migrated insecurely", func() {
+				args := []string{
+					"--skip-tls-validation",
+					"some-donor", "some-plan",
+				}
+				Expect(plugin.Migrate(fakeMigrator, args)).To(Succeed())
+
+				opts := fakeMigrator.MigrateDataArgsForCall(0)
+				Expect(opts.SkipTLSValidation).To(
+					BeTrue(),
+					`Expected MigrateOptions to have SkipTLSValidation set to true, but it was false`)
+			})
 		})
 
 		It("returns an error if the donor service instance does not exist", func() {

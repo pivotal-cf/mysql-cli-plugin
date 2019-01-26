@@ -62,6 +62,7 @@ type MigrateOptions struct {
 	DonorInstanceName     string
 	RecipientInstanceName string
 	Cleanup               bool
+	SkipTLSValidation     bool
 }
 
 func (m *Migrator) CheckServiceExists(donorInstanceName string) error {
@@ -140,10 +141,15 @@ func (m *Migrator) MigrateData(opts MigrateOptions) error {
 
 	log.Print("Started to run migration task")
 	command := fmt.Sprintf("migrate %s %s", donorInstanceName, recipientInstanceName)
+
+	if opts.SkipTLSValidation {
+		command = fmt.Sprintf("migrate -skip-tls-validation %s %s", donorInstanceName, recipientInstanceName)
+	}
+
 	if err = m.client.RunTask(m.appName, command); err != nil {
 		log.Printf("Migration failed: %s", err)
 		// Make best effort to retrieve logs in case of failure, but migration
-		// error has priorty over logging errors.
+		// error has priority over logging errors.
 		_ = m.outputMigrationLogs("")
 	} else {
 		log.Print("Migration completed successfully")

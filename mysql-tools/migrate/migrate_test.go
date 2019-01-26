@@ -147,11 +147,11 @@ var _ = Describe("CreateAndConfigureServiceInstance", func() {
 
 var _ = Describe("MigrateData", func() {
 	var (
-		donorName     string
-		recipientName string
-		fakeClient    *migratefakes.FakeClient
-		fakeUnpacker  *migratefakes.FakeUnpacker
-		migrator      *Migrator
+		donorName      string
+		recipientName  string
+		fakeClient     *migratefakes.FakeClient
+		fakeUnpacker   *migratefakes.FakeUnpacker
+		migrator       *Migrator
 		migrateOptions MigrateOptions
 	)
 
@@ -255,6 +255,24 @@ var _ = Describe("MigrateData", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(fakeClient.DeleteAppCallCount()).To(BeZero())
 			})
+		})
+
+		Context("when told not to validate TLS", func() {
+			BeforeEach(func() {
+				migrateOptions.SkipTLSValidation = true
+			})
+
+			It("sets -skip-tls-validation when running the migrate task", func() {
+				err := migrator.MigrateData(migrateOptions)
+
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(fakeClient.RunTaskCallCount()).To(Equal(1))
+				_, command := fakeClient.RunTaskArgsForCall(0)
+				Expect(command).
+					To(MatchRegexp(`^migrate -skip-tls-validation %s %s$`, donorName, recipientName))
+			})
+
 		})
 	})
 })
