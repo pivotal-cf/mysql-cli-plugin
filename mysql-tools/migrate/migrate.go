@@ -40,11 +40,12 @@ type Client interface {
 	StartApp(appName string) error
 }
 
-type unpacker interface {
+//go:generate counterfeiter . Unpacker
+type Unpacker interface {
 	Unpack(destDir string) error
 }
 
-func NewMigrator(client Client, unpacker unpacker) *Migrator {
+func NewMigrator(client Client, unpacker Unpacker) *Migrator {
 	return &Migrator{
 		client:   client,
 		unpacker: unpacker,
@@ -54,7 +55,7 @@ func NewMigrator(client Client, unpacker unpacker) *Migrator {
 type Migrator struct {
 	appName  string
 	client   Client
-	unpacker unpacker
+	unpacker Unpacker
 }
 
 func (m *Migrator) CheckServiceExists(donorInstanceName string) error {
