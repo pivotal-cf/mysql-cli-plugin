@@ -17,6 +17,7 @@ import (
 	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"net/url"
+	"strings"
 )
 
 type FindBindingsClient struct {
@@ -113,10 +114,12 @@ func (c *FindBindingsClient) lazyInitializeCFClient() error {
 		return err
 	}
 
-	accessToken, err := c.cliConnection.AccessToken()
+	bearToken, err := c.cliConnection.AccessToken()
 	if err != nil {
 		return err
 	}
+
+	tokens := strings.Fields(bearToken)
 
 	sslDisabled, err := c.cliConnection.IsSSLDisabled()
 	if err != nil {
@@ -126,7 +129,7 @@ func (c *FindBindingsClient) lazyInitializeCFClient() error {
 	newClient, err := cfclient.NewClient(&cfclient.Config{
 		ApiAddress:        apiEndpoint,
 		SkipSslValidation: sslDisabled,
-		Token:             accessToken,
+		Token:             tokens[1],
 	})
 
 	if err != nil {
