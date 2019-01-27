@@ -1,6 +1,5 @@
 mysql-v2-cli-plugin
 mysql-cli-plugin
-*.sql
 .idea/
 *-packr.go
 .DS_Store

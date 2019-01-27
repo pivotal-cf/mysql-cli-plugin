@@ -15,8 +15,8 @@ package main_test
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/fsouza/go-dockerclient"
 	. "github.com/onsi/ginkgo"
@@ -30,10 +30,10 @@ const dockerVcapServicesTemplate = `
     {
       "binding_name": null,
       "credentials": {
-        "hostname": "127.0.0.1",
-        "name": "mysql",
+        "hostname": %q,
+        "name": "service_instance_db",
         "password": "",
-        "port": %s,
+        "port": 3306,
         "username": "root"
       },
       "instance_name": "source",
@@ -42,13 +42,13 @@ const dockerVcapServicesTemplate = `
     },
     {
       "credentials": {
-        "hostname": "127.0.0.1",
+        "hostname": %q,
         "name": "service_instance_db",
         "password": "",
-        "port": %s,
+        "port": 3306,
         "tls": {
           "cert": {
-            "ca": "-----BEGIN CERTIFICATE-----\nMIIDCzCCAfOgAwIBAgIUFmlOKyBuBXmtx5vHgAGLSCYts6UwDQYJKoZIhvcNAQEL\nBQAwFTETMBEGA1UEAwwKcHhjX3Rsc19jYTAeFw0xOTAxMjMxOTQwMjdaFw0yMDAx\nMjMxOTQwMjdaMBUxEzARBgNVBAMMCnB4Y190bHNfY2EwggEiMA0GCSqGSIb3DQEB\nAQUAA4IBDwAwggEKAoIBAQDkXKOPl9Fn+igx99aNia4Gvsx2IXgcyYLFUH56iZEE\nn9V3gVS+5p5X4ByOphVxv+UemWcJCvlAyK7T9KKnwXDgUGunYbSqHQXv19eTXeKn\nA2/TkQ/7rXQWkakjo7mtLgJJ7BOtNHw/MDXgEbKM7ifkQLt0zFHmFEzfYrh7VNab\ncZs19IIRFb6BB9oYHQs6oslHQ79Xz6l3gjgyPFlpG/b3RLYqlsKYuK5mxQ/hkCaM\nh13VBITlsdowJiu/9eIn9eeDlxwQBg9VTN/PdQJ41t/7Hw2MpYxTHd04FK7AlGm0\nKLMRM7rRevuxiHXafKNx9tIJsScULOCJ0ssxfCl/Gc1JAgMBAAGjUzBRMB0GA1Ud\nDgQWBBSpWZwmhWpg3p0iqQODgA7EwlXENzAfBgNVHSMEGDAWgBSpWZwmhWpg3p0i\nqQODgA7EwlXENzAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQA5\nx+ajEBKBwKylaCf1Lckug6YC5mkmHTfyzdOM95zH5Yp4Xh9oUxRbuGYq2mPv4SbN\nmN54Xf54g357AZuPF4xVX1LwbMNp0El+OXMUZoUncdDKewJaiINMqwYBeUwnE0Q5\nrP+jiGmBd9BZ2IJy9wi+a7JlRiRScSbDiQovCSv+T5AJd8+59x061Jc3mdxmWKtm\nyb1nit5DcDYFuXccvPkp0+L9EJ5mHH4TLXtq6Tf71WB8Tq1HP+/wA5XM5YJmpaAG\no2NdO8TonvPQbBjb3ntE7Kxlh7nT+PG9Mxa5CUch7fXmY7fFJL0ngQIDrBb7fzGY\nQl+cYjMSL4NsMjegQzQp\n-----END CERTIFICATE-----\n"
+            "ca": %q
           }
         },
         "username": "root"
@@ -63,43 +63,149 @@ const dockerVcapServicesTemplate = `
 
 var _ = Describe("Migrate Task", func() {
 	var (
-		db             *sql.DB
-		mysqlContainer *docker.Container
-		vcapServices   string
+		sourceDB        *sql.DB
+		destDB          *sql.DB
+		sourceContainer *docker.Container
+		destContainer   *docker.Container
+		vcapServices    string
+		sourceChecksums string
 	)
 
 	BeforeEach(func() {
 		var err error
-		mysqlContainer, err = createMySQLContainer("mysql")
+		fixturesPath, err := filepath.Abs("fixtures")
 		Expect(err).NotTo(HaveOccurred())
 
-		mysqlPort := dockertest.HostPort(mySQLDockerPort, mysqlContainer)
-		vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, mysqlPort, mysqlPort)
-		db, err = dockertest.ContainerDBConnection(mysqlContainer, mySQLDockerPort)
+		sourceContainer, err = createMySQLContainer(
+			"mysql.source",
+			dockertest.AddEnvVars(`MYSQL_DATABASE=service_instance_db`),
+			dockertest.AddBinds(
+				filepath.Join(fixturesPath, "sakila.sql:/docker-entrypoint-initdb.d/sakila.sql"),
+			),
+		)
 		Expect(err).NotTo(HaveOccurred())
 
-		Eventually(db.Ping, "1m", "1s").Should(Succeed(),
+		destContainer, err = createMySQLContainer(
+			"mysql.dest",
+			dockertest.AddEnvVars(`MYSQL_DATABASE=service_instance_db`),
+		)
+		Expect(err).NotTo(HaveOccurred())
+
+		vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "mysql.source."+sessionID, "mysql.dest."+sessionID, "")
+
+		sourceDB, err = dockertest.ContainerDBConnection(sourceContainer, mySQLDockerPort)
+		Expect(err).NotTo(HaveOccurred())
+		destDB, err = dockertest.ContainerDBConnection(destContainer, mySQLDockerPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(sourceDB.Ping, "1m", "1s").Should(Succeed(),
+			`Expected MySQL instance to be reachable after 1m, but it was not`,
+		)
+		Eventually(destDB.Ping, "1m", "1s").Should(Succeed(),
 			`Expected MySQL instance to be reachable after 1m, but it was not`,
 		)
 
-		_, err = db.Exec(`CREATE DATABASE foo`)
-		Expect(err).NotTo(HaveOccurred())
-
-		_, err = db.Exec(`CREATE DATABASE service_instance_db`)
+		sourceChecksums, err = schemaChecksum(sourceDB, "sakila")
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		if mysqlContainer != nil {
-			dockertest.RemoveContainer(dockerClient, mysqlContainer)
+		if sourceContainer != nil {
+			dockertest.RemoveContainer(dockerClient, sourceContainer)
+		}
+
+		if destContainer != nil {
+			dockertest.RemoveContainer(dockerClient, destContainer)
 		}
 	})
 
-	It("accepts a --skip-tls-validation option", func() {
-		cmd := exec.Command(migrateTaskBinPath, "-skip-tls-validation", "source", "dest")
-		cmd.Env = append(os.Environ(), "VCAP_SERVICES="+vcapServices)
-		cmd.Stdout = GinkgoWriter
-		cmd.Stderr = GinkgoWriter
-		Expect(cmd.Run()).To(Succeed())
+	It("migrates data between the source and destination", func() {
+		exitStatus, err := runCommand(
+			"migrate.command",
+			dockertest.AddBinds(
+				migrateTaskBinPath+":/usr/local/bin/migrate",
+			),
+			dockertest.WithCmd("migrate", "source", "dest"),
+			dockertest.AddEnvVars("VCAP_SERVICES="+vcapServices),
+		)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exitStatus).To(Equal(0))
+
+		destChecksums, err := schemaChecksum(destDB, "sakila")
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(destChecksums).To(Equal(sourceChecksums))
+	})
+
+	Context("when a TLS CA certificate is provided", func() {
+		BeforeEach(func() {
+			vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "mysql.source."+sessionID, "mysql.dest."+sessionID, "some-ca-cert")
+		})
+
+		It("accepts a --skip-tls-validation option", func() {
+			exitStatus, err := runCommand(
+				"migrate.command",
+				dockertest.AddBinds(
+					migrateTaskBinPath+":/usr/local/bin/migrate",
+				),
+				dockertest.WithCmd("migrate", "-skip-tls-validation", "source", "dest"),
+				dockertest.AddEnvVars("VCAP_SERVICES="+vcapServices),
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exitStatus).To(Equal(0))
+
+			destChecksums, err := schemaChecksum(destDB, "sakila")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(destChecksums).To(Equal(sourceChecksums))
+		})
 	})
 })
+
+func schemaChecksum(db *sql.DB, schemaName string) (string, error) {
+	rows, err := db.Query(`SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ?`, schemaName)
+	if err != nil {
+		return "", err
+	}
+
+	var result []string
+
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			return "", err
+		}
+		checksum, err := tableChecksum(db, schemaName, tableName)
+		if err != nil {
+			return "", err
+		}
+		result = append(result, checksum)
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	return strings.Join(result, "\n"), nil
+}
+
+func tableChecksum(db *sql.DB, schemaName, tableName string) (string, error) {
+	var (
+		unused   string
+		checksum sql.NullString
+	)
+
+	if err := db.QueryRow(`CHECKSUM TABLE `+schemaName+"."+tableName).Scan(&unused, &checksum); err != nil {
+		return "", err
+	}
+
+	result := schemaName + "." + tableName + ":"
+	if checksum.Valid {
+		result += checksum.String
+	} else {
+		// MySQL VIEWs will always generate a NULL checksum
+		result += "N/A"
+	}
+
+	return result, nil
+}
