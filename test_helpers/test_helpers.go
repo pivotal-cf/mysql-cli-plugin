@@ -359,20 +359,19 @@ type album struct {
 	AlbumId     string `json:"albumId"`
 }
 
-func OpenDatabaseTunnelToApp(port int, appName string, serviceKey ServiceKey) context.CancelFunc {
-
+func OpenDatabaseTunnelToApp(appName string, serviceKey ServiceKey) (*sql.DB, context.CancelFunc) {
+	port := 63300 + GinkgoParallelNode()
 	tunnelContext, tunnelCancel := context.WithCancel(context.Background())
 	connectionString := fmt.Sprintf("%d:%s:3306", port, serviceKey.Hostname)
 	tunnelCommand := exec.CommandContext(tunnelContext, "cf", "ssh", "--skip-remote-execution", "-L", connectionString, appName)
 	err := tunnelCommand.Start()
 	Expect(err).ToNot(HaveOccurred())
 
-	waitForTunnel(port, serviceKey)
-
-	return tunnelCancel
+	db := waitForTunnel(port, serviceKey)
+	return db, tunnelCancel
 }
 
-func waitForTunnel(port int, serviceKey ServiceKey) {
+func waitForTunnel(port int, serviceKey ServiceKey) *sql.DB {
 	connectionString := fmt.Sprintf(
 		"%s:%s@tcp(127.0.0.1:%d)/%s?interpolateParams=true",
 		serviceKey.Username,
@@ -383,7 +382,6 @@ func waitForTunnel(port int, serviceKey ServiceKey) {
 
 	db, err := sql.Open("mysql", connectionString)
 	Expect(err).NotTo(HaveOccurred())
-	defer db.Close()
 
 	Eventually(func() error {
 		err = db.Ping()
@@ -392,4 +390,6 @@ func waitForTunnel(port int, serviceKey ServiceKey) {
 		}
 		return err
 	}, "2m", "5s").Should(Not(HaveOccurred()))
+
+	return db
 }

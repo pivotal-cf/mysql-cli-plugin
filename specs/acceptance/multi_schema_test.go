@@ -13,7 +13,6 @@
 package acceptance
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"os/exec"
@@ -141,6 +140,8 @@ var _ = Describe("Migrate Integration Tests v2", func() {
 })
 
 func createTestDb(sourceInstance, dbName string) {
+	var err error
+
 	appName := generator.PrefixedRandomName("MYSQL", "MIGRATION_TEST")
 	sourceServiceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
 
@@ -156,17 +157,9 @@ func createTestDb(sourceInstance, dbName string) {
 	serviceKeyCreds := test_helpers.GetServiceKey(sourceInstance, sourceServiceKey)
 	defer test_helpers.DeleteServiceKey(sourceInstance, sourceServiceKey)
 
-	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
+	db, closeTunnel := test_helpers.OpenDatabaseTunnelToApp(appName, serviceKeyCreds)
 	defer closeTunnel()
-
-	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63308)/%s",
-		serviceKeyCreds.Username,
-		serviceKeyCreds.Password,
-		serviceKeyCreds.Name,
-	)
-	db, err := sql.Open("mysql", dsn)
 	defer db.Close()
-	Expect(err).NotTo(HaveOccurred())
 
 	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 	Expect(err).NotTo(HaveOccurred())
@@ -188,19 +181,9 @@ func dbExists(sourceInstance, dbName string) (bool, error) {
 	serviceKeyCreds := test_helpers.GetServiceKey(sourceInstance, sourceServiceKey)
 	defer test_helpers.DeleteServiceKey(sourceInstance, sourceServiceKey)
 
-	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
+	db, closeTunnel := test_helpers.OpenDatabaseTunnelToApp(appName, serviceKeyCreds)
 	defer closeTunnel()
-
-	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63308)/%s",
-		serviceKeyCreds.Username,
-		serviceKeyCreds.Password,
-		serviceKeyCreds.Name,
-	)
-	db, err := sql.Open("mysql", dsn)
 	defer db.Close()
-	if err != nil {
-		return false, err
-	}
 
 	result, err := db.Query(fmt.Sprintf("SHOW DATABASES LIKE '%s'", dbName))
 	if err != nil {

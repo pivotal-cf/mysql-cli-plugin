@@ -13,7 +13,6 @@
 package acceptance
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -263,6 +262,8 @@ var _ = Describe("Migrate Integration Tests", func() {
 })
 
 func setupStoredCodeFixtures(instanceName string) {
+	var err error
+
 	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
 	serviceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
 
@@ -278,18 +279,9 @@ func setupStoredCodeFixtures(instanceName string) {
 	serviceKeyCreds := test_helpers.GetServiceKey(instanceName, serviceKey)
 	defer test_helpers.DeleteServiceKey(instanceName, serviceKey)
 
-	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63308, appName, serviceKeyCreds)
+	db, closeTunnel := test_helpers.OpenDatabaseTunnelToApp(appName, serviceKeyCreds)
 	defer closeTunnel()
-
-	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63308)/%s",
-		serviceKeyCreds.Username,
-		serviceKeyCreds.Password,
-		serviceKeyCreds.Name,
-	)
-
-	db, err := sql.Open("mysql", dsn)
 	defer db.Close()
-	Expect(err).NotTo(HaveOccurred())
 
 	_, err = db.Exec("CREATE SQL SECURITY INVOKER VIEW migrate_invoker_view AS SELECT 1")
 	Expect(err).NotTo(HaveOccurred())
@@ -326,18 +318,9 @@ func validateMigratedStoredCode(instanceName string) {
 	serviceKeyCreds := test_helpers.GetServiceKey(instanceName, serviceKey)
 	defer test_helpers.DeleteServiceKey(instanceName, serviceKey)
 
-	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63309, appName, serviceKeyCreds)
+	db, closeTunnel := test_helpers.OpenDatabaseTunnelToApp(appName, serviceKeyCreds)
 	defer closeTunnel()
-
-	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63309)/%s",
-		serviceKeyCreds.Username,
-		serviceKeyCreds.Password,
-		serviceKeyCreds.Name,
-	)
-
-	db, err := sql.Open("mysql", dsn)
 	defer db.Close()
-	Expect(err).NotTo(HaveOccurred())
 
 	var routineCount int
 	routineCountSQL := `SELECT COUNT(*) FROM information_schema.routines WHERE ROUTINE_SCHEMA = 'service_instance_db'`
@@ -355,6 +338,8 @@ func validateMigratedStoredCode(instanceName string) {
 }
 
 func createInvalidMigrationState(instanceName string) {
+	var err error
+
 	appName := generator.PrefixedRandomName("MYSQL", "INVALID_MIGRATION")
 	serviceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
 
@@ -370,18 +355,9 @@ func createInvalidMigrationState(instanceName string) {
 	serviceKeyCreds := test_helpers.GetServiceKey(instanceName, serviceKey)
 	defer test_helpers.DeleteServiceKey(instanceName, serviceKey)
 
-	closeTunnel := test_helpers.OpenDatabaseTunnelToApp(63310, appName, serviceKeyCreds)
+	db, closeTunnel := test_helpers.OpenDatabaseTunnelToApp(appName, serviceKeyCreds)
 	defer closeTunnel()
-
-	dsn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:63310)/%s",
-		serviceKeyCreds.Username,
-		serviceKeyCreds.Password,
-		serviceKeyCreds.Name,
-	)
-
-	db, err := sql.Open("mysql", dsn)
 	defer db.Close()
-	Expect(err).NotTo(HaveOccurred())
 
 	_, err = db.Exec("CREATE TABLE migrate_fail (id VARCHAR(1))")
 	Expect(err).NotTo(HaveOccurred())
