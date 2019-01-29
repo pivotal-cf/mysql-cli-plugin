@@ -80,7 +80,7 @@ var _ = Describe("Migrate Task", func() {
 			"mysql.source",
 			dockertest.AddEnvVars(`MYSQL_DATABASE=service_instance_db`),
 			dockertest.AddBinds(
-				filepath.Join(fixturesPath, "sakila.sql:/docker-entrypoint-initdb.d/sakila.sql"),
+				filepath.Join(fixturesPath, "sakila-schema.sql:/docker-entrypoint-initdb.d/sakila-schema.sql"),
 			),
 		)
 		Expect(err).NotTo(HaveOccurred())
