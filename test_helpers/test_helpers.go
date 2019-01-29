@@ -188,6 +188,8 @@ func StartApp(appName string) {
 }
 
 func DeleteApp(appName string) {
+	cf.Cf("app", appName, "--guid").Wait(cfCommandTimeout)
+	cf.Cf("logs", appName, "--recent").Wait(cfCommandTimeout)
 	ExecuteCfCmd("delete", appName, "-f")
 }
 
