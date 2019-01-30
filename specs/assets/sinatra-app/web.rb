@@ -28,7 +28,7 @@ class Dbweb < Sinatra::Base
         # generate random value
         dbName =  "db_" + SecureRandom.hex
         MYSQL_CLIENT.query "create database #{dbName}"
-        MYSQL_CLIENT.query "create table #{dbName}.t1 (data char(40))"
+        MYSQL_CLIENT.query "create table #{dbName}.t1 (data char(40), PRIMARY KEY(data))"
         MYSQL_CLIENT.query "insert into #{dbName}.t1 values(SHA1(RAND()))"
         dbValue = MYSQL_CLIENT.query "select * from #{dbName}.t1 limit 1"
 
