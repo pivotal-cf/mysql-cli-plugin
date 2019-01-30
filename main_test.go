@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
+	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>
 `
 	findBindingUsage = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
 `
@@ -32,7 +32,7 @@ const (
    mysql-tools - Plugin to migrate mysql instances
 
 USAGE:
-   cf mysql-tools migrate [-h] [--no-cleanup] <source-service-instance> <p.mysql-plan-type>
+   cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>
    cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
    cf mysql-tools version
 `
