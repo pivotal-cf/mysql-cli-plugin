@@ -47,7 +47,7 @@ var _ = Describe("Skip TLS Validation", func() {
 			test_helpers.PushApp(sinatraAppName, "../assets/sinatra-app")
 
 			sourceInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_SOURCE")
-			test_helpers.CreateService(os.Getenv("DONOR_SERVICE_NAME"), os.Getenv("DONOR_PLAN_NAME"), sourceInstance)
+			test_helpers.CreateService(os.Getenv("V2_DONOR_SERVICE_NAME"), os.Getenv("V2_DONOR_PLAN_NAME"), sourceInstance)
 			destInstance = sourceInstance + "-new"
 
 			test_helpers.WaitForService(sourceInstance, `[Ss]tatus:\s+create succeeded`)
