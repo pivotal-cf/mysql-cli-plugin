@@ -21,6 +21,7 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal/mysql-test-utils/dockertest"
 )
 
@@ -120,7 +121,7 @@ var _ = Describe("Migrate Task", func() {
 	})
 
 	It("migrates data between the source and destination", func() {
-		exitStatus, err := runCommand(
+		_, exitStatus, err := runCommand(
 			"migrate.command",
 			dockertest.AddBinds(
 				migrateTaskBinPath+":/usr/local/bin/migrate",
@@ -137,13 +138,34 @@ var _ = Describe("Migrate Task", func() {
 		Expect(destChecksums).To(Equal(sourceChecksums))
 	})
 
+	Context("when resolving mysql host keep failing", func() {
+		BeforeEach(func() {
+			vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "nonexist-source", "nonexist-destination", "")
+		})
+
+		It("Validate the host and print out failure message", func() {
+			output, exitStatus, err := runCommand(
+				"migrate.command",
+				dockertest.AddBinds(
+					migrateTaskBinPath+":/usr/local/bin/migrate",
+				),
+				dockertest.WithCmd("migrate", "source", "dest"),
+				dockertest.AddEnvVars("VCAP_SERVICES="+vcapServices),
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exitStatus).To(Equal(1))
+			Eventually(output).Should(gbytes.Say(`Failed to resolve source host "nonexist-source": lookup nonexist-source.*: no such host`))
+			Eventually(output).Should(gbytes.Say(`Failed to resolve destination host "nonexist-destination": lookup nonexist-destination.*: no such host`))
+		})
+	})
+
 	Context("when a TLS CA certificate is provided", func() {
 		BeforeEach(func() {
 			vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "mysql.source."+sessionID, "mysql.dest."+sessionID, "some-ca-cert")
 		})
 
 		It("accepts a --skip-tls-validation option", func() {
-			exitStatus, err := runCommand(
+			_, exitStatus, err := runCommand(
 				"migrate.command",
 				dockertest.AddBinds(
 					migrateTaskBinPath+":/usr/local/bin/migrate",

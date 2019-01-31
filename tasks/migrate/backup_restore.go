@@ -14,8 +14,10 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 	"github.com/pkg/errors"
@@ -74,6 +76,29 @@ func MySQLCmd(credentials Credentials) *exec.Cmd {
 	cmd.Stdout = os.Stdout
 
 	return cmd
+}
+
+func ValidateHost(credentials Credentials, timeout time.Duration) ([]string, error) {
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timer.C:
+			return nil, errors.New("timeout")
+		case <-ticker.C:
+			addrs, err := net.LookupHost(credentials.Hostname)
+			if err == nil {
+				return addrs, nil
+			}
+
+			if e, ok := err.(*net.DNSError); !ok || !e.Temporary() {
+				return nil, err
+			}
+		}
+	}
 }
 
 func ReplaceDefinerCmd() *exec.Cmd {

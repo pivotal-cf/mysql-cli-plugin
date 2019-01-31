@@ -13,6 +13,7 @@
 package main_test
 
 import (
+	"io"
 	"log"
 	"os"
 	"testing"
@@ -23,6 +24,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	. "github.com/pivotal/mysql-test-utils/dockertest"
 )
@@ -103,7 +105,7 @@ func createMySQLContainer(name string, extraOptions ...ContainerOption) (*docker
 	)
 }
 
-func runCommand(containerName string, extraOptions ...ContainerOption) (int, error) {
+func runCommand(containerName string, extraOptions ...ContainerOption) (*gbytes.Buffer, int, error) {
 	options := []ContainerOption{
 		AddExposedPorts(mySQLDockerPort),
 		WithImage(mysqlDockerImage),
@@ -118,15 +120,17 @@ func runCommand(containerName string, extraOptions ...ContainerOption) (int, err
 		options...,
 	)
 	if err != nil {
-		return -1, err
+		return nil, -1, err
 	}
 	defer RemoveContainer(dockerClient, container)
+
+	output := gbytes.NewBuffer()
 
 	go func() {
 		err := dockerClient.AttachToContainer(docker.AttachToContainerOptions{
 			Container:    container.ID,
-			OutputStream: GinkgoWriter,
-			ErrorStream:  GinkgoWriter,
+			OutputStream: io.MultiWriter(output, GinkgoWriter),
+			ErrorStream:  io.MultiWriter(output, GinkgoWriter),
 			Stream:       true,
 			Stdout:       true,
 			Stderr:       true,
@@ -136,5 +140,7 @@ func runCommand(containerName string, extraOptions ...ContainerOption) (int, err
 		}
 	}()
 
-	return dockerClient.WaitContainer(container.ID)
+	exitStatus, err := dockerClient.WaitContainer(container.ID)
+
+	return output, exitStatus, err
 }

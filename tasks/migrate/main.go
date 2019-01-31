@@ -17,6 +17,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
@@ -54,6 +55,19 @@ func main() {
 		log.Fatalf("Failed to lookup destination credentials: %v", err)
 	}
 
+	sourceAddrs, err := ValidateHost(sourceCredentials, time.Minute)
+	if err != nil {
+		log.Printf("Failed to resolve source host %q: %v", sourceCredentials.Hostname, err)
+	} else {
+		log.Printf("Resolve source host %q to %v", sourceCredentials.Hostname, sourceAddrs)
+	}
+
+	destAddrs, err := ValidateHost(destCredentials, time.Minute)
+	if err != nil {
+		log.Printf("Failed to resolve destination host %q: %v", destCredentials.Hostname, err)
+	} else {
+		log.Printf("Resolve destination host %q to %v", destCredentials.Hostname, destAddrs)
+	}
 	sourceCredentials.SkipTLSValidation = skipTLSValidation
 	destCredentials.SkipTLSValidation = skipTLSValidation
 
