@@ -94,7 +94,7 @@ var _ = Describe("Skip TLS Validation", func() {
 			})
 
 			By("Migrating data using the migrate command with skip-tls-validation", func() {
-				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destPlan, "--skip-tls-validation")
+				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "-p", destPlan, "--skip-tls-validation")
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, "20m", "1s").Should(gexec.Exit(0))

@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>
+	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> -p <p.mysql-plan-type>
 `
 	findBindingUsage = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
 `
@@ -32,7 +32,7 @@ const (
    mysql-tools - Plugin to migrate mysql instances
 
 USAGE:
-   cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>
+   cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> -p <p.mysql-plan-type>
    cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
    cf mysql-tools version
 `
@@ -87,7 +87,7 @@ var _ = Describe("MysqlCliPlugin", func() {
 
 		Expect(string(session.Err.Contents())).To(Equal(
 			"Usage: " + migrateUsage +
-				"\nthe required arguments `<source-service-instance>` and `<p.mysql-plan-type>` were not provided\n"))
+				"\nthe required flag `-p, --plan' was not specified\n"))
 	})
 
 	It("find-binding requires exactly 1 arguments", func() {
