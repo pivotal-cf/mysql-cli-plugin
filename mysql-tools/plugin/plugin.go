@@ -159,7 +159,8 @@ func Migrate(migrator Migrator, args []string) error {
 		} `positional-args:"yes" required:"yes"`
 		NoCleanup         bool `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
 		SkipTLSValidation bool `long:"skip-tls-validation" short:"k" description:"Skip certificate validation of the MySQL server certificate. Not recommended!"`
-		PlanName string `short:"p" long:"plan" description:"Service plan type" required:"yes"`
+		PlanName string `short:"p" long:"plan" description:"Service plan name"`
+		ServiceName string `short:"s" long:"service" description:"Existing service name"`
 	}
 
 	parser := flags.NewParser(&opts, flags.None)
@@ -173,12 +174,19 @@ func Migrate(migrator Migrator, args []string) error {
 		}
 		return errors.Errorf("Usage: %s\n\n%s", migrateUsage, msg)
 	}
+
+
 	donorInstanceName := opts.Args.Source
 	tempRecipientInstanceName := donorInstanceName + "-new"
 	destPlan := opts.PlanName
+	destService := opts.ServiceName
 	cleanup := !opts.NoCleanup
 	skipTLSValidation := opts.SkipTLSValidation
 
+	if ((destPlan == "" && destService == "") || (destPlan != "" && destService != "")) {
+		msg := "You must specify either the plan name OR the service name"
+		return errors.Errorf("Usage: %s\n\n%s", migrateUsage, msg)
+	}
 	if err := migrator.CheckServiceExists(donorInstanceName); err != nil {
 		return err
 	}

@@ -46,52 +46,190 @@ var _ = Describe("Plugin Commands", func() {
 	})
 
 	Context("Migrate", func() {
-		It("migrates data from a source service instance to a newly created instance", func() {
-			args := []string{
-				"some-donor", "-p", "some-plan",
-			}
-			Expect(plugin.Migrate(fakeMigrator, args)).To(Succeed())
+		Context("when a plan name is specified", func(){
+			It("migrates data from a source service instance to a newly created instance", func() {
+				args := []string{
+					"some-donor", "-p", "some-plan",
+				}
+				Expect(plugin.Migrate(fakeMigrator, args)).To(Succeed())
 
-			By("log a message that we don't migrate triggers, routines and events", func() {
-				Expect(logOutput.String()).To(ContainSubstring(`Warning: The mysql-tools migrate command will not migrate any triggers, routines or events`))
+				By("log a message that we don't migrate triggers, routines and events", func() {
+					Expect(logOutput.String()).To(ContainSubstring(`Warning: The mysql-tools migrate command will not migrate any triggers, routines or events`))
+				})
+
+				By("checking that donor exists", func() {
+					Expect(fakeMigrator.CheckServiceExistsCallCount()).
+						To(Equal(1))
+					Expect(fakeMigrator.CheckServiceExistsArgsForCall(0)).
+						To(Equal("some-donor"))
+				})
+
+				By("creating and configuring a new service instance", func() {
+					Expect(fakeMigrator.CreateAndConfigureServiceInstanceCallCount()).
+						To(Equal(1))
+
+					createdServicePlan, createdServiceInstanceName := fakeMigrator.CreateAndConfigureServiceInstanceArgsForCall(0)
+					Expect(createdServicePlan).To(Equal("some-plan"))
+					Expect(createdServiceInstanceName).
+						To(Equal("some-donor-new"))
+				})
+
+				By("migrating data from the donor to the recipient", func() {
+					Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
+					opts := fakeMigrator.MigrateDataArgsForCall(0)
+					Expect(opts.DonorInstanceName).To(Equal("some-donor"))
+					Expect(opts.RecipientInstanceName).To(Equal("some-donor-new"))
+					Expect(opts.Cleanup).To(BeTrue())
+					Expect(opts.SkipTLSValidation).To(BeFalse())
+				})
+
+				By("renaming the service instances", func() {
+					Expect(fakeMigrator.RenameServiceInstancesCallCount()).
+						To(Equal(1))
+					donorInstance, recipientName := fakeMigrator.RenameServiceInstancesArgsForCall(0)
+					Expect(donorInstance).To(Equal("some-donor"))
+					Expect(recipientName).To(Equal("some-donor-new"))
+				})
+
+				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(BeZero())
 			})
 
-			By("checking that donor exists", func() {
-				Expect(fakeMigrator.CheckServiceExistsCallCount()).
-					To(Equal(1))
-				Expect(fakeMigrator.CheckServiceExistsArgsForCall(0)).
-					To(Equal("some-donor"))
+			Context("when creating a service instance fails", func() {
+				BeforeEach(func() {
+					fakeMigrator.CreateAndConfigureServiceInstanceReturns(errors.New("some-cf-error"))
+				})
+
+				It("returns an error and attempts to delete the new service instance", func() {
+					args := []string{"some-donor", "-p", "some-plan"}
+					err := plugin.Migrate(fakeMigrator, args)
+					Expect(err).To(MatchError(MatchRegexp("error creating service instance: some-cf-error. Attempting to clean up service some-donor-new")))
+					Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(1))
+				})
+
+				It("returns an error and doesn't clean up when the --no-cleanup flag is passed", func() {
+					args := []string{
+						"some-donor", "-p", "some-plan", "--no-cleanup",
+					}
+
+					err := plugin.Migrate(fakeMigrator, args)
+					Expect(err).To(MatchError("error creating service instance: some-cf-error. Not cleaning up service some-donor-new"))
+					Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
+				})
 			})
 
-			By("creating and configuring a new service instance", func() {
-				Expect(fakeMigrator.CreateAndConfigureServiceInstanceCallCount()).
-					To(Equal(1))
+			Context("when migrating data fails", func() {
+				BeforeEach(func() {
+					fakeMigrator.MigrateDataReturns(errors.New("some-cf-error"))
+				})
 
-				createdServicePlan, createdServiceInstanceName := fakeMigrator.CreateAndConfigureServiceInstanceArgsForCall(0)
-				Expect(createdServicePlan).To(Equal("some-plan"))
-				Expect(createdServiceInstanceName).
-					To(Equal("some-donor-new"))
+				It("returns an error and attempts to delete the new service instance", func() {
+					args := []string{"some-donor", "-p", "some-plan"}
+					err := plugin.Migrate(fakeMigrator, args)
+					Expect(err).To(MatchError(MatchRegexp("error migrating data: some-cf-error. Attempting to clean up service some-donor-new")))
+					opts := fakeMigrator.MigrateDataArgsForCall(0)
+					Expect(opts.Cleanup).To(BeTrue())
+					Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(1))
+				})
+
+				It("returns an error and doesn't clean up when the --no-cleanup flag is passed", func() {
+					args := []string{
+						"some-donor", "-p", "some-plan", "--no-cleanup",
+					}
+
+					err := plugin.Migrate(fakeMigrator, args)
+
+					Expect(err).To(MatchError("error migrating data: some-cf-error. Not cleaning up service some-donor-new"))
+					Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
+					opts := fakeMigrator.MigrateDataArgsForCall(0)
+					Expect(opts.Cleanup).To(BeFalse())
+					Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
+				})
 			})
 
-			By("migrating data from the donor to the recipient", func() {
-				Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
-				opts := fakeMigrator.MigrateDataArgsForCall(0)
-				Expect(opts.DonorInstanceName).To(Equal("some-donor"))
-				Expect(opts.RecipientInstanceName).To(Equal("some-donor-new"))
-				Expect(opts.Cleanup).To(BeTrue())
-				Expect(opts.SkipTLSValidation).To(BeFalse())
-			})
+			Context("when renaming the service instances fail", func() {
+				BeforeEach(func() {
+					fakeMigrator.RenameServiceInstancesReturns(errors.New("some-cf-error"))
+				})
 
-			By("renaming the service instances", func() {
-				Expect(fakeMigrator.RenameServiceInstancesCallCount()).
-					To(Equal(1))
-				donorInstance, recipientName := fakeMigrator.RenameServiceInstancesArgsForCall(0)
-				Expect(donorInstance).To(Equal("some-donor"))
-				Expect(recipientName).To(Equal("some-donor-new"))
+				It("returns an error and doesn't clean up regardless of --no-cleanup flag", func() {
+					args := []string{"some-donor", "-p", "some-plan"}
+					err := plugin.Migrate(fakeMigrator, args)
+					Expect(err).To(MatchError("some-cf-error"))
+					Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
+					opts := fakeMigrator.MigrateDataArgsForCall(0)
+					Expect(opts.Cleanup).To(BeTrue())
+					Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
+				})
 			})
-
-			Expect(fakeMigrator.CleanupOnErrorCallCount()).To(BeZero())
 		})
+
+
+		Context("when a service name is specified", func(){
+			It("migrates data from a source service instance to a newly created instance", func() {
+				args := []string{
+					"some-donor", "-s", "some-service",
+				}
+				Expect(plugin.Migrate(fakeMigrator, args)).To(Succeed())
+
+				By("logging a message that we don't migrate triggers, routines and events", func() {
+					Expect(logOutput.String()).To(ContainSubstring(`Warning: The mysql-tools migrate command will not migrate any triggers, routines or events`))
+				})
+
+				By("checking that donor exists", func() {
+					Expect(fakeMigrator.CheckServiceExistsCallCount()).
+						To(Equal(1))
+					Expect(fakeMigrator.CheckServiceExistsArgsForCall(0)).
+						To(Equal("some-donor"))
+				})
+
+				By("migrating data from the donor to the recipient", func() {
+					Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
+					opts := fakeMigrator.MigrateDataArgsForCall(0)
+					Expect(opts.DonorInstanceName).To(Equal("some-donor"))
+					Expect(opts.RecipientInstanceName).To(Equal("some-donor-new"))
+					Expect(opts.Cleanup).To(BeTrue())
+					Expect(opts.SkipTLSValidation).To(BeFalse())
+				})
+
+				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(BeZero())
+			})
+
+			Context("when receipiant doesn't exist", func(){
+				//TODO
+			})
+
+			Context("when migrating data fails", func() {
+				BeforeEach(func() {
+					fakeMigrator.MigrateDataReturns(errors.New("some-cf-error"))
+				})
+
+				It("returns an error and attempts to delete the new service instance", func() {
+					args := []string{"some-donor", "-s", "some-service"}
+					err := plugin.Migrate(fakeMigrator, args)
+					Expect(err).To(MatchError(MatchRegexp("error migrating data: some-cf-error. Attempting to clean up service some-donor-new")))
+					opts := fakeMigrator.MigrateDataArgsForCall(0)
+					Expect(opts.Cleanup).To(BeTrue())
+					Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(1))
+				})
+
+				It("returns an error and doesn't clean up when the --no-cleanup flag is passed", func() {
+					args := []string{
+						"some-donor", "-s", "some-service", "--no-cleanup",
+					}
+
+					err := plugin.Migrate(fakeMigrator, args)
+
+					Expect(err).To(MatchError("error migrating data: some-cf-error. Not cleaning up service some-donor-new"))
+					Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
+					opts := fakeMigrator.MigrateDataArgsForCall(0)
+					Expect(opts.Cleanup).To(BeFalse())
+					Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
+				})
+			})
+
+		})
+
+
 
 		Context("when skip-tls-validation is specified", func() {
 			It("Requests that the data be migrated insecurely", func() {
@@ -120,7 +258,7 @@ var _ = Describe("Plugin Commands", func() {
 		It("returns an error if not enough args are passed", func() {
 			args := []string{"just-a-source"}
 			err := plugin.Migrate(fakeMigrator, args)
-			Expect(err).To(MatchError(migrateUsage + "\n\nthe required flag `-p, --plan' was not specified"))
+			Expect(err).To(MatchError(migrateUsage + "\n\nYou must specify either the plan name OR the service name"))
 		})
 
 		It("returns an error if too many args are passed", func() {
@@ -135,73 +273,7 @@ var _ = Describe("Plugin Commands", func() {
 			Expect(err).To(MatchError(migrateUsage + "\n\nunknown flag `invalid-flag'"))
 		})
 
-		Context("when creating a service instance fails", func() {
-			BeforeEach(func() {
-				fakeMigrator.CreateAndConfigureServiceInstanceReturns(errors.New("some-cf-error"))
-			})
 
-			It("returns an error and attempts to delete the new service instance", func() {
-				args := []string{"some-donor", "-p", "some-plan"}
-				err := plugin.Migrate(fakeMigrator, args)
-				Expect(err).To(MatchError(MatchRegexp("error creating service instance: some-cf-error. Attempting to clean up service some-donor-new")))
-				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(1))
-			})
-
-			It("returns an error and doesn't clean up when the --no-cleanup flag is passed", func() {
-				args := []string{
-					"some-donor", "-p", "some-plan", "--no-cleanup",
-				}
-
-				err := plugin.Migrate(fakeMigrator, args)
-				Expect(err).To(MatchError("error creating service instance: some-cf-error. Not cleaning up service some-donor-new"))
-				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
-			})
-		})
-
-		Context("when migrating data fails", func() {
-			BeforeEach(func() {
-				fakeMigrator.MigrateDataReturns(errors.New("some-cf-error"))
-			})
-
-			It("returns an error and attempts to delete the new service instance", func() {
-				args := []string{"some-donor", "-p", "some-plan"}
-				err := plugin.Migrate(fakeMigrator, args)
-				Expect(err).To(MatchError(MatchRegexp("error migrating data: some-cf-error. Attempting to clean up service some-donor-new")))
-				opts := fakeMigrator.MigrateDataArgsForCall(0)
-				Expect(opts.Cleanup).To(BeTrue())
-				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(1))
-			})
-
-			It("returns an error and doesn't clean up when the --no-cleanup flag is passed", func() {
-				args := []string{
-					"some-donor", "-p", "some-plan", "--no-cleanup",
-				}
-
-				err := plugin.Migrate(fakeMigrator, args)
-
-				Expect(err).To(MatchError("error migrating data: some-cf-error. Not cleaning up service some-donor-new"))
-				Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
-				opts := fakeMigrator.MigrateDataArgsForCall(0)
-				Expect(opts.Cleanup).To(BeFalse())
-				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
-			})
-		})
-
-		Context("when renaming the service instances fail", func() {
-			BeforeEach(func() {
-				fakeMigrator.RenameServiceInstancesReturns(errors.New("some-cf-error"))
-			})
-
-			It("returns an error and doesn't clean up regardless of --no-cleanup flag", func() {
-				args := []string{"some-donor", "-p", "some-plan"}
-				err := plugin.Migrate(fakeMigrator, args)
-				Expect(err).To(MatchError("some-cf-error"))
-				Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
-				opts := fakeMigrator.MigrateDataArgsForCall(0)
-				Expect(opts.Cleanup).To(BeTrue())
-				Expect(fakeMigrator.CleanupOnErrorCallCount()).To(Equal(0))
-			})
-		})
 	})
 
 	Context("FindBindings", func() {
