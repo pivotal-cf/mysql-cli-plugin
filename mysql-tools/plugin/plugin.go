@@ -49,11 +49,12 @@ type BindingFinder interface {
 
 //go:generate counterfeiter . Migrator
 type Migrator interface {
+	ConfigureServiceInstance(serviceName string) error
 	CheckServiceExists(donorInstanceName string) error
 	CreateAndConfigureServiceInstance(planType, serviceName string) error
 	MigrateData(options migrate.MigrateOptions) error
 	RenameServiceInstances(donorInstanceName, recipientInstanceName string) error
-	CleanupOnError(recipientInstanceName string) error
+	DeleteServiceInstanceOnError(recipientInstanceName string) error
 }
 
 type MySQLPlugin struct {
@@ -155,12 +156,12 @@ func FindBindings(bf BindingFinder, args []string) error {
 func Migrate(migrator Migrator, args []string) error {
 	var opts struct {
 		Args struct {
-			Source   string `positional-arg-name:"<source-service-instance>"`
+			Source string `positional-arg-name:"<source-service-instance>"`
 		} `positional-args:"yes" required:"yes"`
-		NoCleanup         bool `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
-		SkipTLSValidation bool `long:"skip-tls-validation" short:"k" description:"Skip certificate validation of the MySQL server certificate. Not recommended!"`
-		PlanName string `short:"p" long:"plan" description:"Service plan name"`
-		ServiceName string `short:"s" long:"service" description:"Existing service name"`
+		NoCleanup         bool   `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
+		SkipTLSValidation bool   `long:"skip-tls-validation" short:"k" description:"Skip certificate validation of the MySQL server certificate. Not recommended!"`
+		PlanName          string `short:"p" long:"plan" description:"Service plan name"`
+		ServiceName       string `short:"s" long:"service" description:"Existing service name"`
 	}
 
 	parser := flags.NewParser(&opts, flags.None)
@@ -175,20 +176,27 @@ func Migrate(migrator Migrator, args []string) error {
 		return errors.Errorf("Usage: %s\n\n%s", migrateUsage, msg)
 	}
 
-
 	donorInstanceName := opts.Args.Source
+
 	tempRecipientInstanceName := donorInstanceName + "-new"
 	destPlan := opts.PlanName
 	destService := opts.ServiceName
 	cleanup := !opts.NoCleanup
 	skipTLSValidation := opts.SkipTLSValidation
 
-	if ((destPlan == "" && destService == "") || (destPlan != "" && destService != "")) {
+	if (destPlan == "" && destService == "") || (destPlan != "" && destService != "") {
 		msg := "You must specify either the plan name OR the service name"
 		return errors.Errorf("Usage: %s\n\n%s", migrateUsage, msg)
 	}
+
 	if err := migrator.CheckServiceExists(donorInstanceName); err != nil {
 		return err
+	}
+
+	if destService != "" {
+		if err := migrator.CheckServiceExists(destService); err != nil {
+			return err
+		}
 	}
 
 	log.Printf("Warning: The mysql-tools migrate command will not migrate any triggers, routines or events.")
@@ -197,20 +205,31 @@ func Migrate(migrator Migrator, args []string) error {
 		productName = "p.mysql"
 	}
 
-	log.Printf("Creating new service instance %q for service %s using plan %s", tempRecipientInstanceName, productName, destPlan)
-	if err := migrator.CreateAndConfigureServiceInstance(destPlan, tempRecipientInstanceName); err != nil {
-		if cleanup {
-			migrator.CleanupOnError(tempRecipientInstanceName)
-			return fmt.Errorf("error creating service instance: %v. Attempting to clean up service %s",
+	if opts.PlanName != "" {
+		log.Printf("Creating new service instance %q for service %s using plan %s", tempRecipientInstanceName, productName, destPlan)
+		if err := migrator.CreateAndConfigureServiceInstance(destPlan, tempRecipientInstanceName); err != nil {
+			if cleanup {
+				migrator.DeleteServiceInstanceOnError(tempRecipientInstanceName)
+				return fmt.Errorf("error creating service instance: %v. Attempting to clean up service %s",
+					err,
+					tempRecipientInstanceName,
+				)
+			}
+
+			return fmt.Errorf("error creating service instance: %v. Not cleaning up service %s",
 				err,
 				tempRecipientInstanceName,
 			)
 		}
-
-		return fmt.Errorf("error creating service instance: %v. Not cleaning up service %s",
-			err,
-			tempRecipientInstanceName,
-		)
+	} else {
+		tempRecipientInstanceName = opts.ServiceName
+		cleanup = false
+		if err := migrator.ConfigureServiceInstance(opts.ServiceName); err != nil {
+			return fmt.Errorf("error configuring service instance: %v. Not cleaning up service %s",
+				err,
+				tempRecipientInstanceName,
+			)
+		}
 	}
 
 	var migrationOptions = migrate.MigrateOptions{
@@ -222,7 +241,7 @@ func Migrate(migrator Migrator, args []string) error {
 
 	if err := migrator.MigrateData(migrationOptions); err != nil {
 		if cleanup {
-			migrator.CleanupOnError(tempRecipientInstanceName)
+			migrator.DeleteServiceInstanceOnError(tempRecipientInstanceName)
 
 			return fmt.Errorf("error migrating data: %v. Attempting to clean up service %s",
 				err,
@@ -236,7 +255,11 @@ func Migrate(migrator Migrator, args []string) error {
 		)
 	}
 
-	return migrator.RenameServiceInstances(donorInstanceName, tempRecipientInstanceName)
+	if opts.PlanName != "" {
+		return migrator.RenameServiceInstances(donorInstanceName, tempRecipientInstanceName)
+	}
+
+	return nil
 }
 
 func versionFromSemver(in string) plugin.VersionType {

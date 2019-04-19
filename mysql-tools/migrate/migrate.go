@@ -73,6 +73,10 @@ func (m *Migrator) CheckServiceExists(donorInstanceName string) error {
 	return nil
 }
 
+func (m *Migrator) ConfigureServiceInstance(serviceName string) error {
+	return errors.New("unimplemented'")
+}
+
 func (m *Migrator) CreateAndConfigureServiceInstance(planType, serviceName string) error {
 	if err := m.client.CreateServiceInstance(planType, serviceName); err != nil {
 		return errors.Wrap(err, "Error creating service instance")
@@ -197,6 +201,6 @@ In order to complete the data migration, please run 'cf rename-service %[1]s-new
 	return nil
 }
 
-func (m *Migrator) CleanupOnError(recipientServiceInstance string) error {
+func (m *Migrator) DeleteServiceInstanceOnError(recipientServiceInstance string) error {
 	return m.client.DeleteServiceInstance(recipientServiceInstance)
 }

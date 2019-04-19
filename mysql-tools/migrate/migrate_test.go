@@ -341,7 +341,7 @@ In order to complete the data migration, please run 'cf rename-service some-dono
 	})
 })
 
-var _ = Describe("CleanupOnError", func() {
+var _ = Describe("DeleteServiceInstanceOnError", func() {
 	var (
 		recipientServiceInstance string
 		fakeClient               *migratefakes.FakeClient
@@ -355,7 +355,7 @@ var _ = Describe("CleanupOnError", func() {
 	})
 
 	It("deletes the service instance", func() {
-		err := migrator.CleanupOnError(recipientServiceInstance)
+		err := migrator.DeleteServiceInstanceOnError(recipientServiceInstance)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(fakeClient.DeleteServiceInstanceCallCount()).To(Equal(1))
