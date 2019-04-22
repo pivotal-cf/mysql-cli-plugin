@@ -174,14 +174,14 @@ var _ = Describe("Plugin Commands", func() {
 					Expect(logOutput.String()).To(ContainSubstring(`Warning: The mysql-tools migrate command will not migrate any triggers, routines or events`))
 				})
 
-				By("checking that donor exists", func() {
+				By("checking that donor and recipient exist", func() {
 					Expect(fakeMigrator.CheckServiceExistsCallCount()).
-						To(Equal(2), `Expected to call CheckServiceExists twice (once for the donor and once for the recipient `)
+						To(Equal(2), `Expected to call CheckServiceExists twice (once for the donor and once for the recipient) `)
 					Expect(fakeMigrator.CheckServiceExistsArgsForCall(0)).
 						To(Equal("some-donor"))
 				})
 
-				By("only configuring a new service instance", func() {
+				By("configuring the existing service instance", func() {
 					Expect(fakeMigrator.CreateAndConfigureServiceInstanceCallCount()).
 						To(BeZero(), `Expected not to have called CreateAndConfigureServiceInstance`)
 					Expect(fakeMigrator.ConfigureServiceInstanceCallCount()).
@@ -200,6 +200,7 @@ var _ = Describe("Plugin Commands", func() {
 					Expect(opts.SkipTLSValidation).To(BeFalse())
 				})
 
+				// Never rename or delete existing service instances
 				Expect(fakeMigrator.RenameServiceInstancesCallCount()).To(BeZero())
 				Expect(fakeMigrator.DeleteServiceInstanceOnErrorCallCount()).To(BeZero())
 			})
@@ -233,6 +234,7 @@ var _ = Describe("Plugin Commands", func() {
 				It("returns an error and doesn't to delete the new service instance", func() {
 					args := []string{"some-donor", "-s", "some-service"}
 					err := plugin.Migrate(fakeMigrator, args)
+					Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
 					Expect(err).To(MatchError("error migrating data: some-cf-error. Not cleaning up service some-service"))
 					opts := fakeMigrator.MigrateDataArgsForCall(0)
 					Expect(opts.Cleanup).To(BeFalse())
