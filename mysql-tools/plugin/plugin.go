@@ -205,7 +205,7 @@ func Migrate(migrator Migrator, args []string) error {
 		productName = "p.mysql"
 	}
 
-	if opts.PlanName != "" {
+	if destPlan != "" {
 		log.Printf("Creating new service instance %q for service %s using plan %s", tempRecipientInstanceName, productName, destPlan)
 		if err := migrator.CreateAndConfigureServiceInstance(destPlan, tempRecipientInstanceName); err != nil {
 			if cleanup {
@@ -222,9 +222,9 @@ func Migrate(migrator Migrator, args []string) error {
 			)
 		}
 	} else {
-		tempRecipientInstanceName = opts.ServiceName
+		tempRecipientInstanceName = destService
 		cleanup = false
-		if err := migrator.ConfigureServiceInstance(opts.ServiceName); err != nil {
+		if err := migrator.ConfigureServiceInstance(destService); err != nil {
 			return fmt.Errorf("error configuring service instance: %v. Not cleaning up service %s",
 				err,
 				tempRecipientInstanceName,
@@ -255,7 +255,7 @@ func Migrate(migrator Migrator, args []string) error {
 		)
 	}
 
-	if opts.PlanName != "" {
+	if destPlan != "" {
 		return migrator.RenameServiceInstances(donorInstanceName, tempRecipientInstanceName)
 	}
 
