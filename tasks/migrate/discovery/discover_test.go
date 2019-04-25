@@ -117,10 +117,12 @@ var _ = Describe("Discovery Unit Tests", func() {
 					)
 			})
 
-			It("returns an error", func(){
-				err := DiscoverExistingData(mockDB, []string{"foo"})
+			It("returns an error and a list of schemas that failed", func(){
+				badSchemas, err := DiscoverExistingData(mockDB, []string{"foo"})
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Migration target database [ foo ] already contains tables!"))
+				Expect(err.Error()).To(ContainSubstring("Migration target database already contains tables!  Giving up..."))
+				Expect(len(badSchemas)).To(Equal(1), "Expected to find exactly one bad schema.")
+				Expect(badSchemas[0]).To(Equal("foo"))
 			})
 		})
 
@@ -141,8 +143,70 @@ var _ = Describe("Discovery Unit Tests", func() {
 			})
 
 			It("does not return an error", func(){
-				err := DiscoverExistingData(mockDB, []string{"foo"})
+				badSchemas, err := DiscoverExistingData(mockDB, []string{"foo"})
 				Expect(err).NotTo(HaveOccurred())
+				Expect(badSchemas).To(BeEmpty())
+			})
+		})
+
+		When("there are three existing schemas, one without data", func(){
+			BeforeEach(func(){
+				mock.ExpectQuery(`SHOW DATABASES`).
+					WillReturnRows(sqlmock.NewRows([]string{"Database"}).
+						AddRow("information_schema").
+						AddRow("mysql").
+						AddRow("performance_schema").
+						AddRow("cf_metadata").
+						AddRow("sys").
+						AddRow("foo").
+						AddRow("bar").
+						AddRow("baz"),
+					)
+
+				mock.ExpectQuery(`SHOW TABLES FROM foo`).
+					WillReturnRows(sqlmock.NewRows([]string{""}))
+
+				mock.ExpectQuery(`SHOW TABLES FROM bar`).
+					WillReturnRows(sqlmock.NewRows([]string{"Tables_in_bar"}).
+						AddRow("should_not_be_here"),
+					)
+
+				mock.ExpectQuery(`SHOW TABLES FROM baz`).
+					WillReturnRows(sqlmock.NewRows([]string{"Tables_in_baz"}).
+						AddRow("should_not_be_here"),
+					)
+			})
+
+			It("returns an error and a list of bad schemas", func(){
+				badSchemas, err := DiscoverExistingData(mockDB, []string{"foo", "bar", "baz"})
+				Expect(err).To(HaveOccurred())
+
+				Expect(len(badSchemas)).To(Equal(2), "Expected to find exactly two bad schemas.")
+				Expect(badSchemas[0]).To(Equal("bar"))
+				Expect(badSchemas[1]).To(Equal("baz"))
+			})
+		})
+
+		When("there is an existing schema, but errors on show tables", func(){
+			BeforeEach(func(){
+				mock.ExpectQuery(`SHOW DATABASES`).
+					WillReturnRows(sqlmock.NewRows([]string{"Database"}).
+						AddRow("information_schema").
+						AddRow("mysql").
+						AddRow("performance_schema").
+						AddRow("cf_metadata").
+						AddRow("sys").
+						AddRow("foo"),
+					)
+
+				mock.ExpectQuery(`SHOW TABLES FROM foo`).WillReturnError(errors.New("some_error"))
+			})
+
+			It("returns an error", func(){
+				badSchemas, err := DiscoverExistingData(mockDB, []string{"foo"})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("some_error"))
+				Expect(badSchemas).To(BeEmpty())
 			})
 		})
 
@@ -160,8 +224,9 @@ var _ = Describe("Discovery Unit Tests", func() {
 			})
 
 			It("does not return an error", func(){
-				err := DiscoverExistingData(mockDB, []string{"bar"})
+				badSchemas, err := DiscoverExistingData(mockDB, []string{"bar"})
 				Expect(err).NotTo(HaveOccurred())
+				Expect(badSchemas).To(BeEmpty())
 			})
 		})
 	})

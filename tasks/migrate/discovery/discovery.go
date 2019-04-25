@@ -123,10 +123,13 @@ func DiscoverInvalidViews(db *sql.DB, schemas []string) ([]View, error) {
 	return invalidViews, nil
 }
 
-func DiscoverExistingData(destinationDb *sql.DB, sourceSchemas []string) error {
+func DiscoverExistingData(destinationDb *sql.DB, sourceSchemas []string) ([]string, error) {
+	var badSchemas []string
+	var returnErr error
+
 	destinationSchemas, err := DiscoverDatabases(destinationDb)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// We only care about testing schemas in the target server that exist in the source server
@@ -143,12 +146,13 @@ func DiscoverExistingData(destinationDb *sql.DB, sourceSchemas []string) error {
 		checkExistingTables := fmt.Sprintf(`SHOW TABLES FROM %s`, schema)
 		rows, err := destinationDb.Query(checkExistingTables)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if rows.Next() {
-			return errors.Errorf("Migration target database [ %s ] already contains tables!  Giving up...", schema)
+			badSchemas = append(badSchemas, schema)
+			returnErr = errors.Errorf("Migration target database already contains tables!  Giving up...")
 		}
 	}
 
-	return nil
+	return badSchemas, returnErr
 }
