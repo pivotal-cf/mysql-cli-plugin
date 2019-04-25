@@ -98,6 +98,74 @@ var _ = Describe("Discovery Unit Tests", func() {
 		})
 	})
 
+	Context("DiscoverExistingData", func(){
+		When("there is an existing schema with data", func(){
+			BeforeEach(func(){
+				mock.ExpectQuery(`SHOW DATABASES`).
+					WillReturnRows(sqlmock.NewRows([]string{"Database"}).
+						AddRow("information_schema").
+						AddRow("mysql").
+						AddRow("performance_schema").
+						AddRow("cf_metadata").
+						AddRow("sys").
+						AddRow("foo"),
+					)
+
+				mock.ExpectQuery(`SHOW TABLES FROM foo`).
+					WillReturnRows(sqlmock.NewRows([]string{"Tables_in_foo"}).
+						AddRow("should_not_be_here"),
+					)
+			})
+
+			It("returns an error", func(){
+				err := DiscoverExistingData(mockDB, []string{"foo"})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Migration target database [ foo ] already contains tables!"))
+			})
+		})
+
+		When("there is an existing schema without data", func(){
+			BeforeEach(func(){
+				mock.ExpectQuery(`SHOW DATABASES`).
+					WillReturnRows(sqlmock.NewRows([]string{"Database"}).
+						AddRow("information_schema").
+						AddRow("mysql").
+						AddRow("performance_schema").
+						AddRow("cf_metadata").
+						AddRow("sys").
+						AddRow("foo"),
+					)
+
+				mock.ExpectQuery(`SHOW TABLES FROM foo`).
+					WillReturnRows(sqlmock.NewRows([]string{""}))
+			})
+
+			It("does not return an error", func(){
+				err := DiscoverExistingData(mockDB, []string{"foo"})
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		When("there is no existing schema", func(){
+			BeforeEach(func(){
+				mock.ExpectQuery(`SHOW DATABASES`).
+					WillReturnRows(sqlmock.NewRows([]string{"Database"}).
+						AddRow("information_schema").
+						AddRow("mysql").
+						AddRow("performance_schema").
+						AddRow("cf_metadata").
+						AddRow("sys").
+						AddRow("foo"),
+					)
+			})
+
+			It("does not return an error", func(){
+				err := DiscoverExistingData(mockDB, []string{"bar"})
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+	})
+
 	Context("DiscoverInvalidViews", func() {
 		var (
 			schemasToMigrate []string
