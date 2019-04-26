@@ -32,7 +32,7 @@ var _ = Describe("Plugin Commands", func() {
 		logOutput    *bytes.Buffer
 	)
 
-	const migrateUsage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> -p <p.mysql-plan-type>`
+	const migrateUsage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> (destination-service-plan (DEPRECATED, favor -p) | -p <p.mysql-plan-type> | -s <destination-service-instance>)`
 	const findUsage = `Usage: cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 
 	BeforeEach(func() {
@@ -46,10 +46,10 @@ var _ = Describe("Plugin Commands", func() {
 	})
 
 	Context("Migrate", func() {
-		Context("when a plan name is specified", func() {
+		When("a plan name is specified", func() {
 			It("migrates data from a source service instance to a newly created instance", func() {
 				args := []string{
-					"some-donor", "-p", "some-plan",
+					"-p", "some-plan", "some-donor",
 				}
 				Expect(plugin.Migrate(fakeMigrator, args)).To(Succeed())
 
@@ -163,7 +163,7 @@ var _ = Describe("Plugin Commands", func() {
 			})
 		})
 
-		Context("when a service name is specified", func() {
+		When("a service name is specified", func() {
 			It("migrates data from a source service instance to an existing service instance", func() {
 				args := []string{
 					"some-donor", "-s", "some-service",
@@ -269,27 +269,95 @@ var _ = Describe("Plugin Commands", func() {
 			})
 		})
 
-		Context("when both service name and plan name are specified", func() {
+		When("a positional plan name is specified", func(){
+			It("migrates data from a source service instance to a newly created instance", func() {
+				args := []string{"some-donor", "some-plan"}
+
+				Expect(plugin.Migrate(fakeMigrator, args)).To(Succeed())
+
+				By("logging a message that we don't migrate triggers, routines and events", func() {
+					Expect(logOutput.String()).To(ContainSubstring(`Warning: The mysql-tools migrate command will not migrate any triggers, routines or events`))
+				})
+
+				By("checking that donor exists", func() {
+					Expect(fakeMigrator.CheckServiceExistsCallCount()).
+						To(Equal(1))
+					Expect(fakeMigrator.CheckServiceExistsArgsForCall(0)).
+						To(Equal("some-donor"))
+				})
+
+				By("creating and configuring a new service instance", func() {
+					Expect(fakeMigrator.CreateAndConfigureServiceInstanceCallCount()).
+						To(Equal(1))
+
+					createdServicePlan, createdServiceInstanceName := fakeMigrator.CreateAndConfigureServiceInstanceArgsForCall(0)
+					Expect(createdServicePlan).To(Equal("some-plan"))
+					Expect(createdServiceInstanceName).
+						To(Equal("some-donor-new"))
+				})
+
+				By("migrating data from the donor to the recipient", func() {
+					Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
+					opts := fakeMigrator.MigrateDataArgsForCall(0)
+					Expect(opts.DonorInstanceName).To(Equal("some-donor"))
+					Expect(opts.RecipientInstanceName).To(Equal("some-donor-new"))
+					Expect(opts.Cleanup).To(BeTrue())
+					Expect(opts.SkipTLSValidation).To(BeFalse())
+				})
+
+				By("renaming the service instances", func() {
+					Expect(fakeMigrator.RenameServiceInstancesCallCount()).
+						To(Equal(1))
+					donorInstance, recipientName := fakeMigrator.RenameServiceInstancesArgsForCall(0)
+					Expect(donorInstance).To(Equal("some-donor"))
+					Expect(recipientName).To(Equal("some-donor-new"))
+				})
+
+				Expect(fakeMigrator.DeleteServiceInstanceOnErrorCallCount()).To(BeZero())
+			})
+
+			Context("and plan flag is also specified", func(){
+				It("returns an error", func(){
+					args := []string{"some-donor", "some-plan", "-p", "some-plan"}
+					err := plugin.Migrate(fakeMigrator, args)
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(migrateUsage + "\n\nYou must specify only one plan name"))
+				})
+			})
+
+			Context("and a service flag is also specified", func(){
+				It("returns an error", func() {
+					args := []string{"some-donor", "some-plan", "-s", "some-service"}
+					err := plugin.Migrate(fakeMigrator, args)
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(migrateUsage + "\n\nYou must specify either the plan name OR the service name"))
+				})
+			})
+		})
+
+		When("both service name and plan name are specified", func() {
 			It("returns an error", func() {
 				args := []string{
 					"some-donor", "-p", "some-plan", "-s", "some-service",
 				}
 				err := plugin.Migrate(fakeMigrator, args)
+				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(migrateUsage + "\n\nYou must specify either the plan name OR the service name"))
 			})
 		})
 
-		Context("when neither service name nor plan name are specified", func() {
+		When("neither service name nor plan name are specified", func() {
 			It("returns an error", func() {
 				args := []string{
 					"some-donor",
 				}
 				err := plugin.Migrate(fakeMigrator, args)
+				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(migrateUsage + "\n\nYou must specify either the plan name OR the service name"))
 			})
 		})
 
-		Context("when skip-tls-validation is specified", func() {
+		When("skip-tls-validation is specified", func() {
 			It("Requests that the data be migrated insecurely", func() {
 				args := []string{
 					"--skip-tls-validation",
@@ -310,6 +378,7 @@ var _ = Describe("Plugin Commands", func() {
 			args := []string{"some-donor", "-p", "some-plan"}
 
 			err := plugin.Migrate(fakeMigrator, args)
+			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError("some-donor does not exist"))
 		})
 
@@ -320,8 +389,9 @@ var _ = Describe("Plugin Commands", func() {
 		})
 
 		It("returns an error if too many args are passed", func() {
-			args := []string{"source", "-p", "plan-type", "extra-arg"}
+			args := []string{"source", "plan-type", "extra-arg"}
 			err := plugin.Migrate(fakeMigrator, args)
+			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(migrateUsage + "\n\nunexpected arguments: extra-arg"))
 		})
 

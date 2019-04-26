@@ -35,10 +35,10 @@ var (
 )
 
 const (
-	usage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> -p <p.mysql-plan-type>
+	usage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> (destination-service-plan (DEPRECATED, favor -p) | -p <p.mysql-plan-type> | -s <destination-service-instance>)
    cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
    cf mysql-tools version`
-	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> -p <p.mysql-plan-type>`
+	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> (destination-service-plan (DEPRECATED, favor -p) | -p <p.mysql-plan-type> | -s <destination-service-instance>)`
 	findUsage    = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 )
 
@@ -77,7 +77,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
    mysql-tools - Plugin to migrate mysql instances
 
 USAGE:
-   cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> -p <p.mysql-plan-type>
+   cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> (destination-service-plan (DEPRECATED, favor -p) | -p <p.mysql-plan-type> | -s <destination-service-instance>)
    cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
    cf mysql-tools version`)
 		os.Exit(1)
@@ -156,8 +156,9 @@ func FindBindings(bf BindingFinder, args []string) error {
 func Migrate(migrator Migrator, args []string) error {
 	var opts struct {
 		Args struct {
-			Source string `positional-arg-name:"<source-service-instance>"`
-		} `positional-args:"yes" required:"yes"`
+			Source            string `positional-arg-name:"<source-service-instance>" required:"yes"`
+			ImplicitPlanName  string `positional-arg-name:"<p.mysql-plan-type>"`
+		} `positional-args:"yes"`
 		NoCleanup         bool   `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
 		SkipTLSValidation bool   `long:"skip-tls-validation" short:"k" description:"Skip certificate validation of the MySQL server certificate. Not recommended!"`
 		PlanName          string `short:"p" long:"plan" description:"Service plan name"`
@@ -179,7 +180,19 @@ func Migrate(migrator Migrator, args []string) error {
 	donorInstanceName := opts.Args.Source
 
 	tempRecipientInstanceName := donorInstanceName + "-new"
-	destPlan := opts.PlanName
+
+	if opts.PlanName != "" && opts.Args.ImplicitPlanName != "" {
+		msg := "You must specify only one plan name"
+		return errors.Errorf("Usage: %s\n\n%s", migrateUsage, msg)
+	}
+
+	var destPlan string
+	if opts.PlanName == "" {
+		destPlan = opts.Args.ImplicitPlanName
+	} else {
+		destPlan = opts.PlanName
+	}
+
 	destService := opts.ServiceName
 	cleanup := !opts.NoCleanup
 	skipTLSValidation := opts.SkipTLSValidation
