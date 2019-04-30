@@ -184,6 +184,133 @@ var _ = Describe("Migrate Task", func() {
 	})
 })
 
+var _ = Describe("Migrate Task with existing db", func() {
+	var (
+		sourceDB        *sql.DB
+		destDB          *sql.DB
+		sourceContainer *docker.Container
+		destContainer   *docker.Container
+		vcapServices    string
+		sourceChecksums string
+	)
+
+	BeforeEach(func() {
+		var err error
+		fixturesPath, err := filepath.Abs("fixtures")
+		Expect(err).NotTo(HaveOccurred())
+
+		sourceContainer, err = createMySQLContainer(
+			"mysql.source",
+			dockertest.AddEnvVars(`MYSQL_DATABASE=service_instance_db`),
+			dockertest.AddBinds(
+				filepath.Join(fixturesPath, "sakila-schema.sql:/docker-entrypoint-initdb.d/sakila-schema.sql"),
+			),
+		)
+		Expect(err).NotTo(HaveOccurred())
+
+		sourceDB, err = dockertest.ContainerDBConnection(sourceContainer, mySQLDockerPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(sourceDB.Ping, "1m", "1s").Should(Succeed(),
+			`Expected MySQL instance to be reachable after 1m, but it was not`,
+		)
+
+		sourceChecksums, err = schemaChecksum(sourceDB, "sakila")
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		if sourceContainer != nil {
+			dockertest.RemoveContainer(dockerClient, sourceContainer)
+		}
+
+		if destContainer != nil {
+			dockertest.RemoveContainer(dockerClient, destContainer)
+		}
+	})
+
+	It("migrates data to an empty schema with name collision", func() {
+		var err error
+		fixturesPath, err := filepath.Abs("fixtures")
+
+		destContainer, err = createMySQLContainer(
+			"mysql.dest",
+			dockertest.AddEnvVars(`MYSQL_DATABASE=service_instance_db`),
+			dockertest.AddBinds(
+				filepath.Join(fixturesPath, "sakila-schema-empty.sql:/docker-entrypoint-initdb.d/sakila-schema-empty.sql"),
+			),
+		)
+		Expect(err).NotTo(HaveOccurred())
+
+		vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "mysql.source."+sessionID, "mysql.dest."+sessionID, "")
+
+		destDB, err = dockertest.ContainerDBConnection(destContainer, mySQLDockerPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(destDB.Ping, "1m", "1s").Should(Succeed(),
+			`Expected MySQL instance to be reachable after 1m, but it was not`,
+		)
+
+		_, exitStatus, err := runCommand(
+			"migrate.command",
+			dockertest.AddBinds(
+				migrateTaskBinPath+":/usr/local/bin/migrate",
+			),
+			dockertest.WithCmd("migrate", "source", "dest"),
+			dockertest.AddEnvVars("VCAP_SERVICES="+vcapServices),
+		)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exitStatus).To(Equal(0))
+
+		destChecksums, err := schemaChecksum(destDB, "sakila")
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(destChecksums).To(Equal(sourceChecksums))
+	})
+
+	It("It fails when a targeted destination schema has tables", func() {
+		var err error
+		fixturesPath, err := filepath.Abs("fixtures")
+
+		destContainer, err = createMySQLContainer(
+			"mysql.dest",
+			dockertest.AddEnvVars(`MYSQL_DATABASE=service_instance_db`),
+			dockertest.AddBinds(
+				filepath.Join(fixturesPath, "sakila-schema-with-table.sql:/docker-entrypoint-initdb.d/sakila-schema-with-table.sql"),
+			),
+		)
+		Expect(err).NotTo(HaveOccurred())
+
+		vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "mysql.source."+sessionID, "mysql.dest."+sessionID, "")
+
+		destDB, err = dockertest.ContainerDBConnection(destContainer, mySQLDockerPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(destDB.Ping, "1m", "1s").Should(Succeed(),
+			`Expected MySQL instance to be reachable after 1m, but it was not`,
+		)
+
+		destChecksums, err := schemaChecksum(destDB, "sakila")
+
+		_, exitStatus, err := runCommand(
+			"migrate.command",
+			dockertest.AddBinds(
+				migrateTaskBinPath+":/usr/local/bin/migrate",
+			),
+			dockertest.WithCmd("migrate", "source", "dest"),
+			dockertest.AddEnvVars("VCAP_SERVICES="+vcapServices),
+		)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(exitStatus).To(Equal(1))
+
+		destChecksumsFinal, err := schemaChecksum(destDB, "sakila")
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(destChecksums).To(Equal(destChecksumsFinal))
+	})
+
+})
+
 func schemaChecksum(db *sql.DB, schemaName string) (string, error) {
 	rows, err := db.Query(`SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ?`, schemaName)
 	if err != nil {

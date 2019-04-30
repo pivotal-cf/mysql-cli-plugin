@@ -90,6 +90,19 @@ func main() {
 		log.Printf("The following views are invalid, and will not be migrated: %s\n", invalidViews)
 	}
 
+	destDb, err := sql.Open("mysql", destCredentials.DSN())
+	if err != nil {
+		log.Fatalf("Failed to initialize source connection: %v", err)
+	}
+
+	foundSchemas, err := discovery.DiscoverExistingData(destDb, sourceSchemas)
+	if err != nil {
+		if len(foundSchemas) > 0 {
+			log.Fatalf("Failed, the following schemas were found in the destination DB: %s\n %v", foundSchemas, err)
+		}
+		log.Fatalf("Failed to inspect the destination DB for schema collisions: %v", err)
+	}
+
 	mySQLDumpCmd := MySQLDumpCmd(sourceCredentials, invalidViews, sourceSchemas...)
 	mySQLCmd := MySQLCmd(destCredentials)
 	replaceCmd := ReplaceDefinerCmd()
