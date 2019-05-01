@@ -93,12 +93,6 @@ var _ = Describe("Migrate Integration Tests", func() {
 		})
 
 		ValidateMigrationResults := func(readValue string, springAppURI string, albumID string, writeValue string) {
-			By("Verifying the destination service was renamed to the source's name", func() {
-				destInstanceGUID = test_helpers.InstanceUUID(sourceInstance)
-				Expect(destInstanceGUID).NotTo(Equal(sourceInstanceGUID))
-				destInstance = sourceInstance
-			})
-
 			By("Binding the app to the newly created destination instance and reading back data", func() {
 				test_helpers.BindAppToService(springAppName, destInstance)
 				test_helpers.ExecuteCfCmd("restage", springAppName)
@@ -136,12 +130,11 @@ var _ = Describe("Migrate Integration Tests", func() {
 			})
 
 			By("Verifying the views get migrated with invoker security type and procedures are not migrated", func() {
-				validateMigratedStoredCode(sourceInstance)
+				validateMigratedStoredCode(destInstance)
 			})
 		}
 
-
-		FIt("migrates data from donor to recipient", func() {
+		It("migrates data from donor to recipient", func() {
 			var (
 				readValue    string
 				springAppURI string
@@ -181,56 +174,13 @@ var _ = Describe("Migrate Integration Tests", func() {
 				Expect(session.Out).To(gbytes.Say(`The following views are invalid, and will not be migrated: \[%s.dropped_table_view\]`, serviceKey.Name))
 			})
 
-			ValidateMigrationResults(readValue, springAppURI, albumID, writeValue)
-
-/*
 			By("Verifying the destination service was renamed to the source's name", func() {
 				destInstanceGUID = test_helpers.InstanceUUID(sourceInstance)
 				Expect(destInstanceGUID).NotTo(Equal(sourceInstanceGUID))
 				destInstance = sourceInstance
 			})
 
-			By("Binding the app to the newly created destination instance and reading back data", func() {
-				test_helpers.BindAppToService(springAppName, destInstance)
-				test_helpers.ExecuteCfCmd("restage", springAppName)
-
-				readValue = test_helpers.ReadData(true, springAppURI, albumID)
-				Expect(readValue).To(Equal(writeValue))
-			})
-
-			By("Verifying that the credhub reference in the binding only contains the destination service's GUID", func() {
-				appGUID := strings.TrimSpace(test_helpers.ExecuteCfCmd("app", springAppName, "--guid"))
-
-				envOutput := test_helpers.ExecuteCfCmd("curl", fmt.Sprintf("/v2/apps/%s/env", appGUID))
-
-				var result envResult
-
-				err := json.Unmarshal([]byte(envOutput), &result)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(result.Env.VCAPServices).To(HaveKey(os.Getenv("RECIPIENT_SERVICE_NAME")))
-				mysqlServices := result.Env.VCAPServices[os.Getenv("RECIPIENT_SERVICE_NAME")]
-
-				Expect(mysqlServices).To(HaveLen(1))
-				Expect(mysqlServices[0].Credentials).To(HaveKey("credhub-ref"))
-				Expect(mysqlServices[0].Credentials["credhub-ref"]).To(ContainSubstring(destInstanceGUID))
-				Expect(mysqlServices[0].Credentials["credhub-ref"]).NotTo(ContainSubstring(sourceInstanceGUID))
-			})
-
-			By("Verifying TLS was enabled on the recipient instance", func() {
-				serviceKey := test_helpers.GetServiceKey(destInstance, "tls-check")
-				test_helpers.DeleteServiceKey(destInstance, "tls-check")
-
-				Expect(serviceKey.TLS.Cert.CA).
-					NotTo(BeEmpty(),
-						"Expected recipient service instance to be TLS enabled, but it was not")
-			})
-
-			By("Verifying the views get migrated with invoker security type and procedures are not migrated", func() {
-				validateMigratedStoredCode(sourceInstance)
-			})
-*/
-
+			ValidateMigrationResults(readValue, springAppURI, albumID, writeValue)
 		})
 
 		Context("when the --no-cleanup flag is specified", func() {
@@ -265,37 +215,64 @@ var _ = Describe("Migrate Integration Tests", func() {
 			Expect(string(session.Err.Contents())).To(ContainSubstring("Could not find plan with name fake-service-plan"))
 		})
 
-/*
 		Context("and a recipient database exists", func() {
-			Context("with no data", func() {
-				destPlan = os.Getenv("RECIPIENT_PLAN_NAME")
-				appDomain = Config.AppsDomain
-
-				destInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_DEST")
-				test_helpers.CreateService(os.Getenv("RECIPIENT_SERVICE_NAME"), destPlan, destInstance)
-
+			BeforeEach(func() {
+				destInstance = generator.PrefixedRandomName("MYSQL", "MIGRATE_RECIPIENT")
+				test_helpers.CreateService(os.Getenv("RECIPIENT_SERVICE_NAME"), os.Getenv("RECIPIENT_PLAN_NAME"), destInstance)
 				test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+create succeeded`)
 				destInstanceGUID = test_helpers.InstanceUUID(destInstance)
+			})
 
+			FContext("with no data", func() {
+				It("does something", func() {
+					var (
+						readValue    string
+						springAppURI string
+						albumID      string
+						writeValue   string
+					)
 
+					By("Binding an app to the source instance", func() {
+						springAppName = generator.PrefixedRandomName("MYSQL", "APP")
+						test_helpers.PushApp(springAppName, "../assets/spring-music")
 
+						test_helpers.BindAppToService(springAppName, sourceInstance)
+						test_helpers.StartApp(springAppName)
+					})
 
+					By("Writing data to the source instance", func() {
+						springAppURI = springAppName + "." + appDomain
+						test_helpers.CheckAppInfo(true, springAppURI, sourceInstance)
 
+						writeValue = "DM Greatest Hits"
+						albumID = test_helpers.WriteData(true, springAppURI, writeValue)
+						readValue = test_helpers.ReadData(true, springAppURI, albumID)
 
+						Expect(readValue).To(Equal(writeValue))
 
+						test_helpers.UnbindAppFromService(springAppName, sourceInstance)
+					})
 
+					By("Migrating data using the migrate command", func() {
+						serviceKey := test_helpers.GetServiceKey(sourceInstance, "database-key")
+						test_helpers.DeleteServiceKey(sourceInstance, "database-key")
 
+						cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "-s", destInstance)
+						session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+						Expect(err).NotTo(HaveOccurred())
+						Eventually(session, "20m", "1s").Should(gexec.Exit(0))
+						Expect(session.Out).To(gbytes.Say(`The following views are invalid, and will not be migrated: \[%s.dropped_table_view\]`, serviceKey.Name))
+					})
 
-
-
-
+					ValidateMigrationResults(readValue, springAppURI, albumID, writeValue)
+				})
 
 			})
 			Context("with existing data", func() {
 
 			})
 
-		}) */
+		})
 
 	})
 

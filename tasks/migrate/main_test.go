@@ -137,7 +137,6 @@ var _ = Describe("Migrate Task", func() {
 
 		Expect(destChecksums).To(Equal(sourceChecksums))
 	})
-
 	Context("when resolving mysql host keep failing", func() {
 		BeforeEach(func() {
 			vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "nonexist-source", "nonexist-destination", "")
