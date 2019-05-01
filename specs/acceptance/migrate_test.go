@@ -222,7 +222,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(session, "20m", "1s").Should(gexec.Exit(1))
+			Eventually(session, "45m", "1s").Should(gexec.Exit(1))
 			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
 		})
 
