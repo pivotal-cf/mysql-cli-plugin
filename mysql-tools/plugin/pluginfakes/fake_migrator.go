@@ -2,10 +2,10 @@
 package pluginfakes
 
 import (
-	sync "sync"
+	"sync"
 
-	migrate "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
-	plugin "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 )
 
 type FakeMigrator struct {
@@ -41,18 +41,6 @@ type FakeMigrator struct {
 		result1 error
 	}
 	createAndConfigureServiceInstanceReturnsOnCall map[int]struct {
-		result1 error
-	}
-	CreateServiceInstanceStub        func(string, string) error
-	createServiceInstanceMutex       sync.RWMutex
-	createServiceInstanceArgsForCall []struct {
-		arg1 string
-		arg2 string
-	}
-	createServiceInstanceReturns struct {
-		result1 error
-	}
-	createServiceInstanceReturnsOnCall map[int]struct {
 		result1 error
 	}
 	DeleteServiceInstanceOnErrorStub        func(string) error
@@ -274,67 +262,6 @@ func (fake *FakeMigrator) CreateAndConfigureServiceInstanceReturnsOnCall(i int, 
 	}{result1}
 }
 
-func (fake *FakeMigrator) CreateServiceInstance(arg1 string, arg2 string) error {
-	fake.createServiceInstanceMutex.Lock()
-	ret, specificReturn := fake.createServiceInstanceReturnsOnCall[len(fake.createServiceInstanceArgsForCall)]
-	fake.createServiceInstanceArgsForCall = append(fake.createServiceInstanceArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
-	fake.recordInvocation("CreateServiceInstance", []interface{}{arg1, arg2})
-	fake.createServiceInstanceMutex.Unlock()
-	if fake.CreateServiceInstanceStub != nil {
-		return fake.CreateServiceInstanceStub(arg1, arg2)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	fakeReturns := fake.createServiceInstanceReturns
-	return fakeReturns.result1
-}
-
-func (fake *FakeMigrator) CreateServiceInstanceCallCount() int {
-	fake.createServiceInstanceMutex.RLock()
-	defer fake.createServiceInstanceMutex.RUnlock()
-	return len(fake.createServiceInstanceArgsForCall)
-}
-
-func (fake *FakeMigrator) CreateServiceInstanceCalls(stub func(string, string) error) {
-	fake.createServiceInstanceMutex.Lock()
-	defer fake.createServiceInstanceMutex.Unlock()
-	fake.CreateServiceInstanceStub = stub
-}
-
-func (fake *FakeMigrator) CreateServiceInstanceArgsForCall(i int) (string, string) {
-	fake.createServiceInstanceMutex.RLock()
-	defer fake.createServiceInstanceMutex.RUnlock()
-	argsForCall := fake.createServiceInstanceArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
-}
-
-func (fake *FakeMigrator) CreateServiceInstanceReturns(result1 error) {
-	fake.createServiceInstanceMutex.Lock()
-	defer fake.createServiceInstanceMutex.Unlock()
-	fake.CreateServiceInstanceStub = nil
-	fake.createServiceInstanceReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeMigrator) CreateServiceInstanceReturnsOnCall(i int, result1 error) {
-	fake.createServiceInstanceMutex.Lock()
-	defer fake.createServiceInstanceMutex.Unlock()
-	fake.CreateServiceInstanceStub = nil
-	if fake.createServiceInstanceReturnsOnCall == nil {
-		fake.createServiceInstanceReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.createServiceInstanceReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
 func (fake *FakeMigrator) DeleteServiceInstanceOnError(arg1 string) error {
 	fake.deleteServiceInstanceOnErrorMutex.Lock()
 	ret, specificReturn := fake.deleteServiceInstanceOnErrorReturnsOnCall[len(fake.deleteServiceInstanceOnErrorArgsForCall)]
@@ -525,8 +452,6 @@ func (fake *FakeMigrator) Invocations() map[string][][]interface{} {
 	defer fake.configureServiceInstanceMutex.RUnlock()
 	fake.createAndConfigureServiceInstanceMutex.RLock()
 	defer fake.createAndConfigureServiceInstanceMutex.RUnlock()
-	fake.createServiceInstanceMutex.RLock()
-	defer fake.createServiceInstanceMutex.RUnlock()
 	fake.deleteServiceInstanceOnErrorMutex.RLock()
 	defer fake.deleteServiceInstanceOnErrorMutex.RUnlock()
 	fake.migrateDataMutex.RLock()

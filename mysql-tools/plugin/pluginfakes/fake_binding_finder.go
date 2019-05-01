@@ -2,10 +2,10 @@
 package pluginfakes
 
 import (
-	sync "sync"
+	"sync"
 
 	find_bindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
-	plugin "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 )
 
 type FakeBindingFinder struct {
