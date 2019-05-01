@@ -74,14 +74,6 @@ func (m *Migrator) CheckServiceExists(donorInstanceName string) error {
 }
 
 func (m *Migrator) ConfigureServiceInstance(serviceName string) error {
-	return errors.New("unimplemented'")
-}
-
-func (m *Migrator) CreateAndConfigureServiceInstance(planType, serviceName string) error {
-	if err := m.client.CreateServiceInstance(planType, serviceName); err != nil {
-		return errors.Wrap(err, "Error creating service instance")
-	}
-
 	hostnames, err := m.client.GetHostnames(serviceName)
 	if err != nil {
 		return errors.Wrap(err, "Error obtaining hostname for new service instance")
@@ -96,6 +88,14 @@ func (m *Migrator) CreateAndConfigureServiceInstance(planType, serviceName strin
 		fmt.Sprintf(`{"enable_tls": %s}`, jsonEncodedHostnames))
 
 	return nil
+}
+
+func (m *Migrator) CreateAndConfigureServiceInstance(planType, serviceName string) error {
+	if err := m.client.CreateServiceInstance(planType, serviceName); err != nil {
+		return errors.Wrap(err, "Error creating service instance")
+	}
+
+	return m.ConfigureServiceInstance(serviceName)
 }
 
 func (m *Migrator) MigrateData(opts MigrateOptions) error {

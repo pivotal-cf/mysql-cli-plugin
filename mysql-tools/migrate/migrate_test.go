@@ -53,6 +53,79 @@ var _ = Describe("CheckServiceExists", func() {
 	})
 })
 
+var _ = Describe("ConfigureServiceInstance", func() {
+	var (
+		recipientName string
+		fakeClient    *migratefakes.FakeClient
+		fakeUnpacker  *migratefakes.FakeUnpacker
+		migrator      *Migrator
+	)
+
+	BeforeEach(func() {
+		recipientName = "some-recipient-instance"
+		fakeClient = new(migratefakes.FakeClient)
+		fakeUnpacker = new(migratefakes.FakeUnpacker)
+		migrator = NewMigrator(fakeClient, fakeUnpacker)
+	})
+
+	It("Updates a service instance to enable TLS", func() {
+		hostnames := []string{
+			"some-leader-hostname",
+			"some-follower-hostname",
+		}
+		fakeClient.GetHostnamesReturns(hostnames, nil)
+		err := migrator.ConfigureServiceInstance(recipientName)
+
+		Expect(err).NotTo(HaveOccurred())
+
+
+		By("Obtaining its hostname", func() {
+			Expect(fakeClient.GetHostnamesCallCount()).To(Equal(1))
+			Expect(fakeClient.GetHostnamesArgsForCall(0)).To(Equal(recipientName))
+		})
+
+		By("Updating the service to enable TLS on its hostname", func() {
+			Expect(fakeClient.UpdateServiceConfigCallCount()).To(Equal(1))
+			updatedServiceName, updatedJSONParams := fakeClient.UpdateServiceConfigArgsForCall(0)
+			Expect(updatedServiceName).To(Equal(recipientName))
+			Expect(updatedJSONParams).To(Equal(
+				`{"enable_tls": ["some-leader-hostname","some-follower-hostname"]}`,
+			))
+		})
+	})
+
+	Context("When we cannot obtain the new service instance's hostname", func() {
+		BeforeEach(func() {
+			fakeClient.GetHostnamesReturns(nil, errors.New("get hostname failed"))
+		})
+
+		It("Fails", func() {
+			err := migrator.ConfigureServiceInstance(recipientName)
+
+			Expect(err).To(MatchError("Error obtaining hostname for new service instance: get hostname failed"))
+			Expect(fakeClient.CreateServiceInstanceCallCount()).To(BeZero())
+			Expect(fakeClient.GetHostnamesCallCount()).To(Equal(1))
+			Expect(fakeClient.UpdateServiceConfigCallCount()).To(Equal(0))
+
+		})
+	})
+
+	Context("When we cannot update a new service instance", func() {
+		BeforeEach(func() {
+			fakeClient.UpdateServiceConfigReturns(errors.New("update service failed"))
+		})
+
+		It("does not fail", func() {
+			err := migrator.ConfigureServiceInstance(recipientName)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fakeClient.CreateServiceInstanceCallCount()).To(BeZero())
+			Expect(fakeClient.GetHostnamesCallCount()).To(Equal(1))
+			Expect(fakeClient.UpdateServiceConfigCallCount()).To(Equal(1))
+		})
+	})
+})
+
 var _ = Describe("CreateAndConfigureServiceInstance", func() {
 	var (
 		planType      string
