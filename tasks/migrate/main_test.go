@@ -32,7 +32,7 @@ const dockerVcapServicesTemplate = `
       "binding_name": null,
       "credentials": {
         "hostname": %q,
-        "name": "service_instance_db",
+        "name": "sakila",
         "password": "",
         "port": 3306,
         "username": "root"
@@ -79,7 +79,7 @@ var _ = Describe("Migrate Task", func() {
 
 		sourceContainer, err = createMySQLContainer(
 			"mysql.source",
-			dockertest.AddEnvVars(`MYSQL_DATABASE=service_instance_db`),
+			dockertest.AddEnvVars(`MYSQL_DATABASE=sakila`),
 			dockertest.AddBinds(
 				filepath.Join(fixturesPath, "sakila-schema.sql:/docker-entrypoint-initdb.d/sakila-schema.sql"),
 			),
@@ -130,13 +130,14 @@ var _ = Describe("Migrate Task", func() {
 			dockertest.AddEnvVars("VCAP_SERVICES="+vcapServices),
 		)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(exitStatus).To(Equal(0))
+		Expect(exitStatus).To(Equal(0), `Expected migrate to succeed, but it did not`)
 
 		destChecksums, err := schemaChecksum(destDB, "sakila")
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(destChecksums).To(Equal(sourceChecksums))
 	})
+
 	Context("when resolving mysql host keep failing", func() {
 		BeforeEach(func() {
 			vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "nonexist-source", "nonexist-destination", "")
@@ -200,7 +201,7 @@ var _ = Describe("Migrate Task with existing db", func() {
 
 		sourceContainer, err = createMySQLContainer(
 			"mysql.source",
-			dockertest.AddEnvVars(`MYSQL_DATABASE=service_instance_db`),
+			dockertest.AddEnvVars(`MYSQL_DATABASE=sakila`),
 			dockertest.AddBinds(
 				filepath.Join(fixturesPath, "sakila-schema.sql:/docker-entrypoint-initdb.d/sakila-schema.sql"),
 			),
