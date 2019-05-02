@@ -13,16 +13,33 @@ $ cf install-plugin -r CF-Community MysqlTools
 
 Once the plugin is installed, migrate a v1 service instance to a new v2 service instance with the following command:
 
+### Option 1: Specify V2 Destination Plan
 ```
 $ cf mysql-tools migrate V1-INSTANCE -p V2-PLAN
 ```
 
-Where `V1-INSTANCE` is the the name of the v1 service instance that you wish to migrate, and `V2-PLAN`  is the name of the v2 service plan to use for the new v2 service instance.
+Where `V1-INSTANCE` is the the name of the v1 service instance that you wish to migrate, and `V2-PLAN` is the name of the v2 service plan to use for the new v2 service instance.
 
 This will create a new v2 service instance and copy the data from the v1 service instance into it.
 
 At the end of this operation, the v2 service instance will have the same name as the original v1 service instance (`V1-INSTANCE`),
 and the v1 instance will have `-old` appended to its name.
+
+### Option 2: Specify V2 Destination Service Instance
+```
+$ cf mysql-tools migrate V1-INSTANCE -s V2-DESTINATION-SI
+```
+
+Where `V1-INSTANCE` is the the name of the v1 service instance that you wish to migrate,
+and `V2-DESTINATION-DB` is an existing v2 service instance.
+
+This will populate the v2 service instance with the v1 service instance's data. 
+
+The plugin will not overwrite any existing data in a targeted v2 schema. 
+Any overlapping v2 schemas must be empty.
+If the same schema exists in both v1 and v2 and the v2 schema is non-empty, the plugin halts and exits with status 1.
+
+This operation makes no changes to the v1 and v2 service instance names.
 
 More detailed instructions are available in the [MySQL for PCF docs.](http://docs.pivotal.io/p-mysql/2-3/migrate-to-v2.html)
 
