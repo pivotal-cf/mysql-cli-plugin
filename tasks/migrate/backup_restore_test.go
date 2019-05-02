@@ -39,119 +39,26 @@ var _ = Describe("Backup / Restore API", func() {
 		}
 	})
 
-	It("configures stdio", func() {
-		mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
-		By("directing stderr to os.Stderr", func() {
-			Expect(mysqldump.Stderr).To(Equal(os.Stderr))
-		})
+	var _ = Describe("MySQLDumpCmd", func() {
 
-		By("not configuring stdout", func() {
-			Expect(mysqldump.Stdout).To(BeNil())
-		})
-	})
-
-	When("dumping multiple schemas", func() {
-		BeforeEach(func() {
-			schemas = []string{"foo", "bar", "baz"}
-		})
-
-		It("adds the mysqldump --databases option", func() {
+		It("configures stdio", func() {
 			mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
-			Expect(mysqldump).ToNot(BeNil())
-			Expect(mysqldump.Args).To(Equal([]string{
-				"mysqldump",
-				"--user=some-user-name",
-				"--host=some-hostname",
-				"--port=3307",
-				"--max-allowed-packet=1G",
-				"--single-transaction",
-				"--skip-routines",
-				"--skip-events",
-				"--set-gtid-purged=off",
-				"--skip-triggers",
-				"--databases",
-				"foo",
-				"bar",
-				"baz",
-			}))
-			Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
-		})
-
-		When("TLS is enabled", func() {
-			BeforeEach(func() {
-				credentials.CA = "-----BEGIN CERTIFICATE-----\nMIIDcTCCAlmgAwIBAgIUdOO5sOa14a6sjU8/3BdrH5wgY7wwDQYJKoZIhvcNAQEL\nBQAwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tMB4XDTE4\nMDEyNTE3NDI0M1oXDTE5MDEyNTE3NDI0M1owJjEkMCIGA1UEAxMbZG0tcm9vdC5k\nZWRpY2F0ZWQtbXlzcWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC\nAQEAw2f9mjCtEHnjNUrNPxk9K2GXrBEOd6FT5RQOzQ9hN64OQp2q9sqJ3sQDuxhv\nqj8H5neaKmpz9yYQERUol1j+lIcZz2XSySAIEl9gwj2Ifj7W8RZZ2zLgu2atqXjG\n0/Kx74gwT3DssktXctDmTA9qvRHggvkafUJDsqFixAVtd3vuX+73qfonn79ACnBR\n8w5/wCoh5JW449w7v7Ix1tlPEaN1PK82yUgJdW2jOSQ3FQfgwJGCt45qFQSpNYok\n1CmmZ9m0ZtMNCYThsfInU4kWPNigH6dekmrJQwO4Q84h0EmMMebUeaP6havS7gT3\nEsNpeIQvm+aUdDLXllFCx52npwIDAQABo4GWMIGTMB0GA1UdDgQWBBTSVUBoLjWu\n1axkj373gNzrq1QGuzBhBgNVHSMEWjBYgBTSVUBoLjWu1axkj373gNzrq1QGu6Eq\npCgwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tghR047mw\n5rXhrqyNTz/cF2sfnCBjvDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUA\nA4IBAQBgoGK9SOECIEssWcd0bQrJrTJGH6ZXzDLMxalpXoGockpvX0awAFNDJ654\nGezOBAJ7TPmDLdRDZFtITwP6Bjaz0HeLz5bkaFsiDyJxkULRgI2kYI9pADu9Uo74\nk6CgIaupoBHrRXR7aVGrWYeN840IFSZB1TCnrCuPne4UVEzGsTnFfUjyOgs0Mqo6\nqAkD6ZTVUPu0SwBDoY2TWD1UuH4rOIDwWzVV7u3vY6HY7rFtOGhiNHdiav7RjpsY\nXmsHnVSaa+5iOgi04VsOF3JhpxuvbdMmEe+sOfBmjv+NwNR+ngXelyCzvR7w74NQ\ndjPvEZQgEt7w6DpovGp8cwtKIMAx\n-----END CERTIFICATE-----\n"
+			By("directing stderr to os.Stderr", func() {
+				Expect(mysqldump.Stderr).To(Equal(os.Stderr))
 			})
 
-			When("SkipTLSValidation is not set", func() {
-				It("specifies the TLS options in the mysqldump command", func() {
-					mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
-					Expect(mysqldump).ToNot(BeNil())
-					Expect(mysqldump.Args).To(Equal([]string{
-						"mysqldump",
-						"--user=some-user-name",
-						"--host=some-hostname",
-						"--port=3307",
-						"--ssl-mode=VERIFY_IDENTITY",
-						"--ssl-capath=/etc/ssl/certs",
-						"--max-allowed-packet=1G",
-						"--single-transaction",
-						"--skip-routines",
-						"--skip-events",
-						"--set-gtid-purged=off",
-						"--skip-triggers",
-						"--databases",
-						"foo",
-						"bar",
-						"baz",
-					}))
-					Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
-				})
-			})
-
-			When("SkipTLSValidation is set", func() {
-				BeforeEach(func() {
-					credentials.SkipTLSValidation = true
-				})
-
-				It("does not specify TLS options for mysqldump command", func() {
-					mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
-					Expect(mysqldump).ToNot(BeNil())
-					Expect(mysqldump.Args).To(Equal([]string{
-						"mysqldump",
-						"--user=some-user-name",
-						"--host=some-hostname",
-						"--port=3307",
-						"--max-allowed-packet=1G",
-						"--single-transaction",
-						"--skip-routines",
-						"--skip-events",
-						"--set-gtid-purged=off",
-						"--skip-triggers",
-						"--databases",
-						"foo",
-						"bar",
-						"baz",
-					}))
-					Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
-				})
+			By("not configuring stdout", func() {
+				Expect(mysqldump.Stdout).To(BeNil())
 			})
 		})
 
-		When("views to ignore are specified", func() {
-			var (
-				invalidViews []discovery.View
-			)
-
+		When("dumping multiple schemas", func() {
 			BeforeEach(func() {
-				invalidViews = []discovery.View{
-					{Schema: "foo", TableName: "view1"},
-					{Schema: "bar", TableName: "view1"},
-					{Schema: "baz", TableName: "view1"},
-				}
+				schemas = []string{"foo", "bar", "baz"}
 			})
 
-			It("add the mysqldump --ignore-table option the correct number of times", func() {
-				mysqldump := MySQLDumpCmd(credentials, invalidViews, schemas...)
+			It("adds the mysqldump --databases option", func() {
+				mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
 				Expect(mysqldump).ToNot(BeNil())
 				Expect(mysqldump.Args).To(Equal([]string{
 					"mysqldump",
@@ -164,9 +71,6 @@ var _ = Describe("Backup / Restore API", func() {
 					"--skip-events",
 					"--set-gtid-purged=off",
 					"--skip-triggers",
-					"--ignore-table=foo.view1",
-					"--ignore-table=bar.view1",
-					"--ignore-table=baz.view1",
 					"--databases",
 					"foo",
 					"bar",
@@ -174,68 +78,82 @@ var _ = Describe("Backup / Restore API", func() {
 				}))
 				Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
 			})
-		})
-	})
 
-	When("dumping a single schema", func() {
-		BeforeEach(func() {
-			schemas = []string{"one-database"}
-		})
-
-		It("dumps only a single database without the --databases option", func() {
-			mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
-			Expect(mysqldump).ToNot(BeNil())
-			Expect(mysqldump.Args).To(Equal([]string{
-				"mysqldump",
-				"--user=some-user-name",
-				"--host=some-hostname",
-				"--port=3307",
-				"--max-allowed-packet=1G",
-				"--single-transaction",
-				"--skip-routines",
-				"--skip-events",
-				"--set-gtid-purged=off",
-				"--skip-triggers",
-				"one-database",
-			}))
-			Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
-		})
-
-		When("TLS is enabled", func() {
-			BeforeEach(func() {
-				credentials.CA = "-----BEGIN CERTIFICATE-----\nMIIDcTCCAlmgAwIBAgIUdOO5sOa14a6sjU8/3BdrH5wgY7wwDQYJKoZIhvcNAQEL\nBQAwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tMB4XDTE4\nMDEyNTE3NDI0M1oXDTE5MDEyNTE3NDI0M1owJjEkMCIGA1UEAxMbZG0tcm9vdC5k\nZWRpY2F0ZWQtbXlzcWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC\nAQEAw2f9mjCtEHnjNUrNPxk9K2GXrBEOd6FT5RQOzQ9hN64OQp2q9sqJ3sQDuxhv\nqj8H5neaKmpz9yYQERUol1j+lIcZz2XSySAIEl9gwj2Ifj7W8RZZ2zLgu2atqXjG\n0/Kx74gwT3DssktXctDmTA9qvRHggvkafUJDsqFixAVtd3vuX+73qfonn79ACnBR\n8w5/wCoh5JW449w7v7Ix1tlPEaN1PK82yUgJdW2jOSQ3FQfgwJGCt45qFQSpNYok\n1CmmZ9m0ZtMNCYThsfInU4kWPNigH6dekmrJQwO4Q84h0EmMMebUeaP6havS7gT3\nEsNpeIQvm+aUdDLXllFCx52npwIDAQABo4GWMIGTMB0GA1UdDgQWBBTSVUBoLjWu\n1axkj373gNzrq1QGuzBhBgNVHSMEWjBYgBTSVUBoLjWu1axkj373gNzrq1QGu6Eq\npCgwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tghR047mw\n5rXhrqyNTz/cF2sfnCBjvDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUA\nA4IBAQBgoGK9SOECIEssWcd0bQrJrTJGH6ZXzDLMxalpXoGockpvX0awAFNDJ654\nGezOBAJ7TPmDLdRDZFtITwP6Bjaz0HeLz5bkaFsiDyJxkULRgI2kYI9pADu9Uo74\nk6CgIaupoBHrRXR7aVGrWYeN840IFSZB1TCnrCuPne4UVEzGsTnFfUjyOgs0Mqo6\nqAkD6ZTVUPu0SwBDoY2TWD1UuH4rOIDwWzVV7u3vY6HY7rFtOGhiNHdiav7RjpsY\nXmsHnVSaa+5iOgi04VsOF3JhpxuvbdMmEe+sOfBmjv+NwNR+ngXelyCzvR7w74NQ\ndjPvEZQgEt7w6DpovGp8cwtKIMAx\n-----END CERTIFICATE-----\n"
-			})
-
-			When("SkipTLSValidation is not set", func() {
-				It("specifies the TLS options in the mysqldump command", func() {
-					mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
-					Expect(mysqldump).ToNot(BeNil())
-					Expect(mysqldump.Args).To(Equal([]string{
-						"mysqldump",
-						"--user=some-user-name",
-						"--host=some-hostname",
-						"--port=3307",
-						"--ssl-mode=VERIFY_IDENTITY",
-						"--ssl-capath=/etc/ssl/certs",
-						"--max-allowed-packet=1G",
-						"--single-transaction",
-						"--skip-routines",
-						"--skip-events",
-						"--set-gtid-purged=off",
-						"--skip-triggers",
-						"one-database",
-					}))
-					Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
-				})
-			})
-
-			When("SkipTLSValidation is set", func() {
+			When("TLS is enabled", func() {
 				BeforeEach(func() {
-					credentials.SkipTLSValidation = true
+					credentials.CA = "-----BEGIN CERTIFICATE-----\nMIIDcTCCAlmgAwIBAgIUdOO5sOa14a6sjU8/3BdrH5wgY7wwDQYJKoZIhvcNAQEL\nBQAwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tMB4XDTE4\nMDEyNTE3NDI0M1oXDTE5MDEyNTE3NDI0M1owJjEkMCIGA1UEAxMbZG0tcm9vdC5k\nZWRpY2F0ZWQtbXlzcWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC\nAQEAw2f9mjCtEHnjNUrNPxk9K2GXrBEOd6FT5RQOzQ9hN64OQp2q9sqJ3sQDuxhv\nqj8H5neaKmpz9yYQERUol1j+lIcZz2XSySAIEl9gwj2Ifj7W8RZZ2zLgu2atqXjG\n0/Kx74gwT3DssktXctDmTA9qvRHggvkafUJDsqFixAVtd3vuX+73qfonn79ACnBR\n8w5/wCoh5JW449w7v7Ix1tlPEaN1PK82yUgJdW2jOSQ3FQfgwJGCt45qFQSpNYok\n1CmmZ9m0ZtMNCYThsfInU4kWPNigH6dekmrJQwO4Q84h0EmMMebUeaP6havS7gT3\nEsNpeIQvm+aUdDLXllFCx52npwIDAQABo4GWMIGTMB0GA1UdDgQWBBTSVUBoLjWu\n1axkj373gNzrq1QGuzBhBgNVHSMEWjBYgBTSVUBoLjWu1axkj373gNzrq1QGu6Eq\npCgwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tghR047mw\n5rXhrqyNTz/cF2sfnCBjvDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUA\nA4IBAQBgoGK9SOECIEssWcd0bQrJrTJGH6ZXzDLMxalpXoGockpvX0awAFNDJ654\nGezOBAJ7TPmDLdRDZFtITwP6Bjaz0HeLz5bkaFsiDyJxkULRgI2kYI9pADu9Uo74\nk6CgIaupoBHrRXR7aVGrWYeN840IFSZB1TCnrCuPne4UVEzGsTnFfUjyOgs0Mqo6\nqAkD6ZTVUPu0SwBDoY2TWD1UuH4rOIDwWzVV7u3vY6HY7rFtOGhiNHdiav7RjpsY\nXmsHnVSaa+5iOgi04VsOF3JhpxuvbdMmEe+sOfBmjv+NwNR+ngXelyCzvR7w74NQ\ndjPvEZQgEt7w6DpovGp8cwtKIMAx\n-----END CERTIFICATE-----\n"
 				})
 
-				It("does not specify TLS options for the mysqldump command", func() {
-					mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
+				When("SkipTLSValidation is not set", func() {
+					It("specifies the TLS options in the mysqldump command", func() {
+						mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
+						Expect(mysqldump).ToNot(BeNil())
+						Expect(mysqldump.Args).To(Equal([]string{
+							"mysqldump",
+							"--user=some-user-name",
+							"--host=some-hostname",
+							"--port=3307",
+							"--ssl-mode=VERIFY_IDENTITY",
+							"--ssl-capath=/etc/ssl/certs",
+							"--max-allowed-packet=1G",
+							"--single-transaction",
+							"--skip-routines",
+							"--skip-events",
+							"--set-gtid-purged=off",
+							"--skip-triggers",
+							"--databases",
+							"foo",
+							"bar",
+							"baz",
+						}))
+						Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
+					})
+				})
+
+				When("SkipTLSValidation is set", func() {
+					BeforeEach(func() {
+						credentials.SkipTLSValidation = true
+					})
+
+					It("does not specify TLS options for mysqldump command", func() {
+						mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
+						Expect(mysqldump).ToNot(BeNil())
+						Expect(mysqldump.Args).To(Equal([]string{
+							"mysqldump",
+							"--user=some-user-name",
+							"--host=some-hostname",
+							"--port=3307",
+							"--max-allowed-packet=1G",
+							"--single-transaction",
+							"--skip-routines",
+							"--skip-events",
+							"--set-gtid-purged=off",
+							"--skip-triggers",
+							"--databases",
+							"foo",
+							"bar",
+							"baz",
+						}))
+						Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
+					})
+				})
+			})
+
+			When("views to ignore are specified", func() {
+				var (
+					invalidViews []discovery.View
+				)
+
+				BeforeEach(func() {
+					invalidViews = []discovery.View{
+						{Schema: "foo", TableName: "view1"},
+						{Schema: "bar", TableName: "view1"},
+						{Schema: "baz", TableName: "view1"},
+					}
+				})
+
+				It("add the mysqldump --ignore-table option the correct number of times", func() {
+					mysqldump := MySQLDumpCmd(credentials, invalidViews, schemas...)
 					Expect(mysqldump).ToNot(BeNil())
 					Expect(mysqldump.Args).To(Equal([]string{
 						"mysqldump",
@@ -248,9 +166,97 @@ var _ = Describe("Backup / Restore API", func() {
 						"--skip-events",
 						"--set-gtid-purged=off",
 						"--skip-triggers",
-						"one-database",
+						"--databases",
+						"--ignore-table=foo.view1",
+						"--ignore-table=bar.view1",
+						"--ignore-table=baz.view1",
+						"foo",
+						"bar",
+						"baz",
 					}))
 					Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
+				})
+			})
+		})
+
+		When("dumping a single schema", func() {
+			BeforeEach(func() {
+				schemas = []string{"one-database"}
+			})
+
+			It("dumps only a single database with the --databases option", func() {
+				mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
+				Expect(mysqldump).ToNot(BeNil())
+				Expect(mysqldump.Args).To(Equal([]string{
+					"mysqldump",
+					"--user=some-user-name",
+					"--host=some-hostname",
+					"--port=3307",
+					"--max-allowed-packet=1G",
+					"--single-transaction",
+					"--skip-routines",
+					"--skip-events",
+					"--set-gtid-purged=off",
+					"--skip-triggers",
+					"--databases",
+					"one-database",
+				}))
+				Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
+			})
+
+			When("TLS is enabled", func() {
+				BeforeEach(func() {
+					credentials.CA = "-----BEGIN CERTIFICATE-----\nMIIDcTCCAlmgAwIBAgIUdOO5sOa14a6sjU8/3BdrH5wgY7wwDQYJKoZIhvcNAQEL\nBQAwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tMB4XDTE4\nMDEyNTE3NDI0M1oXDTE5MDEyNTE3NDI0M1owJjEkMCIGA1UEAxMbZG0tcm9vdC5k\nZWRpY2F0ZWQtbXlzcWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC\nAQEAw2f9mjCtEHnjNUrNPxk9K2GXrBEOd6FT5RQOzQ9hN64OQp2q9sqJ3sQDuxhv\nqj8H5neaKmpz9yYQERUol1j+lIcZz2XSySAIEl9gwj2Ifj7W8RZZ2zLgu2atqXjG\n0/Kx74gwT3DssktXctDmTA9qvRHggvkafUJDsqFixAVtd3vuX+73qfonn79ACnBR\n8w5/wCoh5JW449w7v7Ix1tlPEaN1PK82yUgJdW2jOSQ3FQfgwJGCt45qFQSpNYok\n1CmmZ9m0ZtMNCYThsfInU4kWPNigH6dekmrJQwO4Q84h0EmMMebUeaP6havS7gT3\nEsNpeIQvm+aUdDLXllFCx52npwIDAQABo4GWMIGTMB0GA1UdDgQWBBTSVUBoLjWu\n1axkj373gNzrq1QGuzBhBgNVHSMEWjBYgBTSVUBoLjWu1axkj373gNzrq1QGu6Eq\npCgwJjEkMCIGA1UEAxMbZG0tcm9vdC5kZWRpY2F0ZWQtbXlzcWwuY29tghR047mw\n5rXhrqyNTz/cF2sfnCBjvDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUA\nA4IBAQBgoGK9SOECIEssWcd0bQrJrTJGH6ZXzDLMxalpXoGockpvX0awAFNDJ654\nGezOBAJ7TPmDLdRDZFtITwP6Bjaz0HeLz5bkaFsiDyJxkULRgI2kYI9pADu9Uo74\nk6CgIaupoBHrRXR7aVGrWYeN840IFSZB1TCnrCuPne4UVEzGsTnFfUjyOgs0Mqo6\nqAkD6ZTVUPu0SwBDoY2TWD1UuH4rOIDwWzVV7u3vY6HY7rFtOGhiNHdiav7RjpsY\nXmsHnVSaa+5iOgi04VsOF3JhpxuvbdMmEe+sOfBmjv+NwNR+ngXelyCzvR7w74NQ\ndjPvEZQgEt7w6DpovGp8cwtKIMAx\n-----END CERTIFICATE-----\n"
+				})
+
+				When("SkipTLSValidation is not set", func() {
+					It("specifies the TLS options in the mysqldump command", func() {
+						mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
+						Expect(mysqldump).ToNot(BeNil())
+						Expect(mysqldump.Args).To(Equal([]string{
+							"mysqldump",
+							"--user=some-user-name",
+							"--host=some-hostname",
+							"--port=3307",
+							"--ssl-mode=VERIFY_IDENTITY",
+							"--ssl-capath=/etc/ssl/certs",
+							"--max-allowed-packet=1G",
+							"--single-transaction",
+							"--skip-routines",
+							"--skip-events",
+							"--set-gtid-purged=off",
+							"--skip-triggers",
+							"--databases",
+							"one-database",
+						}))
+						Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
+					})
+				})
+
+				When("SkipTLSValidation is set", func() {
+					BeforeEach(func() {
+						credentials.SkipTLSValidation = true
+					})
+
+					It("does not specify TLS options for the mysqldump command", func() {
+						mysqldump := MySQLDumpCmd(credentials, nil, schemas...)
+						Expect(mysqldump).ToNot(BeNil())
+						Expect(mysqldump.Args).To(Equal([]string{
+							"mysqldump",
+							"--user=some-user-name",
+							"--host=some-hostname",
+							"--port=3307",
+							"--max-allowed-packet=1G",
+							"--single-transaction",
+							"--skip-routines",
+							"--skip-events",
+							"--set-gtid-purged=off",
+							"--skip-triggers",
+							"--databases",
+							"one-database",
+						}))
+						Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
+					})
 				})
 			})
 		})

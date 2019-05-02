@@ -55,15 +55,13 @@ func MySQLDumpCmd(credentials Credentials, invalidViews []discovery.View, schema
 		"--skip-events",
 		"--set-gtid-purged=off",
 		"--skip-triggers",
+		"--databases",
 	)
 
 	for _, view := range invalidViews {
 		cmd.Args = append(cmd.Args, fmt.Sprintf("--ignore-table=%s", view))
 	}
 
-	if len(schemas) > 1 {
-		cmd.Args = append(cmd.Args, "--databases")
-	}
 	cmd.Args = append(cmd.Args, schemas...)
 
 	return cmd
