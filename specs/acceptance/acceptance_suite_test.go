@@ -31,6 +31,7 @@ func TestIntegration(t *testing.T) {
 var (
 	TestSetup *workflowhelpers.ReproducibleTestSuiteSetup
 	Config    *config.Config
+	migrationTimeout string
 )
 
 var _ = BeforeSuite(func() {
@@ -50,6 +51,11 @@ var _ = BeforeSuite(func() {
 
 	TestSetup = workflowhelpers.NewTestSuiteSetup(Config)
 	TestSetup.Setup()
+
+	migrationTimeout = "25m"
+	if os.Getenv("MIGRATION_TIMEOUT") != "" {
+		migrationTimeout = os.Getenv("MIGRATION_TIMEOUT")
+	}
 
 	Expect(os.Setenv("CF_COLOR", "false")).To(Succeed())
 })

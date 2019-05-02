@@ -128,7 +128,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "-p", destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "20m", "1s").Should(gexec.Exit(0))
+				Eventually(session, migrationTimeout, "1s").Should(gexec.Exit(0))
 				Expect(session.Out).To(gbytes.Say(`The following views are invalid, and will not be migrated: \[%s.dropped_table_view\]`, serviceKey.Name))
 			})
 
@@ -195,7 +195,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				cmd := exec.Command("cf", "mysql-tools", "migrate", "--no-cleanup", sourceInstance, "-p", destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "20m", "1s").Should(gexec.Exit(0))
+				Eventually(session, migrationTimeout, "1s").Should(gexec.Exit(0))
 
 				destinationGUID = test_helpers.InstanceUUID(sourceInstance)
 				appGUIDs := test_helpers.BoundAppGUIDs(destinationGUID)
@@ -222,7 +222,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(session, "45m", "1s").Should(gexec.Exit(1))
+			Eventually(session, migrationTimeout, "1s").Should(gexec.Exit(1))
 			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
 		})
 
@@ -245,7 +245,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(session, "20m", "1s").
+				Eventually(session, migrationTimeout, "1s").
 					Should(
 						gexec.Exit(1),
 						`Expected migration to fail, but it did not`,

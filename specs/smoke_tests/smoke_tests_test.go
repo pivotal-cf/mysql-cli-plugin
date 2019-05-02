@@ -98,7 +98,7 @@ var _ = Describe("SmokeTests", func() {
 				cmd := exec.Command("cf", "mysql-tools", "migrate", instanceName, "-p", destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "45m", "1s").Should(gexec.Exit(0))
+				Eventually(session, migrationTimeout, "1s").Should(gexec.Exit(0))
 			})
 
 			By("Verifying the destination service was renamed to the source's name", func() {
