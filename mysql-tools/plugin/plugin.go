@@ -236,7 +236,6 @@ func Migrate(migrator Migrator, args []string) error {
 		}
 	} else {
 		tempRecipientInstanceName = destService
-		cleanup = false
 		if err := migrator.ConfigureServiceInstance(destService); err != nil {
 			return fmt.Errorf("error configuring service instance: %v. Not cleaning up service %s",
 				err,
@@ -253,7 +252,7 @@ func Migrate(migrator Migrator, args []string) error {
 	}
 
 	if err := migrator.MigrateData(migrationOptions); err != nil {
-		if cleanup {
+		if cleanup && destPlan != "" {
 			migrator.DeleteServiceInstanceOnError(tempRecipientInstanceName)
 
 			return fmt.Errorf("error migrating data: %v. Attempting to clean up service %s",

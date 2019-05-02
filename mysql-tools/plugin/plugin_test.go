@@ -196,7 +196,7 @@ var _ = Describe("Plugin Commands", func() {
 					opts := fakeMigrator.MigrateDataArgsForCall(0)
 					Expect(opts.DonorInstanceName).To(Equal("some-donor"))
 					Expect(opts.RecipientInstanceName).To(Equal("some-service"))
-					Expect(opts.Cleanup).To(BeFalse())
+					Expect(opts.Cleanup).To(BeTrue())
 					Expect(opts.SkipTLSValidation).To(BeFalse())
 				})
 
@@ -237,7 +237,7 @@ var _ = Describe("Plugin Commands", func() {
 					Expect(fakeMigrator.MigrateDataCallCount()).To(Equal(1))
 					Expect(err).To(MatchError("error migrating data: some-cf-error. Not cleaning up service some-service"))
 					opts := fakeMigrator.MigrateDataArgsForCall(0)
-					Expect(opts.Cleanup).To(BeFalse())
+					Expect(opts.Cleanup).To(BeTrue())
 					Expect(fakeMigrator.DeleteServiceInstanceOnErrorCallCount()).To(Equal(0))
 				})
 
