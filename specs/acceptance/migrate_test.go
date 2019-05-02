@@ -223,8 +223,8 @@ var _ = Describe("Migrate Integration Tests", func() {
 				destInstanceGUID = test_helpers.InstanceUUID(destInstance)
 			})
 
-			FContext("with no data", func() {
-				It("does something", func() {
+			Context("with no data on the recipient instance", func() {
+				It("migrates data from donor to recipient", func() {
 					var (
 						readValue    string
 						springAppURI string
@@ -266,10 +266,29 @@ var _ = Describe("Migrate Integration Tests", func() {
 
 					ValidateMigrationResults(readValue, springAppURI, albumID, writeValue)
 				})
-
 			})
-			Context("with existing data", func() {
 
+			Context("with existing data", func() {
+				BeforeEach(func() {
+					donorCredentials := test_helpers.GetServiceKey(sourceInstance, "donor-info")
+					test_helpers.DeleteServiceKey(sourceInstance, "donor-info")
+
+					populateDatabase(destInstance, donorCredentials.Name)
+				})
+
+				It("fails to migrate data", func() {
+					By("Migrating data using the migrate command", func() {
+						cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "-s", destInstance)
+						session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+
+
+						Expect(err).NotTo(HaveOccurred())
+						Eventually(session, "20m", "1s").Should(gexec.Exit(1))
+
+						Expect(session.Out).To(gbytes.Say(`Failed, the following schemas were found in the destination DB:`))
+					})
+
+				})
 			})
 
 		})
@@ -364,6 +383,35 @@ func setupStoredCodeFixtures(instanceName string) {
 
 	_, err = db.Exec("CREATE PROCEDURE migrate_procedure() BEGIN END")
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func populateDatabase(instanceName, dbName string) {
+	var err error
+
+	appName := generator.PrefixedRandomName("MYSQL", "EXISTING_SCHEMA")
+	serviceKey := generator.PrefixedRandomName("MYSQL", "SERVICE_KEY")
+
+	test_helpers.PushApp(appName, "../assets/spring-music")
+	test_helpers.BindAppToService(appName, instanceName)
+	defer func() {
+		test_helpers.DeleteApp(appName)
+		test_helpers.AssertAppIsDeleted(appName)
+	}()
+
+	test_helpers.StartApp(appName)
+
+	serviceKeyCreds := test_helpers.GetServiceKey(instanceName, serviceKey)
+	defer test_helpers.DeleteServiceKey(instanceName, serviceKey)
+
+	db, closeTunnel := test_helpers.OpenDatabaseTunnelToApp(appName, serviceKeyCreds)
+	defer closeTunnel()
+	defer db.Close()
+
+	_, err = db.Exec(`CREATE DATABASE IF NOT EXISTS ` + dbName)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	_, err = db.Exec("CREATE TABLE " + dbName + ".t1 (id int)")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
 
 func validateMigratedStoredCode(instanceName string) {
