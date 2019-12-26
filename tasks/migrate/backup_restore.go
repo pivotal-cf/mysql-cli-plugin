@@ -94,7 +94,7 @@ func ValidateHost(credentials Credentials, timeout time.Duration) ([]string, err
 				return addrs, nil
 			}
 
-			if e, ok := err.(*net.DNSError); !ok || !e.Temporary() {
+			if _, ok := err.(*net.DNSError); !ok {
 				return nil, err
 			}
 		}
