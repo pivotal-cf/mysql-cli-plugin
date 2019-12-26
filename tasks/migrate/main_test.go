@@ -154,8 +154,8 @@ var _ = Describe("Migrate Task", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(exitStatus).To(Equal(1))
-			Eventually(output).Should(gbytes.Say(`Failed to resolve source host "nonexist-source": lookup nonexist-source.*: no such host`))
-			Eventually(output).Should(gbytes.Say(`Failed to resolve destination host "nonexist-destination": lookup nonexist-destination.*: no such host`))
+			Eventually(output).Should(gbytes.Say(`Failed to resolve source host "nonexist-source": Timed out - failing with error: lookup nonexist-source.*: no such host`))
+			Eventually(output).Should(gbytes.Say(`Failed to resolve destination host "nonexist-destination": Timed out - failing with error: lookup nonexist-destination.*: no such host`))
 		})
 	})
 

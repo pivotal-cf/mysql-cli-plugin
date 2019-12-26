@@ -87,7 +87,12 @@ func ValidateHost(credentials Credentials, timeout time.Duration) ([]string, err
 	for {
 		select {
 		case <-timer.C:
-			return nil, errors.New("timeout")
+			addrs, err := net.LookupHost(credentials.Hostname)
+			if err == nil {
+				return addrs, nil
+			}
+
+			return nil, errors.Wrap(err, "Timed out - failing with error")
 		case <-ticker.C:
 			addrs, err := net.LookupHost(credentials.Hostname)
 			if err == nil {
