@@ -271,7 +271,7 @@ func setupStoredCodeFixtures(instanceName string) {
 	test_helpers.BindAppToService(appName, instanceName)
 	defer func() {
 		test_helpers.DeleteApp(appName)
-		test_helpers.AssertAppIsDeleted(appName)
+		Expect(test_helpers.AssertAppIsDeleted(appName)).ToNot(HaveOccurred())
 	}()
 
 	test_helpers.StartApp(appName)
@@ -310,7 +310,7 @@ func validateMigratedStoredCode(instanceName string) {
 	test_helpers.BindAppToService(appName, instanceName)
 	defer func() {
 		test_helpers.DeleteApp(appName)
-		test_helpers.AssertAppIsDeleted(appName)
+		Expect(test_helpers.AssertAppIsDeleted(appName)).ToNot(HaveOccurred())
 	}()
 
 	test_helpers.StartApp(appName)
@@ -347,7 +347,7 @@ func createInvalidMigrationState(instanceName string) {
 	test_helpers.BindAppToService(appName, instanceName)
 	defer func() {
 		test_helpers.DeleteApp(appName)
-		test_helpers.AssertAppIsDeleted(appName)
+		Expect(test_helpers.AssertAppIsDeleted(appName)).ToNot(HaveOccurred())
 	}()
 
 	test_helpers.StartApp(appName)

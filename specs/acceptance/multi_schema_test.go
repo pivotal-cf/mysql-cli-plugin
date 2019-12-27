@@ -149,7 +149,7 @@ func createTestDb(sourceInstance, dbName string) {
 	test_helpers.BindAppToService(appName, sourceInstance)
 	defer func() {
 		test_helpers.DeleteApp(appName)
-		test_helpers.AssertAppIsDeleted(appName)
+		Expect(test_helpers.AssertAppIsDeleted(appName)).ToNot(HaveOccurred())
 	}()
 
 	test_helpers.StartApp(appName)
@@ -173,7 +173,7 @@ func dbExists(sourceInstance, dbName string) (bool, error) {
 	test_helpers.BindAppToService(appName, sourceInstance)
 	defer func() {
 		test_helpers.DeleteApp(appName)
-		test_helpers.AssertAppIsDeleted(appName)
+		Expect(test_helpers.AssertAppIsDeleted(appName)).ToNot(HaveOccurred())
 	}()
 
 	test_helpers.StartApp(appName)

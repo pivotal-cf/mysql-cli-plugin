@@ -24,6 +24,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
+
+	"github.com/pkg/errors"
 
 	pollcf "github.com/pivotal-cf/mysql-cli-plugin/test_helpers/poll_cf/cf"
 
@@ -193,13 +196,33 @@ func DeleteApp(appName string) {
 	ExecuteCfCmd("delete", appName, "-f")
 }
 
-func AssertAppIsDeleted(appName string) {
-	success := fmt.Sprintf("App %s not found", appName)
-	commandReport := fmt.Sprintf("Polling `cf app %s` for '%s'", appName, success)
+
+func AssertAppIsDeleted(appName string) error {
+	not_found_with_quote := fmt.Sprintf("App '%s' not found", appName)
+	not_found_without_quote := fmt.Sprintf("App %s not found", appName)
+	commandReport := fmt.Sprintf("Polling `cf app %s` for '%s' or '%s'", appName, not_found_with_quote, not_found_without_quote)
 	pollcf.ReportPoll(commandReport)
-	EventuallyWithOffset(1, func() string {
-		return string(pollcf.PollCf("app", appName).Wait(cfCommandTimeout).Err.Contents())
-	}, cfServiceWaitTimeout, curlTimeout).Should(ContainSubstring(success))
+
+
+	cfServiceWaitDuration, _ := time.ParseDuration(cfServiceWaitTimeout)
+	timeout := time.NewTimer(cfServiceWaitDuration)
+	curlDuration, _ := time.ParseDuration(curlTimeout)
+	ticker := time.NewTicker(curlDuration)
+
+	for {
+		select {
+		case <-ticker.C:
+			appOutput := string(pollcf.PollCf("app", appName).Wait().Err.Contents())
+			if strings.Contains(appOutput, not_found_with_quote) {
+				return nil
+			}
+			if strings.Contains(appOutput, not_found_without_quote) {
+				return nil
+			}
+		case <-timeout.C:
+			return errors.New("timeout waiting for app deletion")
+		}
+	}
 }
 
 func BoundAppGUIDs(instanceGUID string) []string {
