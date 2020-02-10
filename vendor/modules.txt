@@ -1,10 +1,12 @@
-# code.cloudfoundry.org/cli v6.40.1+incompatible
+# code.cloudfoundry.org/cli v6.49.0+incompatible
 code.cloudfoundry.org/cli/plugin
 code.cloudfoundry.org/cli/plugin/models
+# code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f
+code.cloudfoundry.org/gofileutils/fileutils
 # github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
 github.com/Azure/go-ansiterm
 github.com/Azure/go-ansiterm/winterm
-# github.com/Masterminds/semver v1.4.2
+# github.com/Masterminds/semver v1.5.0
 github.com/Masterminds/semver
 # github.com/Microsoft/go-winio v0.4.11
 github.com/Microsoft/go-winio
@@ -12,9 +14,9 @@ github.com/Microsoft/go-winio
 github.com/Nvveen/Gotty
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
-# github.com/cloudfoundry-community/go-cfclient v0.0.0-20190114203233-22d02065b53f
+# github.com/cloudfoundry-community/go-cfclient v0.0.0-20190808214049-35bcce23fc5f
 github.com/cloudfoundry-community/go-cfclient
-# github.com/cloudfoundry-incubator/cf-test-helpers v0.1.0
+# github.com/cloudfoundry-incubator/cf-test-helpers v1.0.0
 github.com/cloudfoundry-incubator/cf-test-helpers/cf
 github.com/cloudfoundry-incubator/cf-test-helpers/commandreporter
 github.com/cloudfoundry-incubator/cf-test-helpers/commandstarter
@@ -24,8 +26,6 @@ github.com/cloudfoundry-incubator/cf-test-helpers/internal
 github.com/cloudfoundry-incubator/cf-test-helpers/silentcommandstarter
 github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers
 github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers/internal
-# github.com/cloudfoundry/gofileutils v0.0.0-20170111115228-4d0c80011a0f
-github.com/cloudfoundry/gofileutils/fileutils
 # github.com/containerd/continuity v0.0.0-20181203112020-004b46473808
 github.com/containerd/continuity/pathdriver
 # github.com/docker/docker v1.4.2-0.20190110224251-3efd75b972a8
@@ -62,7 +62,7 @@ github.com/fsouza/go-dockerclient
 github.com/fsouza/go-dockerclient/internal/archive
 github.com/fsouza/go-dockerclient/internal/jsonmessage
 github.com/fsouza/go-dockerclient/internal/term
-# github.com/go-sql-driver/mysql v1.4.0
+# github.com/go-sql-driver/mysql v1.5.0
 github.com/go-sql-driver/mysql
 # github.com/gobuffalo/envy v1.9.0
 github.com/gobuffalo/envy
@@ -88,9 +88,9 @@ github.com/gobuffalo/packr/v2/jam/store
 github.com/gobuffalo/packr/v2/plog
 # github.com/gogo/protobuf v1.2.0
 github.com/gogo/protobuf/proto
-# github.com/golang/protobuf v1.3.1
+# github.com/golang/protobuf v1.3.3
 github.com/golang/protobuf/proto
-# github.com/google/uuid v1.0.0
+# github.com/google/uuid v1.1.1
 github.com/google/uuid
 # github.com/hashicorp/errwrap v1.0.0
 github.com/hashicorp/errwrap
@@ -110,16 +110,16 @@ github.com/jessevdk/go-flags
 github.com/joho/godotenv
 # github.com/konsorten/go-windows-terminal-sequences v1.0.2
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/mattn/go-runewidth v0.0.4
+# github.com/mattn/go-runewidth v0.0.8
 github.com/mattn/go-runewidth
 # github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2
 github.com/maxbrunsfeld/counterfeiter/v6
 github.com/maxbrunsfeld/counterfeiter/v6/arguments
 github.com/maxbrunsfeld/counterfeiter/v6/command
 github.com/maxbrunsfeld/counterfeiter/v6/generator
-# github.com/olekukonko/tablewriter v0.0.1
+# github.com/olekukonko/tablewriter v0.0.4
 github.com/olekukonko/tablewriter
-# github.com/onsi/ginkgo v1.8.0
+# github.com/onsi/ginkgo v1.12.0
 github.com/onsi/ginkgo
 github.com/onsi/ginkgo/config
 github.com/onsi/ginkgo/internal/codelocation
@@ -138,7 +138,7 @@ github.com/onsi/ginkgo/reporters/stenographer
 github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable
 github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
 github.com/onsi/ginkgo/types
-# github.com/onsi/gomega v1.5.0
+# github.com/onsi/gomega v1.9.0
 github.com/onsi/gomega
 github.com/onsi/gomega/format
 github.com/onsi/gomega/gbytes
@@ -160,7 +160,7 @@ github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v0.1.1
 github.com/opencontainers/runc/libcontainer/user
-# github.com/pborman/uuid v0.0.0-20180906182336-adf5a7427709
+# github.com/pborman/uuid v1.2.0
 github.com/pborman/uuid
 # github.com/pivotal-cf/go-binmock v0.0.0-20171027112700-f797157c64e9
 github.com/pivotal-cf/go-binmock
@@ -180,13 +180,13 @@ github.com/spf13/cobra
 github.com/spf13/pflag
 # golang.org/x/crypto v0.0.0-20200204104054-c9f3fb736b72
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20190628185345-da137c7871d7
+# golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/oauth2 v0.0.0-20190115181402-5dab4167f31c
+# golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/internal
@@ -227,8 +227,10 @@ golang.org/x/tools/internal/imports
 golang.org/x/tools/internal/module
 golang.org/x/tools/internal/packagesinternal
 golang.org/x/tools/internal/semver
-# google.golang.org/appengine v1.4.0
-google.golang.org/appengine/cloudsql
+# golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
+golang.org/x/xerrors
+golang.org/x/xerrors/internal
+# google.golang.org/appengine v1.6.5
 google.golang.org/appengine/internal
 google.golang.org/appengine/internal/base
 google.golang.org/appengine/internal/datastore
@@ -236,11 +238,9 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0
-gopkg.in/DATA-DOG/go-sqlmock.v1
 # gopkg.in/fsnotify/fsnotify.v1 v1.4.7
 gopkg.in/fsnotify/fsnotify.v1
 # gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 gopkg.in/tomb.v1
-# gopkg.in/yaml.v2 v2.2.2
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2

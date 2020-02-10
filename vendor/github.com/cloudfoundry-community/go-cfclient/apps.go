@@ -244,6 +244,26 @@ func (a *App) Space() (Space, error) {
 	return a.c.mergeSpaceResource(spaceResource), nil
 }
 
+func (a *App) Summary() (AppSummary, error) {
+	var appSummary AppSummary
+	requestUrl := fmt.Sprintf("/v2/apps/%s/summary", a.Guid)
+	r := a.c.NewRequest("GET", requestUrl)
+	resp, err := a.c.DoRequest(r)
+	if err != nil {
+		return AppSummary{}, errors.Wrap(err, "Error requesting app summary")
+	}
+	resBody, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		return AppSummary{}, errors.Wrap(err, "Error reading app summary body")
+	}
+	err = json.Unmarshal(resBody, &appSummary)
+	if err != nil {
+		return AppSummary{}, errors.Wrap(err, "Error unmarshalling app summary")
+	}
+	return appSummary, nil
+}
+
 // ListAppsByQueryWithLimits queries totalPages app info. When totalPages is
 // less and equal than 0, it queries all app info
 // When there are no more than totalPages apps on server side, all apps info will be returned
@@ -552,6 +572,32 @@ func (c *Client) GetAppBits(guid string) (io.ReadCloser, error) {
 		}
 	} else {
 		return nil, errors.Wrapf(err, "Error downloading app %s bits, expected redirect to blobstore", guid)
+	}
+	return resp.Body, nil
+}
+
+// GetDropletBits downloads the application's droplet bits as a tar file
+func (c *Client) GetDropletBits(guid string) (io.ReadCloser, error) {
+	requestURL := fmt.Sprintf("/v2/apps/%s/droplet/download", guid)
+	req := c.NewRequest("GET", requestURL)
+	resp, err := c.DoRequestWithoutRedirects(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error downloading droplet %s bits, API request failed", guid)
+	}
+	if isResponseRedirect(resp) {
+		// directly download the bits from blobstore using a non cloud controller transport
+		// some blobstores will return a 400 if an Authorization header is sent
+		blobStoreLocation := resp.Header.Get("Location")
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: c.Config.SkipSslValidation},
+		}
+		client := &http.Client{Transport: tr}
+		resp, err = client.Get(blobStoreLocation)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Error downloading droplet %s bits from blobstore", guid)
+		}
+	} else {
+		return nil, errors.Wrapf(err, "Error downloading droplet %s bits, expected redirect to blobstore", guid)
 	}
 	return resp.Body, nil
 }
