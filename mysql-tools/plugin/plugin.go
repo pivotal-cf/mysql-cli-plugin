@@ -22,7 +22,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
+	find_bindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/presentation"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
@@ -42,12 +42,12 @@ const (
 	findUsage    = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 )
 
-//go:generate counterfeiter . BindingFinder
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . BindingFinder
 type BindingFinder interface {
 	FindBindings(serviceLabel string) ([]find_bindings.Binding, error)
 }
 
-//go:generate counterfeiter . Migrator
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Migrator
 type Migrator interface {
 	CheckServiceExists(donorInstanceName string) error
 	CreateAndConfigureServiceInstance(planType, serviceName string) error
@@ -155,11 +155,11 @@ func FindBindings(bf BindingFinder, args []string) error {
 func Migrate(migrator Migrator, args []string) error {
 	var opts struct {
 		Args struct {
-			Source   string `positional-arg-name:"<source-service-instance>"`
+			Source string `positional-arg-name:"<source-service-instance>"`
 		} `positional-args:"yes" required:"yes"`
-		NoCleanup         bool `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
-		SkipTLSValidation bool `long:"skip-tls-validation" short:"k" description:"Skip certificate validation of the MySQL server certificate. Not recommended!"`
-		PlanName string `short:"p" long:"plan" description:"Service plan type" required:"yes"`
+		NoCleanup         bool   `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
+		SkipTLSValidation bool   `long:"skip-tls-validation" short:"k" description:"Skip certificate validation of the MySQL server certificate. Not recommended!"`
+		PlanName          string `short:"p" long:"plan" description:"Service plan type" required:"yes"`
 	}
 
 	parser := flags.NewParser(&opts, flags.None)

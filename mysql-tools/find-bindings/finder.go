@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate counterfeiter . Client
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Client
 type Client interface {
 	GetAppByGuid(guid string) (cfclient.App, error)
 	GetOrgByGuid(spaceGUID string) (cfclient.Org, error)

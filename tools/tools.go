@@ -1,3 +1,5 @@
+// +build toolsaa
+
 // Copyright (C) 2019-Present Pivotal Software, Inc. All rights reserved.
 //
 // This program and the accompanying materials are made available under the terms of the under the Apache License,
@@ -10,40 +12,12 @@
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-package cf
+package tools
 
 import (
-	"time"
-
-	plugin_models "code.cloudfoundry.org/cli/plugin/models"
+	_ "github.com/gobuffalo/packr/packr"
+	_ "github.com/maxbrunsfeld/counterfeiter/v6"
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . CFPluginAPI
-type CFPluginAPI interface {
-	CliCommand(...string) ([]string, error)
-	CliCommandWithoutTerminalOutput(args ...string) ([]string, error)
-	GetCurrentSpace() (plugin_models.Space, error)
-	GetService(string) (plugin_models.GetService_Model, error)
-	AccessToken() (string, error)
-}
-
-type SleepFunc func(time.Duration)
-
-type Error struct {
-	Detail string
-	Title  string
-	Code   int
-}
-
-type Task struct {
-	Errors []Error
-	State  string
-	Guid   string
-}
-
-type App struct {
-	Name string
-	Guid string
-}
-
-type cliTask func(string) (*Task, error)
+// This file imports packages that are used when running go generate, or used
+// during the development process but not otherwise depended on by built code.

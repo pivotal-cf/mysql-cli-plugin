@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate counterfeiter . Client
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Client
 type Client interface {
 	ServiceExists(serviceName string) bool
 	CreateServiceInstance(planType, instanceName string) error
@@ -40,7 +40,7 @@ type Client interface {
 	StartApp(appName string) error
 }
 
-//go:generate counterfeiter . Unpacker
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Unpacker
 type Unpacker interface {
 	Unpack(destDir string) error
 }

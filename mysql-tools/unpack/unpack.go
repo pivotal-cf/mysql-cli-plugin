@@ -21,12 +21,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate $GOPATH/bin/packr --compress
+//go:generate go run github.com/gobuffalo/packr/packr --compress
 var (
 	defaultBox = packr.NewBox("../../app")
 )
 
-//go:generate counterfeiter . Box
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Box
 type Box interface {
 	Walk(walkFunc packr.WalkFunc) error
 }
