@@ -14,12 +14,17 @@ package discovery_test
 
 import (
 	"database/sql"
+	"strconv"
+	"strings"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	. "github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
+	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/mysql"
+
 	"github.com/pivotal/mysql-test-utils/dockertest"
 )
 
@@ -27,6 +32,7 @@ var _ = Describe("Discovery Integration Tests", func() {
 	var (
 		db             *sql.DB
 		mysqlContainer *docker.Container
+		credentials    mysql.Credentials
 	)
 
 	BeforeEach(func() {
@@ -40,11 +46,22 @@ var _ = Describe("Discovery Integration Tests", func() {
 		Eventually(db.Ping, "1m", "1s").Should(Succeed(),
 			`Expected MySQL instance to be reachable after 1m, but it was not`,
 		)
+
+		hostMySQLPort, err := strconv.Atoi(dockertest.HostPort("3306/tcp", mysqlContainer))
+		Expect(err).NotTo(HaveOccurred())
+
+		credentials = mysql.Credentials{
+			Hostname: "127.0.0.1",
+			Name:     "",
+			Password: "",
+			Port:     hostMySQLPort,
+			Username: "root",
+		}
 	})
 
 	AfterEach(func() {
 		if mysqlContainer != nil {
-			dockertest.RemoveContainer(dockerClient, mysqlContainer)
+			Expect(dockertest.RemoveContainer(dockerClient, mysqlContainer)).To(Succeed())
 		}
 	})
 
@@ -52,14 +69,15 @@ var _ = Describe("Discovery Integration Tests", func() {
 		When("querying the database is successful", func() {
 			When("there are databases not in the list of filtered schemas", func() {
 				BeforeEach(func() {
-					Expect(createDatabases(db, "cf_metadata", "foo", "bar", "baz")).To(Succeed())
+					Expect(createDatabases(db, "foo\tbar", "cf_metadata", "foo", "bar", "baz")).To(Succeed())
 				})
 
 				It("returns a slice of discovered database names", func() {
-					Expect(DiscoverDatabases(db)).To(ConsistOf(
+					Expect(DiscoverDatabases(credentials)).To(ConsistOf(
 						"foo",
 						"bar",
 						"baz",
+						"foo\tbar",
 					), `Expected DiscoverDatabases to find 3 user databases, but it did not`)
 				})
 			})
@@ -70,7 +88,7 @@ var _ = Describe("Discovery Integration Tests", func() {
 				})
 
 				It("returns an error", func() {
-					_, err := DiscoverDatabases(db)
+					_, err := DiscoverDatabases(credentials)
 					Expect(err).To(MatchError("no databases found"))
 				})
 			})
@@ -78,44 +96,60 @@ var _ = Describe("Discovery Integration Tests", func() {
 	})
 
 	Context("DiscoverInvalidViews", func() {
-		var (
-			schemasToMigrate     []string
-			expectedInvalidViews []View
-		)
-
-		BeforeEach(func() {
-			schemasToMigrate = []string{
-				"service_instance_db",
-				"custom_user_db",
-			}
-			expectedInvalidViews = []View{
-				{Schema: "service_instance_db", TableName: "invalid_view"},
-				{Schema: "custom_user_db", TableName: "invalid_view"},
-			}
-
-			Expect(createDatabases(db, schemasToMigrate...)).To(Succeed())
-			Expect(createInvalidViews(db, expectedInvalidViews)).To(Succeed())
-			Expect(createValidViews(db, []View{
-				{Schema: "service_instance_db", TableName: "valid_view"},
-			})).To(Succeed())
+		When("there are no invalid views", func() {
+			It("returns an empty list without error", func() {
+				invalidViews, err := DiscoverInvalidViews(credentials)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(invalidViews).To(BeEmpty())
+			})
 		})
 
-		It("returns invalid views for each specified databases", func() {
-			invalidViews, err := DiscoverInvalidViews(db, schemasToMigrate)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(invalidViews).To(Equal(expectedInvalidViews))
-		})
+		When("there are invalid views in the source database", func() {
+			var (
+				schemasToMigrate []string
+			)
 
-		Context("when a schema exists with special characters in the name", func() {
 			BeforeEach(func() {
-				Expect(createDatabases(db, QuoteIdentifier("bad_character_`_schema"))).To(Succeed())
-				schemasToMigrate = append(schemasToMigrate, "bad_character_`_schema")
+				schemasToMigrate = []string{
+					"service_instance_db",
+					"custom_user_db",
+				}
+
+				Expect(createDatabases(db, schemasToMigrate...)).To(Succeed())
+
+				Expect(createInvalidViews(db, []View{
+					{Schema: "service_instance_db", TableName: "invalid_view"},
+					{Schema: "custom_user_db", TableName: "invalid_view"},
+				})).To(Succeed())
+
+				Expect(createValidViews(db, []View{
+					{Schema: "service_instance_db", TableName: "valid_view"},
+				})).To(Succeed())
 			})
 
-			It("is able to migrate views", func() {
-				invalidViews, err := DiscoverInvalidViews(db, schemasToMigrate)
+			It("returns a list of qualified view names", func() {
+				invalidViews, err := DiscoverInvalidViews(credentials)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(invalidViews).To(Equal(expectedInvalidViews))
+				Expect(invalidViews).To(ConsistOf([]string{
+					"service_instance_db.invalid_view",
+					"custom_user_db.invalid_view",
+				}))
+			})
+
+			Context("when a schema exists with special characters in the name", func() {
+				BeforeEach(func() {
+					Expect(createDatabases(db, quoteIdentifier("bad_character_`_schema"))).To(Succeed())
+					schemasToMigrate = append(schemasToMigrate, "bad_character_`_schema")
+				})
+
+				It("is able to migrate views", func() {
+					invalidViews, err := DiscoverInvalidViews(credentials)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(invalidViews).To(ConsistOf([]string{
+						"service_instance_db.invalid_view",
+						"custom_user_db.invalid_view",
+					}))
+				})
 			})
 		})
 	})
@@ -124,7 +158,7 @@ var _ = Describe("Discovery Integration Tests", func() {
 func createDatabases(db *sql.DB, names ...string) error {
 	var errs error
 	for _, name := range names {
-		if _, err := db.Exec(`CREATE DATABASE IF NOT EXISTS ` + name); err != nil {
+		if _, err := db.Exec(`CREATE DATABASE IF NOT EXISTS ` + quoteIdentifier(name)); err != nil {
 			errs = multierror.Append(errs, err)
 		}
 	}
@@ -132,11 +166,20 @@ func createDatabases(db *sql.DB, names ...string) error {
 	return errs
 }
 
+type View struct {
+	Schema    string
+	TableName string
+}
+
+func quoteIdentifier(name string) string {
+	return "`" + strings.Replace(name, "`", "``", -1) + "`"
+}
+
 func createInvalidViews(db *sql.DB, views []View) error {
 
 	for _, view := range views {
 		var err error
-		schema := QuoteIdentifier(view.Schema)
+		schema := quoteIdentifier(view.Schema)
 
 		_, err = db.Exec(`CREATE TABLE ` + schema + `.t1 (id int, data text)`)
 		if err != nil {
@@ -157,7 +200,7 @@ func createInvalidViews(db *sql.DB, views []View) error {
 
 func createValidViews(db *sql.DB, views []View) error {
 	for _, view := range views {
-		schema := QuoteIdentifier(view.Schema)
+		schema := quoteIdentifier(view.Schema)
 		_, err := db.Exec(`CREATE VIEW ` + schema + `.` + view.TableName + ` AS SELECT NOW()`)
 		if err != nil {
 			return err

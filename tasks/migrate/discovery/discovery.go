@@ -13,112 +13,90 @@
 package discovery
 
 import (
-	"database/sql"
+	"bytes"
+	"errors"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
+	"log"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/mysql"
 )
 
-func DiscoverDatabases(db *sql.DB) ([]string, error) {
-	rows, err := db.Query(`SHOW DATABASES`)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to query the database")
+func DiscoverDatabases(creds mysql.Credentials) ([]string, error) {
+	var (
+		sql    = "SHOW DATABASES WHERE `Database` NOT IN ('cf_metadata', 'information_schema', 'mysql', 'performance_schema', 'sys')"
+		input  = bytes.NewBufferString(sql)
+		output = bytes.Buffer{}
+	)
+
+	cmd := mysql.MySQLCmd(creds)
+	cmd.Args = append(cmd.Args, "--batch", "--skip-column-names")
+	cmd.Stdin = input
+	cmd.Stdout = &output
+
+	if err := cmd.Run(); err != nil {
+		return nil, err // wraap. aalso log stderr?
 	}
 
-	var dbs []string
+	var result []string
 
-	filterSchemas := map[string]struct{}{
-		"cf_metadata":        {},
-		"information_schema": {},
-		"mysql":              {},
-		"performance_schema": {},
-		"sys":                {},
-	}
-
-	for rows.Next() {
-		var dbName string
-		if err := rows.Scan(&dbName); err != nil {
-			return nil, errors.Wrap(err, "failed to scan the list of databases")
+	r := strings.NewReplacer(`\t`, "\t", `\\n`, "\n", `\\`, `\`)
+	for _, name := range strings.Split(output.String(), "\n") {
+		if name == "" {
+			continue
 		}
+		result = append(result, r.Replace(name))
+	}
 
-		if _, ok := filterSchemas[dbName]; ok {
+	if len(result) == 0 {
+		return nil, errors.New("no databases found")
+	}
+
+	return result, nil
+}
+
+func DiscoverInvalidViews(creds mysql.Credentials) ([]string, error) {
+	var (
+		sql = "SELECT `vws`.`TABLE_SCHEMA`, `vws`.`TABLE_NAME` " +
+			"FROM (" +
+			"SELECT `TABLE_SCHEMA`, `TABLE_NAME` " +
+			"FROM `information_schema`.`TABLES` " +
+			"WHERE `TABLE_SCHEMA` NOT IN ('cf_metadata', 'information_schema', 'mysql', 'performance_schema', 'sys') " +
+			"AND `TABLE_TYPE`='VIEW' " +
+			"AND `TABLE_ROWS` IS NULL " +
+			"AND `TABLE_COMMENT` LIKE '%invalid%') vws"
+		input  = bytes.NewBufferString(sql)
+		output = bytes.Buffer{}
+	)
+
+	cmd := mysql.MySQLCmd(creds)
+	cmd.Args = append(cmd.Args, "--batch", "--skip-column-names")
+	cmd.Stdin = input
+	cmd.Stdout = &output
+
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+
+	var result []string
+
+	r := strings.NewReplacer(`\t`, "\t", `\\n`, "\n", `\\`, `\`)
+	for _, row := range strings.Split(output.String(), "\n") {
+		if row == "" {
 			continue
 		}
 
-		dbs = append(dbs, dbName)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "failed to parse the list of databases")
-	}
-
-	if len(dbs) == 0 {
-		return nil, fmt.Errorf("no databases found")
-	}
-
-	return dbs, nil
-}
-
-type View struct {
-	Schema    string
-	TableName string
-}
-
-func (v View) String() string {
-	return fmt.Sprintf("%s.%s", v.Schema, v.TableName)
-}
-
-func QuoteIdentifier(name string) string {
-	return "`" + strings.Replace(name, "`", "``", -1) + "`"
-}
-
-func discoverViews(db *sql.DB, schema string) (views []View, err error) {
-	findViewsQuery := `SELECT table_name from INFORMATION_SCHEMA.VIEWS WHERE table_schema = ?`
-	rows, err := db.Query(findViewsQuery, schema)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve views for %s schema", schema)
-	}
-
-	for rows.Next() {
-		var (
-			view View
-		)
-		if err := rows.Scan(&view.TableName); err != nil {
-			return nil, errors.Wrap(err, "failed to scan the list of views")
-		}
-		view.Schema = schema
-
-		views = append(views, view)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "failed to prepare the list of views")
-	}
-
-	return views, nil
-}
-
-func DiscoverInvalidViews(db *sql.DB, schemas []string) ([]View, error) {
-	var invalidViews []View
-	for _, schema := range schemas {
-		views, err := discoverViews(db, schema)
-		if err != nil {
-			return nil, err
+		fields := strings.SplitN(row, "\t", 2)
+		if len(fields) != 2 {
+			log.Printf("Error while scanning for invalid views: expected exactly one schema name and view name but found %q", row)
+			continue
 		}
 
-		for _, view := range views {
-			checkInvalidViewQuery := fmt.Sprintf(`SHOW FIELDS FROM %s IN %s`, QuoteIdentifier(view.TableName), QuoteIdentifier(view.Schema))
-			if _, err := db.Exec(checkInvalidViewQuery); err != nil {
-				if _, ok := err.(*mysql.MySQLError); ok {
-					invalidViews = append(invalidViews, view)
-				} else {
-					return nil, errors.Wrapf(err, "Unexpected error when validating view %q.%q", view.Schema, view.TableName)
-				}
-			}
-		}
+		result = append(result, fmt.Sprintf("%s.%s",
+			r.Replace(fields[0]),
+			r.Replace(fields[1]),
+		))
 	}
 
-	return invalidViews, nil
+	return result, nil
 }

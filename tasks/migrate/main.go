@@ -13,14 +13,15 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"log"
 	"os"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
+	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/mysql"
 )
 
 var (
@@ -45,24 +46,24 @@ func main() {
 	sourceInstance = args[0]
 	destInstance = args[1]
 
-	sourceCredentials, err := InstanceCredentials(sourceInstance, VcapCredentials)
+	sourceCredentials, err := mysql.InstanceCredentials(sourceInstance, VcapCredentials)
 	if err != nil {
 		log.Fatalf("Failed to lookup source credentials: %v", err)
 	}
 
-	destCredentials, err := InstanceCredentials(destInstance, VcapCredentials)
+	destCredentials, err := mysql.InstanceCredentials(destInstance, VcapCredentials)
 	if err != nil {
 		log.Fatalf("Failed to lookup destination credentials: %v", err)
 	}
 
-	sourceAddrs, err := ValidateHost(sourceCredentials, time.Minute)
+	sourceAddrs, err := mysql.ValidateHost(sourceCredentials, time.Minute)
 	if err != nil {
 		log.Printf("Failed to resolve source host %q: %v", sourceCredentials.Hostname, err)
 	} else {
 		log.Printf("Resolve source host %q to %v", sourceCredentials.Hostname, sourceAddrs)
 	}
 
-	destAddrs, err := ValidateHost(destCredentials, time.Minute)
+	destAddrs, err := mysql.ValidateHost(destCredentials, time.Minute)
 	if err != nil {
 		log.Printf("Failed to resolve destination host %q: %v", destCredentials.Hostname, err)
 	} else {
@@ -71,17 +72,12 @@ func main() {
 	sourceCredentials.SkipTLSValidation = skipTLSValidation
 	destCredentials.SkipTLSValidation = skipTLSValidation
 
-	db, err := sql.Open("mysql", sourceCredentials.DSN())
-	if err != nil {
-		log.Fatalf("Failed to initialize source connection: %v", err)
-	}
-
-	sourceSchemas, err := discovery.DiscoverDatabases(db)
+	sourceSchemas, err := discovery.DiscoverDatabases(sourceCredentials)
 	if err != nil {
 		log.Fatalf("Failed to discover schemas: %v", err)
 	}
 
-	invalidViews, err := discovery.DiscoverInvalidViews(db, sourceSchemas)
+	invalidViews, err := discovery.DiscoverInvalidViews(sourceCredentials)
 	if err != nil {
 		log.Fatalf("Failed to retrieve invalid views: %v", err)
 	}
@@ -90,11 +86,11 @@ func main() {
 		log.Printf("The following views are invalid, and will not be migrated: %s\n", invalidViews)
 	}
 
-	mySQLDumpCmd := MySQLDumpCmd(sourceCredentials, invalidViews, sourceSchemas...)
-	mySQLCmd := MySQLCmd(destCredentials)
-	replaceCmd := ReplaceDefinerCmd()
+	mySQLDumpCmd := mysql.MySQLDumpCmd(sourceCredentials, invalidViews, sourceSchemas)
+	mySQLCmd := mysql.MySQLCmd(destCredentials)
+	replaceCmd := mysql.ReplaceDefinerCmd()
 
-	if err := CopyData(mySQLDumpCmd, replaceCmd, mySQLCmd); err != nil {
+	if err := mysql.CopyData(mySQLDumpCmd, replaceCmd, mySQLCmd); err != nil {
 		log.Fatalf("Failed to copy data: %v", err)
 	}
 }

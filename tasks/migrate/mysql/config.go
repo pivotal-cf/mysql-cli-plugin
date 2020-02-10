@@ -10,12 +10,13 @@
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-package main
+package mysql
 
 import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 )
 
@@ -42,15 +43,15 @@ func (d Credentials) DSN() string {
 		tlsConfig = "true"
 	}
 
-	return fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s?tls=%s",
-		d.Username,
-		d.Password,
-		d.Hostname,
-		d.Port,
-		d.Name,
-		tlsConfig,
-	)
+	cfg := mysql.NewConfig()
+
+	cfg.User = d.Username
+	cfg.Passwd = d.Password
+	cfg.Addr = fmt.Sprintf("%s:%d", d.Hostname, d.Port)
+	cfg.DBName = d.Name
+	cfg.TLSConfig = tlsConfig
+
+	return cfg.FormatDSN()
 }
 
 func InstanceCredentials(instanceName, vcapCredentials string) (Credentials, error) {

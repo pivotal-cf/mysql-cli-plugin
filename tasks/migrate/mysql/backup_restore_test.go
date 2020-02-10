@@ -10,7 +10,7 @@
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-package main
+package mysql
 
 import (
 	"bytes"
@@ -20,6 +20,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/go-binmock"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 )
 

@@ -10,7 +10,7 @@
 // an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-package main
+package mysql
 
 import (
 	"fmt"
@@ -19,7 +19,6 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 	"github.com/pkg/errors"
 )
 
@@ -45,7 +44,7 @@ func baseCmd(cmdName string, credentials Credentials) *exec.Cmd {
 	return cmd
 }
 
-func MySQLDumpCmd(credentials Credentials, invalidViews []discovery.View, schemas ...string) *exec.Cmd {
+func MySQLDumpCmd(credentials Credentials, invalidViews []string, schemas []string) *exec.Cmd {
 	cmd := baseCmd("mysqldump", credentials)
 
 	cmd.Args = append(cmd.Args,
@@ -108,8 +107,8 @@ func ValidateHost(credentials Credentials, timeout time.Duration) ([]string, err
 
 func ReplaceDefinerCmd() *exec.Cmd {
 	args := []string{
-		"-e",
-		"s/DEFINER=.* SQL SECURITY .*/SQL SECURITY INVOKER/",
+		"-e", "s/DEFINER=.* SQL SECURITY .*/SQL SECURITY INVOKER/",
+		"-e", "s/ ENCRYPTION='Y'//",
 	}
 
 	cmd := exec.Command("sed", args...)

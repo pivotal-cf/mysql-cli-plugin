@@ -16,7 +16,7 @@ set -euo pipefail
 
 bin_dir='app/bin'
 lib_dir='app/lib'
-percona_version='5.7.21-20'
+percona_version='5.7.29-32'
 percona_major_minor="5.7"
 
 function install_mysql_client_utils() {
@@ -24,8 +24,9 @@ function install_mysql_client_utils() {
     local build_deps=(
       cmake
       g++
-      make \
+      make
       libncurses5-dev
+      libpam0g-dev
       libssl-dev
       zlib1g-dev
     )
@@ -43,36 +44,42 @@ function install_mysql_client_utils() {
 
     curl -Ls "https://www.percona.com/downloads/Percona-Server-${percona_major_minor}/Percona-Server-${percona_version}/source/tarball/percona-server-${percona_version}.tar.gz" \
         > "${build_dir}/percona.tgz" \
-        && sha256sum -c - <<< "842785e9b73c606be00ea74f568615d3427362fbeed5c136d8f509f03c9d43a6  ${build_dir}/percona.tgz"
+        && sha256sum -c - <<< "e3a7e6a0d966e41f62645f88cfbc75e052756f6ab45bd8b981343a0d9f5c3aa4  ${build_dir}/percona.tgz"
 
     tar -xf "${build_dir}/boost.tgz" -C "${build_dir}" && \
     tar -xf "${build_dir}/percona.tgz" -C "${build_dir}" && \
 
     pushd "${build_dir}/percona-server-${percona_version}" >/dev/null
-    CMAKE_INCLUDE_PATH=/usr/include/ cmake . \
+    CXXFLAGS=-static-libstdc++ \
+    CMAKE_INCLUDE_PATH=/usr/include/ \
+    cmake . \
       -DBUILD_CONFIG=mysql_release \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-      -DCMAKE_INSTALL_PREFIX=/build \
+      -DCMAKE_INSTALL_PREFIX=/home/vcap/app \
+      -DCURSES_LIBRARY=/usr/lib/x86_64-linux-gnu/libtinfo.a \
       -DFEATURE_SET=community \
+      -DIGNORE_AIO_CHECK=ON \
       -DINSTALL_MYSQLTESTDIR= \
       -DWITH_BOOST="../boost_1_59_0" \
-      -DWITH_EMBEDDED_SERVER=OFF \
       -DWITH_EDITLINE=bundled \
-      -DWITH_SSL=system \
+      -DWITH_EMBEDDED_SERVER=OFF \
+      -DWITH_PAM=on \
+      -DWITH_RAPID=OFF \
+      -DWITH_ROCKSDB=OFF \
+      -DWITH_SSL=/usr \
+      -DWITH_TOKUDB=OFF \
       -DWITH_ZLIB=system \
-      -DIGNORE_AIO_CHECK=ON \
-      -DWITHOUT_SERVER=ON && \
-      make --jobs 4 && \
-      make install
+      && make --jobs 4 \
+      && make install
     popd >/dev/null
 
-    mv /build/COPYING ${bin_dir}
-    mv /build/README.MySQL ${bin_dir}
-    mv /build/bin/mysql ${bin_dir}
-    mv /build/bin/mysqldump ${bin_dir}
-    cp /usr/lib/x86_64-linux-gnu/libssl.so.1.1 ${lib_dir}
-    cp /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 ${lib_dir}
-    cp /lib/x86_64-linux-gnu/libtinfo.so.5 ${lib_dir}
+    echo "PWD = $PWD"
+    ls -lthr "$PWD"
+    install -D /home/vcap/app/LICENSE "$PWD/app/LICENSE"
+    install -D /home/vcap/app/README "$PWD/app/README"
+    install -D /home/vcap/app/bin/mysql "$PWD/app/bin/mysql"
+    install -D /home/vcap/app/bin/mysqldump "$PWD/app/bin/mysqldump"
+    install -D /home/vcap/app/lib/mysql/plugin/dialog.so "$PWD/app/lib/mysql/plugin/dialog.so"
 }
 
 function install_migrate_task() {
