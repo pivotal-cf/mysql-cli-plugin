@@ -2,13 +2,13 @@ package packd
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
+
+	"github.com/gobuffalo/packd/internal/takeon/github.com/markbates/errx"
 )
 
 var _ Addable = NewMemoryBox()
@@ -21,7 +21,7 @@ var _ Box = NewMemoryBox()
 
 // MemoryBox is a thread-safe, in-memory, implementation of the Box interface.
 type MemoryBox struct {
-	files *sync.Map
+	files *ByteMap
 }
 
 func (m *MemoryBox) Has(path string) bool {
@@ -31,10 +31,8 @@ func (m *MemoryBox) Has(path string) bool {
 
 func (m *MemoryBox) List() []string {
 	var names []string
-	m.files.Range(func(key interface{}, value interface{}) bool {
-		if s, ok := key.(string); ok {
-			names = append(names, s)
-		}
+	m.files.Range(func(key string, value []byte) bool {
+		names = append(names, key)
 		return true
 	})
 
@@ -73,16 +71,31 @@ func (m *MemoryBox) FindString(path string) (string, error) {
 	return string(bb), err
 }
 
-func (m *MemoryBox) Find(path string) ([]byte, error) {
-	res, ok := m.files.Load(strings.ToLower(path))
+func (m *MemoryBox) Find(path string) (ret []byte, e error) {
+	res, ok := m.files.Load(path)
 	if !ok {
-		return nil, os.ErrNotExist
+
+		var b []byte
+		lpath := strings.ToLower(path)
+		err := m.Walk(func(p string, file File) error {
+			lp := strings.ToLower(p)
+			if lp != lpath {
+				return nil
+			}
+
+			res := file.String()
+			b = []byte(res)
+			return nil
+		})
+		if err != nil {
+			return b, os.ErrNotExist
+		}
+		if len(b) == 0 {
+			return b, os.ErrNotExist
+		}
+		return b, nil
 	}
-	b, ok := res.([]byte)
-	if !ok {
-		return nil, fmt.Errorf("expected []byte got %T", res)
-	}
-	return b, nil
+	return res, nil
 }
 
 func (m *MemoryBox) AddString(path string, t string) error {
@@ -90,26 +103,13 @@ func (m *MemoryBox) AddString(path string, t string) error {
 }
 
 func (m *MemoryBox) AddBytes(path string, t []byte) error {
-	m.files.Store(strings.ToLower(path), t)
+	m.files.Store(path, t)
 	return nil
 }
 
 func (m *MemoryBox) Walk(wf WalkFunc) error {
 	var err error
-	m.files.Range(func(key interface{}, res interface{}) bool {
-
-		path, ok := key.(string)
-		if !ok {
-			err = fmt.Errorf("expected string got %T", key)
-			return false
-		}
-
-		b, ok := res.([]byte)
-		if !ok {
-			err = fmt.Errorf("expected []byte got %T", res)
-			return false
-		}
-
+	m.files.Range(func(path string, b []byte) bool {
 		var f File
 		f, err = NewFile(path, bytes.NewReader(b))
 		if err != nil {
@@ -118,12 +118,19 @@ func (m *MemoryBox) Walk(wf WalkFunc) error {
 
 		err = wf(path, f)
 		if err != nil {
+			if errx.Unwrap(err) == filepath.SkipDir {
+				err = nil
+				return true
+			}
 			return false
 		}
 
 		return true
 	})
 
+	if errx.Unwrap(err) == filepath.SkipDir {
+		return nil
+	}
 	return err
 }
 
@@ -138,11 +145,12 @@ func (m *MemoryBox) WalkPrefix(pre string, wf WalkFunc) error {
 
 func (m *MemoryBox) Remove(path string) {
 	m.files.Delete(path)
+	m.files.Delete(strings.ToLower(path))
 }
 
 // NewMemoryBox returns a configured *MemoryBox
 func NewMemoryBox() *MemoryBox {
 	return &MemoryBox{
-		files: &sync.Map{},
+		files: &ByteMap{},
 	}
 }

@@ -3,6 +3,7 @@ package packr
 import (
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,13 +13,11 @@ import (
 	"strings"
 
 	"github.com/gobuffalo/packd"
-	"github.com/markbates/oncer"
-	"github.com/pkg/errors"
 )
 
 var (
 	// ErrResOutsideBox gets returned in case of the requested resources being outside the box
-	ErrResOutsideBox = errors.New("Can't find a resource outside the box")
+	ErrResOutsideBox = fmt.Errorf("Can't find a resource outside the box")
 )
 
 var _ packd.Box = Box{}
@@ -70,33 +69,29 @@ func (b Box) AddString(path string, t string) error {
 
 // AddBytes sets t in b.data by the given path
 func (b Box) AddBytes(path string, t []byte) error {
-	b.data[strings.ToLower(path)] = t
+	b.data[path] = t
 	return nil
 }
 
-// String is deprecated. Use Find instead
+// Deprecated: Use FindString instead.
 func (b Box) String(name string) string {
-	oncer.Deprecate(0, "github.com/gobuffalo/packr#Box.String", "Use github.com/gobuffalo/packr#Box.FindString instead.")
 	bb, _ := b.FindString(name)
 	return bb
 }
 
-// MustString is deprecated. Use FindString instead
+// Deprecated: Use FindString instead.
 func (b Box) MustString(name string) (string, error) {
-	oncer.Deprecate(0, "github.com/gobuffalo/packr#Box.MustString", "Use github.com/gobuffalo/packr#Box.FindString instead.")
 	return b.FindString(name)
 }
 
-// Bytes is deprecated. Use Find instead
+// Deprecated: Use Find instead.
 func (b Box) Bytes(name string) []byte {
-	oncer.Deprecate(0, "github.com/gobuffalo/packr#Box.Bytes", "Use github.com/gobuffalo/packr#Box.Find instead.")
 	bb, _ := b.Find(name)
 	return bb
 }
 
-// Bytes is deprecated. Use Find instead
+// Deprecated: Use Find instead.
 func (b Box) MustBytes(name string) ([]byte, error) {
-	oncer.Deprecate(0, "github.com/gobuffalo/packr#Box.MustBytes", "Use github.com/gobuffalo/packr#Box.Find instead.")
 	return b.Find(name)
 }
 
@@ -133,6 +128,8 @@ func (b Box) decompress(bb []byte) []byte {
 	if err != nil {
 		return bb
 	}
+	defer reader.Close()
+
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return bb
@@ -143,11 +140,6 @@ func (b Box) decompress(bb []byte) []byte {
 func (b Box) find(name string) (File, error) {
 	if bb, ok := b.data[name]; ok {
 		return packd.NewFile(name, bytes.NewReader(bb))
-	}
-
-	lname := strings.TrimPrefix(strings.ToLower(name), "/")
-	if bb, ok := b.data[lname]; ok {
-		return packd.NewFile(lname, bytes.NewReader(bb))
 	}
 
 	if b.directories == nil {
@@ -162,15 +154,10 @@ func (b Box) find(name string) (File, error) {
 	// Absolute name is considered as relative to the box root
 	cleanName = strings.TrimPrefix(cleanName, "/")
 
-	// Try to get the resource from the box
-	lclean := strings.ToLower(cleanName)
-
 	if _, ok := data[b.Path]; ok {
-		for _, n := range []string{cleanName, lclean} {
-			if bb, ok := data[b.Path][n]; ok {
-				bb = b.decompress(bb)
-				return packd.NewFile(cleanName, bytes.NewReader(bb))
-			}
+		if bb, ok := data[b.Path][cleanName]; ok {
+			bb = b.decompress(bb)
+			return packd.NewFile(cleanName, bytes.NewReader(bb))
 		}
 		if _, ok := b.directories[cleanName]; ok {
 			return packd.NewDir(cleanName)
