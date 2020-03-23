@@ -64,10 +64,10 @@ var _ = Describe("Plugin Commands", func() {
 			})
 
 			By("creating and configuring a new service instance", func() {
-				Expect(fakeMigrator.CreateAndConfigureServiceInstanceCallCount()).
+				Expect(fakeMigrator.CreateServiceInstanceCallCount()).
 					To(Equal(1))
 
-				createdServicePlan, createdServiceInstanceName := fakeMigrator.CreateAndConfigureServiceInstanceArgsForCall(0)
+				createdServicePlan, createdServiceInstanceName := fakeMigrator.CreateServiceInstanceArgsForCall(0)
 				Expect(createdServicePlan).To(Equal("some-plan"))
 				Expect(createdServiceInstanceName).
 					To(Equal("some-donor-new"))
@@ -137,7 +137,7 @@ var _ = Describe("Plugin Commands", func() {
 
 		Context("when creating a service instance fails", func() {
 			BeforeEach(func() {
-				fakeMigrator.CreateAndConfigureServiceInstanceReturns(errors.New("some-cf-error"))
+				fakeMigrator.CreateServiceInstanceReturns(errors.New("some-cf-error"))
 			})
 
 			It("returns an error and attempts to delete the new service instance", func() {
