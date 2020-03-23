@@ -50,7 +50,7 @@ type BindingFinder interface {
 //go:generate counterfeiter . Migrator
 type Migrator interface {
 	CheckServiceExists(donorInstanceName string) error
-	CreateAndConfigureServiceInstance(planType, serviceName string) error
+	CreateServiceInstance(planType, serviceName string) error
 	MigrateData(options migrate.MigrateOptions) error
 	RenameServiceInstances(donorInstanceName, recipientInstanceName string) error
 	CleanupOnError(recipientInstanceName string) error
@@ -155,11 +155,11 @@ func FindBindings(bf BindingFinder, args []string) error {
 func Migrate(migrator Migrator, args []string) error {
 	var opts struct {
 		Args struct {
-			Source   string `positional-arg-name:"<source-service-instance>"`
+			Source string `positional-arg-name:"<source-service-instance>"`
 		} `positional-args:"yes" required:"yes"`
-		NoCleanup         bool `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
-		SkipTLSValidation bool `long:"skip-tls-validation" short:"k" description:"Skip certificate validation of the MySQL server certificate. Not recommended!"`
-		PlanName string `short:"p" long:"plan" description:"Service plan type" required:"yes"`
+		NoCleanup         bool   `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
+		SkipTLSValidation bool   `long:"skip-tls-validation" short:"k" description:"Skip certificate validation of the MySQL server certificate. Not recommended!"`
+		PlanName          string `short:"p" long:"plan" description:"Service plan type" required:"yes"`
 	}
 
 	parser := flags.NewParser(&opts, flags.None)
@@ -190,7 +190,7 @@ func Migrate(migrator Migrator, args []string) error {
 	}
 
 	log.Printf("Creating new service instance %q for service %s using plan %s", tempRecipientInstanceName, productName, destPlan)
-	if err := migrator.CreateAndConfigureServiceInstance(destPlan, tempRecipientInstanceName); err != nil {
+	if err := migrator.CreateServiceInstance(destPlan, tempRecipientInstanceName); err != nil {
 		if cleanup {
 			migrator.CleanupOnError(tempRecipientInstanceName)
 			return fmt.Errorf("error creating service instance: %v. Attempting to clean up service %s",

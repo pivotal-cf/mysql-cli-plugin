@@ -13,7 +13,6 @@
 package migrate
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -28,8 +27,6 @@ import (
 type Client interface {
 	ServiceExists(serviceName string) bool
 	CreateServiceInstance(planType, instanceName string) error
-	GetHostnames(instanceName string) ([]string, error)
-	UpdateServiceConfig(instanceName string, jsonParams string) error
 	BindService(appName, serviceName string) error
 	DeleteApp(appName string) error
 	DeleteServiceInstance(instanceName string) error
@@ -73,23 +70,10 @@ func (m *Migrator) CheckServiceExists(donorInstanceName string) error {
 	return nil
 }
 
-func (m *Migrator) CreateAndConfigureServiceInstance(planType, serviceName string) error {
+func (m *Migrator) CreateServiceInstance(planType, serviceName string) error {
 	if err := m.client.CreateServiceInstance(planType, serviceName); err != nil {
 		return errors.Wrap(err, "Error creating service instance")
 	}
-
-	hostnames, err := m.client.GetHostnames(serviceName)
-	if err != nil {
-		return errors.Wrap(err, "Error obtaining hostname for new service instance")
-	}
-
-	jsonEncodedHostnames, err := json.Marshal(hostnames)
-	if err != nil {
-		return errors.Wrapf(err, "Error JSON encoding hostnames: %s", hostnames)
-	}
-
-	_ = m.client.UpdateServiceConfig(serviceName,
-		fmt.Sprintf(`{"enable_tls": %s}`, jsonEncodedHostnames))
 
 	return nil
 }

@@ -250,7 +250,8 @@ var _ = Describe("Migrate Integration Tests", func() {
 						gexec.Exit(1),
 						`Expected migration to fail, but it did not`,
 					)
-				test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+update succeeded`)
+
+				test_helpers.WaitForService(destInstance, `[Ss]tatus:\s+create succeeded`)
 
 				destinationGUID = test_helpers.InstanceUUID(destInstance)
 

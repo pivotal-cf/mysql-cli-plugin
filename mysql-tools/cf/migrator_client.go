@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -151,38 +150,6 @@ func (c *MigratorClient) GetAppByName(name string) (App, error) {
 	return appInfo.Resources[0], nil
 }
 
-func (c *MigratorClient) GetHostnames(instanceName string) ([]string, error) {
-	serviceKeyName := "MIGRATE-" + uuid.New()
-	if err := c.createServiceKey(instanceName, serviceKeyName); err != nil {
-		return nil, errors.Wrapf(err, "Cannot get the hostnames for %s", instanceName)
-	}
-	defer func() {
-		_ = c.deleteServiceKey(instanceName, serviceKeyName)
-	}()
-
-	jsonRaw, err := c.serviceKey(instanceName, serviceKeyName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot get the hostnames for %s", instanceName)
-	}
-
-	var serviceKey struct {
-		Hostname  string   `json:"hostname"`
-		Hostnames []string `json:"hostnames"`
-	}
-
-	if err = json.Unmarshal([]byte(jsonRaw), &serviceKey); err != nil {
-		return nil, fmt.Errorf("Cannot get the hostnames for %s: invalid response: %s", instanceName, jsonRaw)
-	}
-
-	dnsEnabled := strings.HasPrefix(serviceKey.Hostname, "q-")
-
-	if !dnsEnabled && len(serviceKey.Hostnames) != 0 {
-		return serviceKey.Hostnames, nil
-	}
-
-	return []string{serviceKey.Hostname}, nil
-}
-
 func (c *MigratorClient) GetLogs(appName, filter string) ([]string, error) {
 	var filteredOutput []string
 
@@ -268,19 +235,6 @@ func (c *MigratorClient) StartApp(appName string) error {
 		"failed to start application %q",
 		appName,
 	)
-}
-
-func (c *MigratorClient) UpdateServiceConfig(instanceName string, jsonParams string) error {
-	if _, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
-		"update-service",
-		instanceName,
-		"-c",
-		jsonParams,
-	); err != nil {
-		return err
-	}
-
-	return c.waitForOperationCompletion("update service config", instanceName)
 }
 
 func (c *MigratorClient) createServiceKey(instanceName, serviceKeyName string) error {

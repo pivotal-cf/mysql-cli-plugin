@@ -29,8 +29,8 @@ func TestSmokeTests(t *testing.T) {
 }
 
 var (
-	TestSetup *workflowhelpers.ReproducibleTestSuiteSetup
-	Config    *config.Config
+	TestSetup        *workflowhelpers.ReproducibleTestSuiteSetup
+	Config           *config.Config
 	migrationTimeout string
 )
 

@@ -196,13 +196,11 @@ func DeleteApp(appName string) {
 	ExecuteCfCmd("delete", appName, "-f")
 }
 
-
 func AssertAppIsDeleted(appName string) error {
 	not_found_with_quote := fmt.Sprintf("App '%s' not found", appName)
 	not_found_without_quote := fmt.Sprintf("App %s not found", appName)
 	commandReport := fmt.Sprintf("Polling `cf app %s` for '%s' or '%s'", appName, not_found_with_quote, not_found_without_quote)
 	pollcf.ReportPoll(commandReport)
-
 
 	cfServiceWaitDuration, _ := time.ParseDuration(cfServiceWaitTimeout)
 	timeout := time.NewTimer(cfServiceWaitDuration)
@@ -212,7 +210,7 @@ func AssertAppIsDeleted(appName string) error {
 	for {
 		select {
 		case <-ticker.C:
-			appOutput := string(pollcf.PollCf("app", appName).Wait().Err.Contents())
+			appOutput := string(pollcf.PollCf("app", appName).Wait(cfServiceWaitTimeout).Err.Contents())
 			if strings.Contains(appOutput, not_found_with_quote) {
 				return nil
 			}

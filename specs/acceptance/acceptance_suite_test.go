@@ -29,8 +29,8 @@ func TestIntegration(t *testing.T) {
 }
 
 var (
-	TestSetup *workflowhelpers.ReproducibleTestSuiteSetup
-	Config    *config.Config
+	TestSetup        *workflowhelpers.ReproducibleTestSuiteSetup
+	Config           *config.Config
 	migrationTimeout string
 )
 
@@ -44,7 +44,6 @@ var _ = BeforeSuite(func() {
 		"RECIPIENT_SERVICE_NAME",
 		"V2_DONOR_SERVICE_NAME",
 		"V2_DONOR_PLAN_NAME",
-
 	})
 
 	Config = config.LoadConfig()
