@@ -48,7 +48,6 @@ var _ = Describe("Migrate Integration Tests", func() {
 		sourceInstance     string
 		sourceInstanceGUID string
 		destInstanceGUID   string
-		serviceKey         = "tls-key"
 	)
 
 	BeforeEach(func() {
@@ -89,7 +88,6 @@ var _ = Describe("Migrate Integration Tests", func() {
 			if springAppName != "" {
 				test_helpers.DeleteApp(springAppName)
 			}
-			test_helpers.DeleteServiceKey(destInstance, serviceKey)
 		})
 
 		It("migrates data from donor to recipient", func() {
@@ -163,15 +161,6 @@ var _ = Describe("Migrate Integration Tests", func() {
 				Expect(mysqlServices[0].Credentials).To(HaveKey("credhub-ref"))
 				Expect(mysqlServices[0].Credentials["credhub-ref"]).To(ContainSubstring(destInstanceGUID))
 				Expect(mysqlServices[0].Credentials["credhub-ref"]).NotTo(ContainSubstring(sourceInstanceGUID))
-			})
-
-			By("Verifying TLS was enabled on the recipient instance", func() {
-				serviceKey := test_helpers.GetServiceKey(destInstance, "tls-check")
-				test_helpers.DeleteServiceKey(destInstance, "tls-check")
-
-				Expect(serviceKey.TLS.Cert.CA).
-					NotTo(BeEmpty(),
-						"Expected recipient service instance to be TLS enabled, but it was not")
 			})
 
 			By("Verifying the views get migrated with invoker security type and procedures are not migrated", func() {
