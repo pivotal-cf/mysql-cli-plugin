@@ -22,7 +22,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
+	find_bindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/presentation"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
@@ -35,10 +35,10 @@ var (
 )
 
 const (
-	usage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> -p <p.mysql-plan-type>
+	usage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>
    cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
    cf mysql-tools version`
-	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> -p <p.mysql-plan-type>`
+	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>`
 	findUsage    = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 )
 
@@ -76,7 +76,7 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
    mysql-tools - Plugin to migrate mysql instances
 
 USAGE:
-   cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> -p <p.mysql-plan-type>
+   cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>
    cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
    cf mysql-tools version`)
 		os.Exit(1)
@@ -155,11 +155,11 @@ func FindBindings(bf BindingFinder, args []string) error {
 func Migrate(migrator Migrator, args []string) error {
 	var opts struct {
 		Args struct {
-			Source string `positional-arg-name:"<source-service-instance>"`
+			Source   string `positional-arg-name:"<source-service-instance>"`
+			PlanName string `positional-arg-name:"<p.mysql-plan-type>"`
 		} `positional-args:"yes" required:"yes"`
-		NoCleanup         bool   `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration'"`
-		SkipTLSValidation bool   `long:"skip-tls-validation" short:"k" description:"Skip certificate validation of the MySQL server certificate. Not recommended!"`
-		PlanName          string `short:"p" long:"plan" description:"Service plan type" required:"yes"`
+		NoCleanup         bool `long:"no-cleanup" description:"don't clean up migration app and new service instance after a failed migration"`
+		SkipTLSValidation bool `long:"skip-tls-validation" short:"k" description:"Skip certificate validation of the MySQL server certificate. Not recommended!"`
 	}
 
 	parser := flags.NewParser(&opts, flags.None)
@@ -175,7 +175,7 @@ func Migrate(migrator Migrator, args []string) error {
 	}
 	donorInstanceName := opts.Args.Source
 	tempRecipientInstanceName := donorInstanceName + "-new"
-	destPlan := opts.PlanName
+	destPlan := opts.Args.PlanName
 	cleanup := !opts.NoCleanup
 	skipTLSValidation := opts.SkipTLSValidation
 

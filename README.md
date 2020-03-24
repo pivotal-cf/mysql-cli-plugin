@@ -14,7 +14,7 @@ $ cf install-plugin -r CF-Community MysqlTools
 Once the plugin is installed, migrate a v1 service instance to a new v2 service instance with the following command:
 
 ```
-$ cf mysql-tools migrate V1-INSTANCE -p V2-PLAN
+$ cf mysql-tools migrate V1-INSTANCE V2-PLAN
 ```
 
 Where `V1-INSTANCE` is the the name of the v1 service instance that you wish to migrate, and `V2-PLAN`  is the name of the v2 service plan to use for the new v2 service instance.

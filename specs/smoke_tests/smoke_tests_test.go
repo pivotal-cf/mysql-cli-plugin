@@ -96,7 +96,7 @@ var _ = Describe("SmokeTests", func() {
 			})
 
 			By("Migrating data using the migrate command", func() {
-				cmd := exec.Command("cf", "mysql-tools", "migrate", instanceName, "-p", destPlan)
+				cmd := exec.Command("cf", "mysql-tools", "migrate", instanceName, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, migrationTimeout, "1s").Should(gexec.Exit(0))

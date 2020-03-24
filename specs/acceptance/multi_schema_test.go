@@ -94,7 +94,7 @@ var _ = Describe("Migrate Integration Tests v2", func() {
 			})
 
 			By("Migrating data using the migrate command", func() {
-				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "-p", destPlan)
+				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, migrationTimeout, "1s").Should(gexec.Exit(0))
@@ -126,7 +126,7 @@ var _ = Describe("Migrate Integration Tests v2", func() {
 			})
 
 			It("transfers all DBs", func() {
-				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, "-p", destPlan)
+				cmd := exec.Command("cf", "mysql-tools", "migrate", sourceInstance, destPlan)
 				session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, migrationTimeout, "1s").Should(gexec.Exit(0))
