@@ -137,7 +137,7 @@ func (m *Migrator) MigrateData(opts MigrateOptions) error {
 		_ = m.outputMigrationLogs("")
 	} else {
 		log.Print("Migration completed successfully")
-		err = m.outputMigrationLogs("APP/TASK/")
+		_ = m.outputMigrationLogs("APP/TASK/")
 	}
 
 	return err
