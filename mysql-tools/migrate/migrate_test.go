@@ -171,10 +171,9 @@ var _ = Describe("MigrateData", func() {
 				fakeClient.GetLogsReturns(nil, errors.New("failed logs"))
 			})
 
-			It("returns an error", func() {
+			It("does not return an error", func() {
 				err := migrator.MigrateData(migrateOptions)
-				Expect(err).To(HaveOccurred())
-				Expect(fakeClient.GetLogsCallCount()).To(Equal(1))
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
