@@ -13,10 +13,12 @@
 package smoke_tests_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 
+	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -33,6 +35,8 @@ var _ = Describe("SmokeTests", func() {
 			springAppName      string
 			instanceName       string
 			sourceInstanceGUID string
+			serviceKeyName     string
+			serviceKey         test_helpers.ServiceKey
 		)
 
 		BeforeEach(func() {
@@ -47,6 +51,8 @@ var _ = Describe("SmokeTests", func() {
 			)
 			test_helpers.WaitForService(instanceName, `[Ss]tatus:\s+create succeeded`)
 			sourceInstanceGUID = test_helpers.InstanceUUID(instanceName)
+			serviceKeyName = generator.PrefixedRandomName("MYSQL-TLS", "KEY")
+			serviceKey = test_helpers.GetServiceKey(instanceName, serviceKeyName)
 		})
 
 		AfterEach(func() {
@@ -77,10 +83,20 @@ var _ = Describe("SmokeTests", func() {
 			)
 
 			By("Writing data to the source instance", func() {
+				cupsInstanceName := generator.PrefixedRandomName("MYSQL", "CUPS")
+				cupsServiceKey := serviceKey
+				cupsServiceKey.JbdcUrl += "&sslMode=VERIFY_IDENTITY&enabledTLSProtocols=TLSv1.2"
+
+				cupsServiceKeyString, err := json.Marshal(&cupsServiceKey)
+				Expect(err).NotTo(HaveOccurred())
+
+				session := cf.Cf("create-user-provided-service", cupsInstanceName, "-p", string(cupsServiceKeyString)).Wait()
+				Expect(session).To(gexec.Exit(0))
+
 				springAppName = generator.PrefixedRandomName("MYSQL", "APP")
 				test_helpers.PushApp(springAppName, "../assets/spring-music")
 
-				test_helpers.BindAppToService(springAppName, instanceName)
+				test_helpers.BindAppToService(springAppName, cupsInstanceName)
 				test_helpers.StartApp(springAppName)
 
 				springAppURI = springAppName + "." + appDomain
@@ -92,7 +108,7 @@ var _ = Describe("SmokeTests", func() {
 
 				Expect(readValue).To(Equal(writeValue))
 
-				test_helpers.UnbindAppFromService(springAppName, instanceName)
+				test_helpers.UnbindAppFromService(springAppName, cupsInstanceName)
 			})
 
 			By("Migrating data using the migrate command", func() {

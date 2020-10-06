@@ -154,6 +154,7 @@ func GetServiceKey(serviceInstanceName, serviceKeyName string) ServiceKey {
 	session := cf.Cf("service-key", serviceInstanceName, serviceKeyName).Wait("10s")
 	output := string(session.Out.Contents())
 	Expect(output).To(ContainSubstring(fmt.Sprintf("Getting key %s for service instance %s", serviceKeyName, serviceInstanceName)))
+	Expect(output).NotTo(ContainSubstring("No service key"))
 
 	outputLines := strings.SplitN(output, "\n", 3)
 	serviceKeyJson := outputLines[len(outputLines)-1]
