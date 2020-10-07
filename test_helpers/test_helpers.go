@@ -135,7 +135,7 @@ func resourceGUID(resourceType string, name string) string {
 
 type ServiceKey struct {
 	Hostname string `json:"hostname"`
-	JbdcUrl  string `json:"jbdcUrl"`
+	JdbcUrl  string `json:"jdbcUrl"`
 	Name     string `json:"name"`
 	Password string `json:"password"`
 	Port     int    `json:"port"`

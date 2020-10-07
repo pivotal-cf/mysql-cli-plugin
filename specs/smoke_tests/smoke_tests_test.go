@@ -85,7 +85,7 @@ var _ = Describe("SmokeTests", func() {
 			By("Writing data to the source instance", func() {
 				cupsInstanceName := generator.PrefixedRandomName("MYSQL", "CUPS")
 				cupsServiceKey := serviceKey
-				cupsServiceKey.JbdcUrl += "&sslMode=VERIFY_IDENTITY&enabledTLSProtocols=TLSv1.2"
+				cupsServiceKey.JdbcUrl += "&sslMode=VERIFY_IDENTITY&enabledTLSProtocols=TLSv1.2"
 
 				cupsServiceKeyString, err := json.Marshal(&cupsServiceKey)
 				Expect(err).NotTo(HaveOccurred())
