@@ -137,15 +137,16 @@ func (fake *FakeClient) BindService(arg1 string, arg2 string) error {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.BindServiceStub
+	fakeReturns := fake.bindServiceReturns
 	fake.recordInvocation("BindService", []interface{}{arg1, arg2})
 	fake.bindServiceMutex.Unlock()
-	if fake.BindServiceStub != nil {
-		return fake.BindServiceStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.bindServiceReturns
 	return fakeReturns.result1
 }
 
@@ -198,15 +199,16 @@ func (fake *FakeClient) CreateServiceInstance(arg1 string, arg2 string) error {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.CreateServiceInstanceStub
+	fakeReturns := fake.createServiceInstanceReturns
 	fake.recordInvocation("CreateServiceInstance", []interface{}{arg1, arg2})
 	fake.createServiceInstanceMutex.Unlock()
-	if fake.CreateServiceInstanceStub != nil {
-		return fake.CreateServiceInstanceStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.createServiceInstanceReturns
 	return fakeReturns.result1
 }
 
@@ -258,15 +260,16 @@ func (fake *FakeClient) DeleteApp(arg1 string) error {
 	fake.deleteAppArgsForCall = append(fake.deleteAppArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.DeleteAppStub
+	fakeReturns := fake.deleteAppReturns
 	fake.recordInvocation("DeleteApp", []interface{}{arg1})
 	fake.deleteAppMutex.Unlock()
-	if fake.DeleteAppStub != nil {
-		return fake.DeleteAppStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteAppReturns
 	return fakeReturns.result1
 }
 
@@ -318,15 +321,16 @@ func (fake *FakeClient) DeleteServiceInstance(arg1 string) error {
 	fake.deleteServiceInstanceArgsForCall = append(fake.deleteServiceInstanceArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.DeleteServiceInstanceStub
+	fakeReturns := fake.deleteServiceInstanceReturns
 	fake.recordInvocation("DeleteServiceInstance", []interface{}{arg1})
 	fake.deleteServiceInstanceMutex.Unlock()
-	if fake.DeleteServiceInstanceStub != nil {
-		return fake.DeleteServiceInstanceStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteServiceInstanceReturns
 	return fakeReturns.result1
 }
 
@@ -379,15 +383,16 @@ func (fake *FakeClient) GetLogs(arg1 string, arg2 string) ([]string, error) {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.GetLogsStub
+	fakeReturns := fake.getLogsReturns
 	fake.recordInvocation("GetLogs", []interface{}{arg1, arg2})
 	fake.getLogsMutex.Unlock()
-	if fake.GetLogsStub != nil {
-		return fake.GetLogsStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getLogsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -443,15 +448,16 @@ func (fake *FakeClient) PushApp(arg1 string, arg2 string) error {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.PushAppStub
+	fakeReturns := fake.pushAppReturns
 	fake.recordInvocation("PushApp", []interface{}{arg1, arg2})
 	fake.pushAppMutex.Unlock()
-	if fake.PushAppStub != nil {
-		return fake.PushAppStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.pushAppReturns
 	return fakeReturns.result1
 }
 
@@ -504,15 +510,16 @@ func (fake *FakeClient) RenameService(arg1 string, arg2 string) error {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.RenameServiceStub
+	fakeReturns := fake.renameServiceReturns
 	fake.recordInvocation("RenameService", []interface{}{arg1, arg2})
 	fake.renameServiceMutex.Unlock()
-	if fake.RenameServiceStub != nil {
-		return fake.RenameServiceStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.renameServiceReturns
 	return fakeReturns.result1
 }
 
@@ -565,15 +572,16 @@ func (fake *FakeClient) RunTask(arg1 string, arg2 string) error {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.RunTaskStub
+	fakeReturns := fake.runTaskReturns
 	fake.recordInvocation("RunTask", []interface{}{arg1, arg2})
 	fake.runTaskMutex.Unlock()
-	if fake.RunTaskStub != nil {
-		return fake.RunTaskStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.runTaskReturns
 	return fakeReturns.result1
 }
 
@@ -625,15 +633,16 @@ func (fake *FakeClient) ServiceExists(arg1 string) bool {
 	fake.serviceExistsArgsForCall = append(fake.serviceExistsArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.ServiceExistsStub
+	fakeReturns := fake.serviceExistsReturns
 	fake.recordInvocation("ServiceExists", []interface{}{arg1})
 	fake.serviceExistsMutex.Unlock()
-	if fake.ServiceExistsStub != nil {
-		return fake.ServiceExistsStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.serviceExistsReturns
 	return fakeReturns.result1
 }
 
@@ -685,15 +694,16 @@ func (fake *FakeClient) StartApp(arg1 string) error {
 	fake.startAppArgsForCall = append(fake.startAppArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.StartAppStub
+	fakeReturns := fake.startAppReturns
 	fake.recordInvocation("StartApp", []interface{}{arg1})
 	fake.startAppMutex.Unlock()
-	if fake.StartAppStub != nil {
-		return fake.StartAppStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.startAppReturns
 	return fakeReturns.result1
 }
 

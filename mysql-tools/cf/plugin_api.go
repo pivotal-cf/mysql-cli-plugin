@@ -12,12 +12,15 @@
 
 package cf
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
-	"code.cloudfoundry.org/cli/plugin/models"
 	"time"
+
+	plugin_models "code.cloudfoundry.org/cli/plugin/models"
 )
 
-//go:generate counterfeiter . CFPluginAPI
+//counterfeiter:generate . CFPluginAPI
 type CFPluginAPI interface {
 	CliCommand(...string) ([]string, error)
 	CliCommandWithoutTerminalOutput(args ...string) ([]string, error)

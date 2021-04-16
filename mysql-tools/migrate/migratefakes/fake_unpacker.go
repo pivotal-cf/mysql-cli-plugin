@@ -29,15 +29,16 @@ func (fake *FakeUnpacker) Unpack(arg1 string) error {
 	fake.unpackArgsForCall = append(fake.unpackArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.UnpackStub
+	fakeReturns := fake.unpackReturns
 	fake.recordInvocation("Unpack", []interface{}{arg1})
 	fake.unpackMutex.Unlock()
-	if fake.UnpackStub != nil {
-		return fake.UnpackStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.unpackReturns
 	return fakeReturns.result1
 }
 

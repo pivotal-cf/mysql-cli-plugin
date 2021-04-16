@@ -2,7 +2,7 @@
 package unpackfakes
 
 import (
-	"os"
+	"io/fs"
 	"sync"
 
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
@@ -22,11 +22,11 @@ type FakeFilesystem struct {
 		result1 unpack.File
 		result2 error
 	}
-	MkdirAllStub        func(string, os.FileMode) error
+	MkdirAllStub        func(string, fs.FileMode) error
 	mkdirAllMutex       sync.RWMutex
 	mkdirAllArgsForCall []struct {
 		arg1 string
-		arg2 os.FileMode
+		arg2 fs.FileMode
 	}
 	mkdirAllReturns struct {
 		result1 error
@@ -44,15 +44,16 @@ func (fake *FakeFilesystem) Create(arg1 string) (unpack.File, error) {
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.CreateStub
+	fakeReturns := fake.createReturns
 	fake.recordInvocation("Create", []interface{}{arg1})
 	fake.createMutex.Unlock()
-	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.createReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -101,22 +102,23 @@ func (fake *FakeFilesystem) CreateReturnsOnCall(i int, result1 unpack.File, resu
 	}{result1, result2}
 }
 
-func (fake *FakeFilesystem) MkdirAll(arg1 string, arg2 os.FileMode) error {
+func (fake *FakeFilesystem) MkdirAll(arg1 string, arg2 fs.FileMode) error {
 	fake.mkdirAllMutex.Lock()
 	ret, specificReturn := fake.mkdirAllReturnsOnCall[len(fake.mkdirAllArgsForCall)]
 	fake.mkdirAllArgsForCall = append(fake.mkdirAllArgsForCall, struct {
 		arg1 string
-		arg2 os.FileMode
+		arg2 fs.FileMode
 	}{arg1, arg2})
+	stub := fake.MkdirAllStub
+	fakeReturns := fake.mkdirAllReturns
 	fake.recordInvocation("MkdirAll", []interface{}{arg1, arg2})
 	fake.mkdirAllMutex.Unlock()
-	if fake.MkdirAllStub != nil {
-		return fake.MkdirAllStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.mkdirAllReturns
 	return fakeReturns.result1
 }
 
@@ -126,13 +128,13 @@ func (fake *FakeFilesystem) MkdirAllCallCount() int {
 	return len(fake.mkdirAllArgsForCall)
 }
 
-func (fake *FakeFilesystem) MkdirAllCalls(stub func(string, os.FileMode) error) {
+func (fake *FakeFilesystem) MkdirAllCalls(stub func(string, fs.FileMode) error) {
 	fake.mkdirAllMutex.Lock()
 	defer fake.mkdirAllMutex.Unlock()
 	fake.MkdirAllStub = stub
 }
 
-func (fake *FakeFilesystem) MkdirAllArgsForCall(i int) (string, os.FileMode) {
+func (fake *FakeFilesystem) MkdirAllArgsForCall(i int) (string, fs.FileMode) {
 	fake.mkdirAllMutex.RLock()
 	defer fake.mkdirAllMutex.RUnlock()
 	argsForCall := fake.mkdirAllArgsForCall[i]

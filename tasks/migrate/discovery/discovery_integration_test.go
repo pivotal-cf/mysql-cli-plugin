@@ -15,12 +15,13 @@ package discovery_test
 import (
 	"database/sql"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
-	"github.com/pivotal/mysql-test-utils/dockertest"
+
+	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers/dockertest"
 )
 
 var _ = Describe("Discovery Integration Tests", func() {

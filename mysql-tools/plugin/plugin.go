@@ -12,6 +12,8 @@
 
 package plugin
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"fmt"
 	"log"
@@ -42,12 +44,12 @@ const (
 	findUsage    = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 )
 
-//go:generate counterfeiter . BindingFinder
+//counterfeiter:generate . BindingFinder
 type BindingFinder interface {
 	FindBindings(serviceLabel string) ([]find_bindings.Binding, error)
 }
 
-//go:generate counterfeiter . Migrator
+//counterfeiter:generate . Migrator
 type Migrator interface {
 	CheckServiceExists(donorInstanceName string) error
 	CreateServiceInstance(planType, serviceName string) error

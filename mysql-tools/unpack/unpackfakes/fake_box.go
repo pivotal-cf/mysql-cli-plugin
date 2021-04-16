@@ -30,15 +30,16 @@ func (fake *FakeBox) Walk(arg1 packd.WalkFunc) error {
 	fake.walkArgsForCall = append(fake.walkArgsForCall, struct {
 		arg1 packd.WalkFunc
 	}{arg1})
+	stub := fake.WalkStub
+	fakeReturns := fake.walkReturns
 	fake.recordInvocation("Walk", []interface{}{arg1})
 	fake.walkMutex.Unlock()
-	if fake.WalkStub != nil {
-		return fake.WalkStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.walkReturns
 	return fakeReturns.result1
 }
 

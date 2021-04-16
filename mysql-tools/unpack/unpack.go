@@ -12,6 +12,8 @@
 
 package unpack
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"io"
 	"path/filepath"
@@ -26,7 +28,7 @@ var (
 	defaultBox = packr.NewBox("../../app")
 )
 
-//go:generate counterfeiter . Box
+//counterfeiter:generate . Box
 type Box interface {
 	Walk(walkFunc packr.WalkFunc) error
 }

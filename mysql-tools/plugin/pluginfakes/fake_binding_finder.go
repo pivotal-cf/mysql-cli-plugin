@@ -32,15 +32,16 @@ func (fake *FakeBindingFinder) FindBindings(arg1 string) ([]find_bindings.Bindin
 	fake.findBindingsArgsForCall = append(fake.findBindingsArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.FindBindingsStub
+	fakeReturns := fake.findBindingsReturns
 	fake.recordInvocation("FindBindings", []interface{}{arg1})
 	fake.findBindingsMutex.Unlock()
-	if fake.FindBindingsStub != nil {
-		return fake.FindBindingsStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.findBindingsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

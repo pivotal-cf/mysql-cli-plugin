@@ -12,18 +12,20 @@
 
 package unpack
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"io"
 	"os"
 )
 
-//go:generate counterfeiter . File
+//counterfeiter:generate . File
 type File interface {
 	io.ReadWriteCloser
 	Chmod(mode os.FileMode) error
 }
 
-//go:generate counterfeiter . Filesystem
+//counterfeiter:generate . Filesystem
 type Filesystem interface {
 	Create(name string) (File, error)
 	MkdirAll(path string, perm os.FileMode) error

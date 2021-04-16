@@ -12,6 +12,8 @@
 
 package migrate
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"fmt"
 	"io/ioutil"
@@ -23,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate counterfeiter . Client
+//counterfeiter:generate . Client
 type Client interface {
 	ServiceExists(serviceName string) bool
 	CreateServiceInstance(planType, instanceName string) error
@@ -37,7 +39,7 @@ type Client interface {
 	StartApp(appName string) error
 }
 
-//go:generate counterfeiter . Unpacker
+//counterfeiter:generate . Unpacker
 type Unpacker interface {
 	Unpack(destDir string) error
 }

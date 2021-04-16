@@ -76,15 +76,16 @@ func (fake *FakeMigrator) CheckServiceExists(arg1 string) error {
 	fake.checkServiceExistsArgsForCall = append(fake.checkServiceExistsArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.CheckServiceExistsStub
+	fakeReturns := fake.checkServiceExistsReturns
 	fake.recordInvocation("CheckServiceExists", []interface{}{arg1})
 	fake.checkServiceExistsMutex.Unlock()
-	if fake.CheckServiceExistsStub != nil {
-		return fake.CheckServiceExistsStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.checkServiceExistsReturns
 	return fakeReturns.result1
 }
 
@@ -136,15 +137,16 @@ func (fake *FakeMigrator) CleanupOnError(arg1 string) error {
 	fake.cleanupOnErrorArgsForCall = append(fake.cleanupOnErrorArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.CleanupOnErrorStub
+	fakeReturns := fake.cleanupOnErrorReturns
 	fake.recordInvocation("CleanupOnError", []interface{}{arg1})
 	fake.cleanupOnErrorMutex.Unlock()
-	if fake.CleanupOnErrorStub != nil {
-		return fake.CleanupOnErrorStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.cleanupOnErrorReturns
 	return fakeReturns.result1
 }
 
@@ -197,15 +199,16 @@ func (fake *FakeMigrator) CreateServiceInstance(arg1 string, arg2 string) error 
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.CreateServiceInstanceStub
+	fakeReturns := fake.createServiceInstanceReturns
 	fake.recordInvocation("CreateServiceInstance", []interface{}{arg1, arg2})
 	fake.createServiceInstanceMutex.Unlock()
-	if fake.CreateServiceInstanceStub != nil {
-		return fake.CreateServiceInstanceStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.createServiceInstanceReturns
 	return fakeReturns.result1
 }
 
@@ -257,15 +260,16 @@ func (fake *FakeMigrator) MigrateData(arg1 migrate.MigrateOptions) error {
 	fake.migrateDataArgsForCall = append(fake.migrateDataArgsForCall, struct {
 		arg1 migrate.MigrateOptions
 	}{arg1})
+	stub := fake.MigrateDataStub
+	fakeReturns := fake.migrateDataReturns
 	fake.recordInvocation("MigrateData", []interface{}{arg1})
 	fake.migrateDataMutex.Unlock()
-	if fake.MigrateDataStub != nil {
-		return fake.MigrateDataStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.migrateDataReturns
 	return fakeReturns.result1
 }
 
@@ -318,15 +322,16 @@ func (fake *FakeMigrator) RenameServiceInstances(arg1 string, arg2 string) error
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.RenameServiceInstancesStub
+	fakeReturns := fake.renameServiceInstancesReturns
 	fake.recordInvocation("RenameServiceInstances", []interface{}{arg1, arg2})
 	fake.renameServiceInstancesMutex.Unlock()
-	if fake.RenameServiceInstancesStub != nil {
-		return fake.RenameServiceInstancesStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.renameServiceInstancesReturns
 	return fakeReturns.result1
 }
 

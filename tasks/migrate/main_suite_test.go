@@ -18,7 +18,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
@@ -26,7 +26,8 @@ import (
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-	. "github.com/pivotal/mysql-test-utils/dockertest"
+
+	. "github.com/pivotal-cf/mysql-cli-plugin/test_helpers/dockertest"
 )
 
 func TestMigrate(t *testing.T) {

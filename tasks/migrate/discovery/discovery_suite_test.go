@@ -16,12 +16,13 @@ import (
 	"log"
 	"testing"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/pivotal/mysql-test-utils/dockertest"
+
+	. "github.com/pivotal-cf/mysql-cli-plugin/test_helpers/dockertest"
 )
 
 func TestDiscovery(t *testing.T) {

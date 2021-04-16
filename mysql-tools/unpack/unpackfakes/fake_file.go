@@ -2,17 +2,17 @@
 package unpackfakes
 
 import (
-	"os"
+	"io/fs"
 	"sync"
 
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 )
 
 type FakeFile struct {
-	ChmodStub        func(os.FileMode) error
+	ChmodStub        func(fs.FileMode) error
 	chmodMutex       sync.RWMutex
 	chmodArgsForCall []struct {
-		arg1 os.FileMode
+		arg1 fs.FileMode
 	}
 	chmodReturns struct {
 		result1 error
@@ -60,21 +60,22 @@ type FakeFile struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeFile) Chmod(arg1 os.FileMode) error {
+func (fake *FakeFile) Chmod(arg1 fs.FileMode) error {
 	fake.chmodMutex.Lock()
 	ret, specificReturn := fake.chmodReturnsOnCall[len(fake.chmodArgsForCall)]
 	fake.chmodArgsForCall = append(fake.chmodArgsForCall, struct {
-		arg1 os.FileMode
+		arg1 fs.FileMode
 	}{arg1})
+	stub := fake.ChmodStub
+	fakeReturns := fake.chmodReturns
 	fake.recordInvocation("Chmod", []interface{}{arg1})
 	fake.chmodMutex.Unlock()
-	if fake.ChmodStub != nil {
-		return fake.ChmodStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.chmodReturns
 	return fakeReturns.result1
 }
 
@@ -84,13 +85,13 @@ func (fake *FakeFile) ChmodCallCount() int {
 	return len(fake.chmodArgsForCall)
 }
 
-func (fake *FakeFile) ChmodCalls(stub func(os.FileMode) error) {
+func (fake *FakeFile) ChmodCalls(stub func(fs.FileMode) error) {
 	fake.chmodMutex.Lock()
 	defer fake.chmodMutex.Unlock()
 	fake.ChmodStub = stub
 }
 
-func (fake *FakeFile) ChmodArgsForCall(i int) os.FileMode {
+func (fake *FakeFile) ChmodArgsForCall(i int) fs.FileMode {
 	fake.chmodMutex.RLock()
 	defer fake.chmodMutex.RUnlock()
 	argsForCall := fake.chmodArgsForCall[i]
@@ -125,15 +126,16 @@ func (fake *FakeFile) Close() error {
 	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
 	fake.closeArgsForCall = append(fake.closeArgsForCall, struct {
 	}{})
+	stub := fake.CloseStub
+	fakeReturns := fake.closeReturns
 	fake.recordInvocation("Close", []interface{}{})
 	fake.closeMutex.Unlock()
-	if fake.CloseStub != nil {
-		return fake.CloseStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.closeReturns
 	return fakeReturns.result1
 }
 
@@ -183,15 +185,16 @@ func (fake *FakeFile) Read(arg1 []byte) (int, error) {
 	fake.readArgsForCall = append(fake.readArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
+	stub := fake.ReadStub
+	fakeReturns := fake.readReturns
 	fake.recordInvocation("Read", []interface{}{arg1Copy})
 	fake.readMutex.Unlock()
-	if fake.ReadStub != nil {
-		return fake.ReadStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.readReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -251,15 +254,16 @@ func (fake *FakeFile) Write(arg1 []byte) (int, error) {
 	fake.writeArgsForCall = append(fake.writeArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
+	stub := fake.WriteStub
+	fakeReturns := fake.writeReturns
 	fake.recordInvocation("Write", []interface{}{arg1Copy})
 	fake.writeMutex.Unlock()
-	if fake.WriteStub != nil {
-		return fake.WriteStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.writeReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

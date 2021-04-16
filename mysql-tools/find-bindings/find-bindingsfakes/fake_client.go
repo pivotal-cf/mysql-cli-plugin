@@ -124,15 +124,16 @@ func (fake *FakeClient) GetAppByGuid(arg1 string) (cfclient.App, error) {
 	fake.getAppByGuidArgsForCall = append(fake.getAppByGuidArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetAppByGuidStub
+	fakeReturns := fake.getAppByGuidReturns
 	fake.recordInvocation("GetAppByGuid", []interface{}{arg1})
 	fake.getAppByGuidMutex.Unlock()
-	if fake.GetAppByGuidStub != nil {
-		return fake.GetAppByGuidStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getAppByGuidReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -187,15 +188,16 @@ func (fake *FakeClient) GetOrgByGuid(arg1 string) (cfclient.Org, error) {
 	fake.getOrgByGuidArgsForCall = append(fake.getOrgByGuidArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetOrgByGuidStub
+	fakeReturns := fake.getOrgByGuidReturns
 	fake.recordInvocation("GetOrgByGuid", []interface{}{arg1})
 	fake.getOrgByGuidMutex.Unlock()
-	if fake.GetOrgByGuidStub != nil {
-		return fake.GetOrgByGuidStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getOrgByGuidReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -250,15 +252,16 @@ func (fake *FakeClient) GetSpaceByGuid(arg1 string) (cfclient.Space, error) {
 	fake.getSpaceByGuidArgsForCall = append(fake.getSpaceByGuidArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetSpaceByGuidStub
+	fakeReturns := fake.getSpaceByGuidReturns
 	fake.recordInvocation("GetSpaceByGuid", []interface{}{arg1})
 	fake.getSpaceByGuidMutex.Unlock()
-	if fake.GetSpaceByGuidStub != nil {
-		return fake.GetSpaceByGuidStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getSpaceByGuidReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -313,15 +316,16 @@ func (fake *FakeClient) ListServiceBindingsByQuery(arg1 url.Values) ([]cfclient.
 	fake.listServiceBindingsByQueryArgsForCall = append(fake.listServiceBindingsByQueryArgsForCall, struct {
 		arg1 url.Values
 	}{arg1})
+	stub := fake.ListServiceBindingsByQueryStub
+	fakeReturns := fake.listServiceBindingsByQueryReturns
 	fake.recordInvocation("ListServiceBindingsByQuery", []interface{}{arg1})
 	fake.listServiceBindingsByQueryMutex.Unlock()
-	if fake.ListServiceBindingsByQueryStub != nil {
-		return fake.ListServiceBindingsByQueryStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listServiceBindingsByQueryReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -376,15 +380,16 @@ func (fake *FakeClient) ListServiceInstancesByQuery(arg1 url.Values) ([]cfclient
 	fake.listServiceInstancesByQueryArgsForCall = append(fake.listServiceInstancesByQueryArgsForCall, struct {
 		arg1 url.Values
 	}{arg1})
+	stub := fake.ListServiceInstancesByQueryStub
+	fakeReturns := fake.listServiceInstancesByQueryReturns
 	fake.recordInvocation("ListServiceInstancesByQuery", []interface{}{arg1})
 	fake.listServiceInstancesByQueryMutex.Unlock()
-	if fake.ListServiceInstancesByQueryStub != nil {
-		return fake.ListServiceInstancesByQueryStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listServiceInstancesByQueryReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -439,15 +444,16 @@ func (fake *FakeClient) ListServiceKeysByQuery(arg1 url.Values) ([]cfclient.Serv
 	fake.listServiceKeysByQueryArgsForCall = append(fake.listServiceKeysByQueryArgsForCall, struct {
 		arg1 url.Values
 	}{arg1})
+	stub := fake.ListServiceKeysByQueryStub
+	fakeReturns := fake.listServiceKeysByQueryReturns
 	fake.recordInvocation("ListServiceKeysByQuery", []interface{}{arg1})
 	fake.listServiceKeysByQueryMutex.Unlock()
-	if fake.ListServiceKeysByQueryStub != nil {
-		return fake.ListServiceKeysByQueryStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listServiceKeysByQueryReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -502,15 +508,16 @@ func (fake *FakeClient) ListServicePlansByQuery(arg1 url.Values) ([]cfclient.Ser
 	fake.listServicePlansByQueryArgsForCall = append(fake.listServicePlansByQueryArgsForCall, struct {
 		arg1 url.Values
 	}{arg1})
+	stub := fake.ListServicePlansByQueryStub
+	fakeReturns := fake.listServicePlansByQueryReturns
 	fake.recordInvocation("ListServicePlansByQuery", []interface{}{arg1})
 	fake.listServicePlansByQueryMutex.Unlock()
-	if fake.ListServicePlansByQueryStub != nil {
-		return fake.ListServicePlansByQueryStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listServicePlansByQueryReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -565,15 +572,16 @@ func (fake *FakeClient) ListServicesByQuery(arg1 url.Values) ([]cfclient.Service
 	fake.listServicesByQueryArgsForCall = append(fake.listServicesByQueryArgsForCall, struct {
 		arg1 url.Values
 	}{arg1})
+	stub := fake.ListServicesByQueryStub
+	fakeReturns := fake.listServicesByQueryReturns
 	fake.recordInvocation("ListServicesByQuery", []interface{}{arg1})
 	fake.listServicesByQueryMutex.Unlock()
-	if fake.ListServicesByQueryStub != nil {
-		return fake.ListServicesByQueryStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listServicesByQueryReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

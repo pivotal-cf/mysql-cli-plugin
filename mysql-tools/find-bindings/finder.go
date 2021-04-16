@@ -12,6 +12,8 @@
 
 package find_bindings
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"net/url"
 
@@ -20,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate counterfeiter . Client
+//counterfeiter:generate . Client
 type Client interface {
 	GetAppByGuid(guid string) (cfclient.App, error)
 	GetOrgByGuid(spaceGUID string) (cfclient.Org, error)

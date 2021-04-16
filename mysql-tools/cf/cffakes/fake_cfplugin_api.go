@@ -81,15 +81,16 @@ func (fake *FakeCFPluginAPI) AccessToken() (string, error) {
 	ret, specificReturn := fake.accessTokenReturnsOnCall[len(fake.accessTokenArgsForCall)]
 	fake.accessTokenArgsForCall = append(fake.accessTokenArgsForCall, struct {
 	}{})
+	stub := fake.AccessTokenStub
+	fakeReturns := fake.accessTokenReturns
 	fake.recordInvocation("AccessToken", []interface{}{})
 	fake.accessTokenMutex.Unlock()
-	if fake.AccessTokenStub != nil {
-		return fake.AccessTokenStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.accessTokenReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -137,15 +138,16 @@ func (fake *FakeCFPluginAPI) CliCommand(arg1 ...string) ([]string, error) {
 	fake.cliCommandArgsForCall = append(fake.cliCommandArgsForCall, struct {
 		arg1 []string
 	}{arg1})
+	stub := fake.CliCommandStub
+	fakeReturns := fake.cliCommandReturns
 	fake.recordInvocation("CliCommand", []interface{}{arg1})
 	fake.cliCommandMutex.Unlock()
-	if fake.CliCommandStub != nil {
-		return fake.CliCommandStub(arg1...)
+	if stub != nil {
+		return stub(arg1...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.cliCommandReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -200,15 +202,16 @@ func (fake *FakeCFPluginAPI) CliCommandWithoutTerminalOutput(arg1 ...string) ([]
 	fake.cliCommandWithoutTerminalOutputArgsForCall = append(fake.cliCommandWithoutTerminalOutputArgsForCall, struct {
 		arg1 []string
 	}{arg1})
+	stub := fake.CliCommandWithoutTerminalOutputStub
+	fakeReturns := fake.cliCommandWithoutTerminalOutputReturns
 	fake.recordInvocation("CliCommandWithoutTerminalOutput", []interface{}{arg1})
 	fake.cliCommandWithoutTerminalOutputMutex.Unlock()
-	if fake.CliCommandWithoutTerminalOutputStub != nil {
-		return fake.CliCommandWithoutTerminalOutputStub(arg1...)
+	if stub != nil {
+		return stub(arg1...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.cliCommandWithoutTerminalOutputReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -262,15 +265,16 @@ func (fake *FakeCFPluginAPI) GetCurrentSpace() (plugin_models.Space, error) {
 	ret, specificReturn := fake.getCurrentSpaceReturnsOnCall[len(fake.getCurrentSpaceArgsForCall)]
 	fake.getCurrentSpaceArgsForCall = append(fake.getCurrentSpaceArgsForCall, struct {
 	}{})
+	stub := fake.GetCurrentSpaceStub
+	fakeReturns := fake.getCurrentSpaceReturns
 	fake.recordInvocation("GetCurrentSpace", []interface{}{})
 	fake.getCurrentSpaceMutex.Unlock()
-	if fake.GetCurrentSpaceStub != nil {
-		return fake.GetCurrentSpaceStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getCurrentSpaceReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -318,15 +322,16 @@ func (fake *FakeCFPluginAPI) GetService(arg1 string) (plugin_models.GetService_M
 	fake.getServiceArgsForCall = append(fake.getServiceArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetServiceStub
+	fakeReturns := fake.getServiceReturns
 	fake.recordInvocation("GetService", []interface{}{arg1})
 	fake.getServiceMutex.Unlock()
-	if fake.GetServiceStub != nil {
-		return fake.GetServiceStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getServiceReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

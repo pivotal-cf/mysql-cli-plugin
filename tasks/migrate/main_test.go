@@ -18,11 +18,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"github.com/pivotal/mysql-test-utils/dockertest"
+
+	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers/dockertest"
 )
 
 const dockerVcapServicesTemplate = `
