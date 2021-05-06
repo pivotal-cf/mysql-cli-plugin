@@ -55,6 +55,7 @@ func MySQLDumpCmd(credentials Credentials, invalidViews []discovery.View, schema
 		"--skip-events",
 		"--set-gtid-purged=off",
 		"--skip-triggers",
+		"--no-tablespaces",
 	)
 
 	for _, view := range invalidViews {

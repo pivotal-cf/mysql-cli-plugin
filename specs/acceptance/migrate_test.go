@@ -128,6 +128,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, migrationTimeout, "1s").Should(gexec.Exit(0))
 				Expect(session.Out).To(gbytes.Say(`The following views are invalid, and will not be migrated: \[%s.dropped_table_view\]`, serviceKey.Name))
+				Expect(session.Out).NotTo(gbytes.Say(`mysqldump: Error:`))
 			})
 
 			By("Verifying the destination service was renamed to the source's name", func() {
