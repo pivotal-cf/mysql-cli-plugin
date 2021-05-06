@@ -69,6 +69,7 @@ var _ = Describe("Backup / Restore API", func() {
 				"--skip-events",
 				"--set-gtid-purged=off",
 				"--skip-triggers",
+				"--no-tablespaces",
 				"--databases",
 				"foo",
 				"bar",
@@ -99,6 +100,7 @@ var _ = Describe("Backup / Restore API", func() {
 						"--skip-events",
 						"--set-gtid-purged=off",
 						"--skip-triggers",
+						"--no-tablespaces",
 						"--databases",
 						"foo",
 						"bar",
@@ -127,6 +129,7 @@ var _ = Describe("Backup / Restore API", func() {
 						"--skip-events",
 						"--set-gtid-purged=off",
 						"--skip-triggers",
+						"--no-tablespaces",
 						"--databases",
 						"foo",
 						"bar",
@@ -164,6 +167,7 @@ var _ = Describe("Backup / Restore API", func() {
 					"--skip-events",
 					"--set-gtid-purged=off",
 					"--skip-triggers",
+					"--no-tablespaces",
 					"--ignore-table=foo.view1",
 					"--ignore-table=bar.view1",
 					"--ignore-table=baz.view1",
@@ -196,6 +200,7 @@ var _ = Describe("Backup / Restore API", func() {
 				"--skip-events",
 				"--set-gtid-purged=off",
 				"--skip-triggers",
+				"--no-tablespaces",
 				"one-database",
 			}))
 			Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
@@ -223,6 +228,7 @@ var _ = Describe("Backup / Restore API", func() {
 						"--skip-events",
 						"--set-gtid-purged=off",
 						"--skip-triggers",
+						"--no-tablespaces",
 						"one-database",
 					}))
 					Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
@@ -248,6 +254,7 @@ var _ = Describe("Backup / Restore API", func() {
 						"--skip-events",
 						"--set-gtid-purged=off",
 						"--skip-triggers",
+						"--no-tablespaces",
 						"one-database",
 					}))
 					Expect(mysqldump.Env).To(ContainElement("MYSQL_PWD=some-password"))
