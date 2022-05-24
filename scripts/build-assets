@@ -76,8 +76,8 @@ function install_mysql_client_utils() {
 }
 
 function install_migrate_task() {
-    curl --silent https://dl.google.com/go/go1.16.3.linux-amd64.tar.gz > /tmp/golang.tgz \
-        && sha256sum -c - <<< "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2  /tmp/golang.tgz" \
+    curl --silent -L https://go.dev/dl/go1.18.2.linux-amd64.tar.gz > /tmp/golang.tgz \
+        && sha256sum -c - <<< "e54bec97a1a5d230fc2f9ad0880fcbabb5888f30ed9666eca4a91c5a32e86cbc  /tmp/golang.tgz" \
         && tar -xf /tmp/golang.tgz -C /usr/local/
 
     GOROOT=/usr/local/go
