@@ -250,7 +250,7 @@ func UnbindAllAppsFromService(instanceGUID string) {
 }
 
 func BindAppToService(appName string, instance string) {
-	session := cf.Cf("bind-service", appName, instance).Wait()
+	session := cf.Cf("bind-service", appName, instance).Wait(cfCommandTimeout)
 	Expect(session.ExitCode()).To(Equal(0),
 		`Failed to bind-service: %s`,
 		string(session.Out.Contents())+string(session.Err.Contents()),
