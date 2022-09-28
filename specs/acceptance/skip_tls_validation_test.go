@@ -13,7 +13,6 @@
 package acceptance
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 
@@ -22,6 +21,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
 
@@ -62,9 +62,9 @@ var _ = Describe("Skip TLS Validation", func() {
 			test_helpers.DeleteService(destInstance)
 			test_helpers.DeleteService(sourceInstance)
 			test_helpers.DeleteService(oldInstance)
-			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
-			test_helpers.WaitForService(sourceInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
-			test_helpers.WaitForService(oldInstance, fmt.Sprintf("Service instance %s not found", oldInstance))
+			test_helpers.WaitForService(destInstance, "Service instance .* not found")
+			test_helpers.WaitForService(sourceInstance, "Service instance .* not found")
+			test_helpers.WaitForService(oldInstance, "Service instance .* not found")
 		})
 
 		It("migrates data from donor to recipient", func() {

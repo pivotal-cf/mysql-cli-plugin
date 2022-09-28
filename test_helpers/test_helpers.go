@@ -33,7 +33,6 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -251,28 +250,19 @@ func UnbindAllAppsFromService(instanceGUID string) {
 }
 
 func BindAppToService(appName string, instance string) {
-	output := cf.Cf("bind-service", appName, instance).Wait(cfCommandTimeout).Out.Contents()
-	Expect(string(output)).To(ContainSubstring("Binding service %s to app %s", instance, appName))
-	Expect(string(output)).ToNot(SatisfyAny(ContainSubstring("FAILED"),
-		ContainSubstring("Server error")))
-
-	instanceGUID := InstanceUUID(instance)
-	appGUID := AppUUID(appName)
-
-	Eventually(BoundAppGUIDs(instanceGUID), cfServiceWaitTimeout, curlTimeout).Should(ContainElement(appGUID))
+	session := cf.Cf("bind-service", appName, instance).Wait()
+	Expect(session.ExitCode()).To(Equal(0),
+		`Failed to bind-service: %s`,
+		string(session.Out.Contents())+string(session.Err.Contents()),
+	)
 }
 
 func UnbindAppFromService(appName string, instance string) {
-	output := cf.Cf("unbind-service", appName, instance).Wait(cfCommandTimeout).Out
-	ExpectWithOffset(1, output).To(Say("Unbinding app %s from service %s", appName, instance))
-	ExpectWithOffset(1, output).ToNot(SatisfyAny(
-		Say("FAILED"),
-		Say("Server error")))
-
-	instanceGUID := InstanceUUID(instance)
-	appGUID := AppUUID(appName)
-
-	Eventually(BoundAppGUIDs(instanceGUID), cfServiceWaitTimeout, curlTimeout).ShouldNot(ContainElement(appGUID))
+	session := cf.Cf("unbind-service", appName, instance).Wait(cfCommandTimeout)
+	Expect(session.ExitCode()).To(Equal(0),
+		`Failed to unbind-service: %s`,
+		string(session.Out.Contents())+string(session.Err.Contents()),
+	)
 }
 
 func CheckAppInfo(skipSSLValidation bool, appURI string, instance string) {

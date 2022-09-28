@@ -13,7 +13,6 @@
 package smoke_tests_test
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 
@@ -57,15 +56,9 @@ var _ = Describe("SmokeTests", func() {
 			test_helpers.DeleteService(instanceName + "-old")
 			test_helpers.DeleteService(instanceName + "-new")
 			test_helpers.DeleteService(instanceName)
-			test_helpers.WaitForService(
-				instanceName+"-old",
-				fmt.Sprintf("Service instance %s-old not found", instanceName))
-			test_helpers.WaitForService(
-				instanceName+"-new",
-				fmt.Sprintf("Service instance %s-new not found", instanceName))
-			test_helpers.WaitForService(
-				instanceName,
-				fmt.Sprintf("Service instance %s not found", instanceName))
+			test_helpers.WaitForService(instanceName+"-old", "Service instance .* not found")
+			test_helpers.WaitForService(instanceName+"-new", "Service instance .* not found")
+			test_helpers.WaitForService(instanceName, "Service instance .* not found")
 		})
 
 		It("migrates data from donor to recipient", func() {

@@ -14,14 +14,15 @@ package acceptance
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"github.com/onsi/gomega/gexec"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
-	"os"
-	"os/exec"
 )
 
 var _ = Describe("Find bindings Integration tests", func() {
@@ -49,7 +50,7 @@ var _ = Describe("Find bindings Integration tests", func() {
 			test_helpers.DeleteApp(bindingApp)
 			test_helpers.DeleteServiceKey(bindingInstance, bindingKey)
 			test_helpers.DeleteService(bindingInstance)
-			test_helpers.WaitForService(bindingInstance, fmt.Sprintf("Service instance %s not found", bindingInstance))
+			test_helpers.WaitForService(bindingInstance, "Service instance .* not found")
 		})
 
 		It("Prints out the app bindings and the service keys", func() {

@@ -25,6 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
 
@@ -66,9 +67,9 @@ var _ = Describe("Migrate Integration Tests", func() {
 		test_helpers.DeleteService(oldInstance)
 		test_helpers.DeleteService(destInstance)
 		test_helpers.DeleteService(sourceInstance)
-		test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
-		test_helpers.WaitForService(sourceInstance, fmt.Sprintf("Service instance %s not found", sourceInstance))
-		test_helpers.WaitForService(oldInstance, fmt.Sprintf("Service instance %s not found", oldInstance))
+		test_helpers.WaitForService(destInstance, "Service instance .* not found")
+		test_helpers.WaitForService(sourceInstance, "Service instance .* not found")
+		test_helpers.WaitForService(oldInstance, "Service instance .* not found")
 	})
 
 	It("fails on invalid donor service instance", func() {
@@ -213,7 +214,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(session, migrationTimeout, "1s").Should(gexec.Exit(1))
-			test_helpers.WaitForService(destInstance, fmt.Sprintf("Service instance %s not found", destInstance))
+			test_helpers.WaitForService(destInstance, "Service instance .* not found")
 		})
 
 		Context("When --no-cleanup flag is specified", func() {
@@ -226,7 +227,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 				test_helpers.UnbindAllAppsFromService(srcGUID)
 				test_helpers.UnbindAllAppsFromService(destinationGUID)
 				test_helpers.DeleteService(renamedSourceInstance)
-				test_helpers.WaitForService(renamedSourceInstance, fmt.Sprintf("Service instance %s not found", renamedSourceInstance))
+				test_helpers.WaitForService(renamedSourceInstance, "Service instance .* not found")
 			})
 
 			It("Does not delete the recipient service instance when the --no-cleanup flag is specified", func() {
