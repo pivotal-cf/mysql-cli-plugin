@@ -157,11 +157,15 @@ func GetServiceKey(serviceInstanceName, serviceKeyName string) ServiceKey {
 	outputLines := strings.SplitN(output, "\n", 3)
 	serviceKeyJson := outputLines[len(outputLines)-1]
 
-	var serviceKey ServiceKey
+	var serviceKey struct {
+		Credentials struct {
+			ServiceKey `json:",inline"`
+		} `json:"credentials"`
+	}
 
-	json.Unmarshal([]byte(serviceKeyJson), &serviceKey)
+	Expect(json.Unmarshal([]byte(serviceKeyJson), &serviceKey)).To(Succeed())
 
-	return serviceKey
+	return serviceKey.Credentials.ServiceKey
 }
 
 func CreateServiceKey(instanceName, keyName string) {
