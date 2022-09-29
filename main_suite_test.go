@@ -13,6 +13,7 @@
 package main_test
 
 import (
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -23,3 +24,9 @@ func TestMysqlCLIPlugin(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "TestMysqlCLIPlugin Suite")
 }
+
+var _ = BeforeSuite(func() {
+	cfHomeTmp, err := os.MkdirTemp("", "cf_home_")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(os.Setenv("CF_HOME", cfHomeTmp)).To(Succeed())
+})
