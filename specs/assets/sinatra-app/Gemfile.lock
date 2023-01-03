@@ -4,6 +4,9 @@ GEM
     mustermann (3.0.0)
       ruby2_keywords (~> 0.0.1)
     mysql2 (0.5.4)
+    nio4r (2.5.8)
+    puma (6.0.2)
+      nio4r (~> 2.0)
     rack (2.2.5)
     rack-protection (3.0.5)
       rack
@@ -20,7 +23,11 @@ PLATFORMS
 
 DEPENDENCIES
   mysql2
+  puma
   sinatra
 
+RUBY VERSION
+   ruby 3.1.2p20
+
 BUNDLED WITH
-   2.4.2
+   2.3.26
