@@ -381,14 +381,21 @@ func OpenDatabaseTunnelToApp(appName string, serviceKey ServiceKey) (*sql.DB, co
 	tunnelContext, tunnelCancel := context.WithCancel(context.Background())
 	connectionString := fmt.Sprintf("%d:%s:3306", port, serviceKey.Hostname)
 	tunnelCommand := exec.CommandContext(tunnelContext, "cf", "ssh", "--skip-remote-execution", "-L", connectionString, appName)
+	tunnelCommand.Stderr = GinkgoWriter
+	tunnelCommand.Stdout = GinkgoWriter
+
 	err := tunnelCommand.Start()
 	Expect(err).ToNot(HaveOccurred())
 
-	db := waitForTunnel(port, serviceKey)
+	db := waitForTunnel(tunnelCommand, port, serviceKey)
+
+	if tunnelCommand.ProcessState.Exited() {
+		_, _ = fmt.Fprintf(GinkgoWriter, "%s exited: %v", strings.Join(tunnelCommand.Args, " "), tunnelCommand.ProcessState.ExitCode())
+	}
 	return db, tunnelCancel
 }
 
-func waitForTunnel(port int, serviceKey ServiceKey) *sql.DB {
+func waitForTunnel(tunnelCmd *exec.Cmd, port int, serviceKey ServiceKey) *sql.DB {
 	connectionString := fmt.Sprintf(
 		"%s:%s@tcp(127.0.0.1:%d)/%s?interpolateParams=true",
 		serviceKey.Username,
@@ -403,8 +410,13 @@ func waitForTunnel(port int, serviceKey ServiceKey) *sql.DB {
 	Eventually(func() error {
 		err = db.Ping()
 		if err != nil {
-			fmt.Fprintf(GinkgoWriter, "db ping failed: %v", err)
+			_, _ = fmt.Fprintf(GinkgoWriter, "db ping failed: %v\n", err)
 		}
+
+		if tunnelCmd.ProcessState.Exited() {
+			_, _ = fmt.Fprintf(GinkgoWriter, "%s exited: %v", strings.Join(tunnelCmd.Args, " "), tunnelCmd.ProcessState.ExitCode())
+		}
+
 		return err
 	}, "2m", "5s").Should(Not(HaveOccurred()))
 
