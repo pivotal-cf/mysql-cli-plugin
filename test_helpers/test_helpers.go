@@ -389,13 +389,13 @@ func OpenDatabaseTunnelToApp(appName string, serviceKey ServiceKey) (*sql.DB, co
 
 	db := waitForTunnel(tunnelCommand, port, serviceKey)
 
-	if tunnelCommand.ProcessState.Exited() {
+	if tunnelCommand.ProcessState != nil && tunnelCommand.ProcessState.Exited() {
 		_, _ = fmt.Fprintf(GinkgoWriter, "%s exited: %v", strings.Join(tunnelCommand.Args, " "), tunnelCommand.ProcessState.ExitCode())
 	}
 	return db, tunnelCancel
 }
 
-func waitForTunnel(tunnelCmd *exec.Cmd, port int, serviceKey ServiceKey) *sql.DB {
+func waitForTunnel(tunnelCommand *exec.Cmd, port int, serviceKey ServiceKey) *sql.DB {
 	connectionString := fmt.Sprintf(
 		"%s:%s@tcp(127.0.0.1:%d)/%s?interpolateParams=true",
 		serviceKey.Username,
@@ -413,8 +413,8 @@ func waitForTunnel(tunnelCmd *exec.Cmd, port int, serviceKey ServiceKey) *sql.DB
 			_, _ = fmt.Fprintf(GinkgoWriter, "db ping failed: %v\n", err)
 		}
 
-		if tunnelCmd.ProcessState.Exited() {
-			_, _ = fmt.Fprintf(GinkgoWriter, "%s exited: %v", strings.Join(tunnelCmd.Args, " "), tunnelCmd.ProcessState.ExitCode())
+		if tunnelCommand.ProcessState != nil && tunnelCommand.ProcessState.Exited() {
+			_, _ = fmt.Fprintf(GinkgoWriter, "%s exited: %v", strings.Join(tunnelCommand.Args, " "), tunnelCommand.ProcessState.ExitCode())
 		}
 
 		return err
