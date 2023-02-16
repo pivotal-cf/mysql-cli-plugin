@@ -31,7 +31,7 @@ require (
 	github.com/Microsoft/hcsshim v0.9.6 // indirect
 	github.com/cloudfoundry/gofileutils v0.0.0-20170111115228-4d0c80011a0f // indirect
 	github.com/containerd/cgroups v1.0.4 // indirect
-	github.com/containerd/containerd v1.6.14 // indirect
+	github.com/containerd/containerd v1.6.18 // indirect
 	github.com/docker/docker v20.10.22+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
