@@ -1,7 +1,8 @@
-mysql-v2-cli-plugin
 mysql-cli-plugin
 .idea/
-*-packr.go
 .DS_Store
 app/bin
 app/lib
+app/percona.README
+app/percona.LICENSE
+app/migration-app.zip

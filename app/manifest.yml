@@ -3,7 +3,7 @@ applications:
 - buildpack: "binary_buildpack"
   health-check-type: none
   command: "/bin/sleep infinity"
-  path: .
+  path: migration-app.zip
   no-route: true
   env:
     PATH: "/home/vcap/app/bin:/bin:/usr/bin"

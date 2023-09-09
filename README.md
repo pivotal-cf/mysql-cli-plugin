@@ -55,10 +55,3 @@ Once the build-plugin script has been run and the assets have been built, you ca
 1. Compile the final binary
    ```
    $ go build .
-   ```
-
-### Cleaning Up
-
-```
-$ packr clean
-```

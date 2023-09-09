@@ -24,11 +24,11 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/jessevdk/go-flags"
 
+	"github.com/pivotal-cf/mysql-cli-plugin/app"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 	find_bindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/presentation"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
 )
 
 var (
@@ -97,7 +97,7 @@ USAGE:
 		finder := find_bindings.NewBindingFinder(cf.NewFindBindingsClient(cliConnection))
 		c.err = FindBindings(finder, args[2:])
 	case "migrate":
-		migrator := migrate.NewMigrator(cf.NewMigratorClient(cliConnection), unpack.NewUnpacker())
+		migrator := migrate.NewMigrator(cf.NewMigratorClient(cliConnection), app.NewExtractor())
 		c.err = Migrate(migrator, args[2:])
 	}
 }

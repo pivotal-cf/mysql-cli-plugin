@@ -40,15 +40,6 @@ run docker run --rm \
   "${docker_image}" \
   ./scripts/build-assets
 
-echo >&2 "Running go generate ./... to repack app assets..."
-run docker run --rm \
-  --mount=type=volume,src=gomod-cache,dst=/go \
-  --mount=type="bind,src=$PWD,dst=/workspace" \
-  --workdir=/workspace \
-  --tty \
-  "${docker_image}" \
-  go generate ./...
-
 echo >&2 "Building $PWD/mysql-cli-plugin"
 run go build \
   -tags forceposix \

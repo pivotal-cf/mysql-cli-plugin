@@ -9,8 +9,6 @@ require (
 	github.com/cloudfoundry-community/go-cfclient/v2 v2.0.0
 	github.com/cloudfoundry/cf-test-helpers/v2 v2.7.0
 	github.com/go-sql-driver/mysql v1.7.1
-	github.com/gobuffalo/packd v1.0.0
-	github.com/gobuffalo/packr v1.30.1
 	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jessevdk/go-flags v1.5.0
@@ -26,12 +24,10 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
-	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/pprof v0.0.0-20230912144702-c363fe2c2ed8 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect

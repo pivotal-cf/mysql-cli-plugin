@@ -76,11 +76,17 @@ install_migrate_task() {
   GOBIN="$PWD/app/bin" go install -ldflags="-s -w" github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate
 }
 
-clean_app_directory() {
-  rm -rf ${bin_dir}
-  rm -rf ${lib_dir}
-  mkdir -p ${bin_dir}
-  mkdir -p ${lib_dir}
+package_app() {
+  cd app
+  run zip migration-app.zip \
+    bin/{migrate,mysql,mysqldump} \
+    lib/{libssl.so.1.1,libcrypto.so.1.1,libtinfo.so.5} \
+    percona.LICENSE percona.README
+  cd -
+}
+
+clean_app_artifacts() {
+  rm -rf "${bin_dir}" "${lib_dir}" "app/percona.LICENSE" "app/percona.README"
 }
 
 main() {
@@ -95,12 +101,16 @@ main() {
     fi
   done
 
-  echo >&2 "Cleaning app/ directory..."
-  clean_app_directory
+  echo >&2 "Cleaning pre-existing stale app artifacts..."
+  clean_app_artifacts && rm -f app/migration-app.zip
   echo >&2 "Installing migrate task binary into app/"
   install_migrate_task
   echo >&2 "Installing mysql client utilities into app/"
   install_mysql_client_utils
+  echo >&2 "Packaging final cf migration app"
+  package_app
+  echo >&2 "Cleaning app build artifacts..."
+  clean_app_artifacts
 }
 
 main

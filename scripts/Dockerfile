@@ -6,9 +6,6 @@ COPY --from=go /usr/local/go /usr/local/go
 
 ENV PATH=/usr/local/go/bin:$PATH GOPATH=/go GOCACHE=/go
 
-RUN GOBIN=/usr/local/bin go install github.com/gobuffalo/packr/packr@latest \
-    && go clean -modcache -cache -testcache
-
 RUN DEBIAN_FRONTEND=noninteractive apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes --no-install-recommends \
     cmake \
