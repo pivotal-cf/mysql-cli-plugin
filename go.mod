@@ -19,7 +19,6 @@ require (
 	github.com/onsi/ginkgo/v2 v2.12.0
 	github.com/onsi/gomega v1.27.10
 	github.com/pivotal-cf/go-binmock v0.0.0-20171027112700-f797157c64e9
-	github.com/pkg/errors v0.9.1
 )
 
 require (
@@ -36,6 +35,7 @@ require (
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect

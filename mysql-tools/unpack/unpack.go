@@ -15,12 +15,12 @@ package unpack
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 import (
+	"fmt"
 	"io"
 	"path/filepath"
 	"runtime"
 
 	"github.com/gobuffalo/packr"
-	"github.com/pkg/errors"
 )
 
 //go:generate packr --compress
@@ -70,7 +70,7 @@ func (u *Unpacker) Unpack(destDir string) error {
 		return dest.Close()
 	})
 	if err != nil {
-		return errors.Errorf("Error extracting migrate assets: %s", err)
+		return fmt.Errorf("Error extracting migrate assets: %s", err)
 	}
 
 	return nil

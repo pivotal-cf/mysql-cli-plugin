@@ -23,12 +23,12 @@ import (
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/blang/semver/v4"
 	"github.com/jessevdk/go-flags"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 	find_bindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/presentation"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -89,7 +89,7 @@ USAGE:
 
 	switch command {
 	default:
-		c.err = errors.Errorf("unknown command '%s'", command)
+		c.err = fmt.Errorf("unknown command '%s'", command)
 	case "version":
 		fmt.Printf("%s (%s)\n", version, gitSHA)
 		os.Exit(0)
@@ -139,7 +139,7 @@ func FindBindings(bf BindingFinder, args []string) error {
 		if err != nil {
 			msg = err.Error()
 		}
-		return errors.Errorf("Usage: %s\n\n%s", findUsage, msg)
+		return fmt.Errorf("Usage: %s\n\n%s", findUsage, msg)
 	}
 
 	serviceName := opts.Args.ServiceName
@@ -173,7 +173,7 @@ func Migrate(migrator Migrator, args []string) error {
 		if err != nil {
 			msg = err.Error()
 		}
-		return errors.Errorf("Usage: %s\n\n%s", migrateUsage, msg)
+		return fmt.Errorf("Usage: %s\n\n%s", migrateUsage, msg)
 	}
 	donorInstanceName := opts.Args.Source
 	tempRecipientInstanceName := donorInstanceName + "-new"
@@ -218,7 +218,8 @@ func Migrate(migrator Migrator, args []string) error {
 		if cleanup {
 			migrator.CleanupOnError(tempRecipientInstanceName)
 
-			return fmt.Errorf("error migrating data: %v. Attempting to clean up service %s",
+			return fmt.Errorf(
+				"error migrating data: %w. Attempting to clean up service %s",
 				err,
 				tempRecipientInstanceName,
 			)

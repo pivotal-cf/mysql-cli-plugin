@@ -18,6 +18,7 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -25,8 +26,6 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 
 	pollcf "github.com/pivotal-cf/mysql-cli-plugin/test_helpers/poll_cf/cf"
 

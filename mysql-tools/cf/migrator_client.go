@@ -14,14 +14,13 @@ package cf
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 type MigratorClient struct {
@@ -41,15 +40,13 @@ func NewMigratorClient(pluginAPI CFPluginAPI) *MigratorClient {
 }
 
 func (c *MigratorClient) BindService(appName, serviceName string) error {
-	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
+	if _, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"bind-service", appName, serviceName,
-	)
+	); err != nil {
+		return fmt.Errorf("failed to bind-service %q to application %q: %w", serviceName, appName, err)
+	}
 
-	return errors.Wrapf(
-		err,
-		"failed to bind-service %q to application %q",
-		serviceName, appName,
-	)
+	return nil
 }
 
 func (c *MigratorClient) CreateServiceInstance(planType, instanceName string) error {
@@ -102,15 +99,13 @@ func (c *MigratorClient) CreateTask(app App, command string) (*Task, error) {
 }
 
 func (c *MigratorClient) DeleteApp(appName string) error {
-	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
+	if _, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"delete", "-f", appName,
-	)
+	); err != nil {
+		return fmt.Errorf("failed to delete application %q: %w", appName, err)
+	}
 
-	return errors.Wrapf(
-		err,
-		"failed to delete application %q",
-		appName,
-	)
+	return nil
 }
 
 func (c *MigratorClient) DeleteServiceInstance(instanceName string) error {
@@ -155,7 +150,7 @@ func (c *MigratorClient) GetLogs(appName, filter string) ([]string, error) {
 
 	output, err := c.pluginAPI.CliCommandWithoutTerminalOutput("logs", "--recent", appName)
 	if err != nil {
-		return nil, errors.Wrap(err, "GetLogs failed")
+		return nil, fmt.Errorf("GetLogs failed: %w", err)
 	}
 
 	for _, val := range output {
@@ -175,46 +170,46 @@ func (c *MigratorClient) GetTaskByGUID(guid string) (*Task, error) {
 }
 
 func (c *MigratorClient) PushApp(path, appName string) error {
-	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
+	if _, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"push",
 		"-f", filepath.Join(path, "manifest.yml"),
 		"--no-start",
 		appName,
-	)
+	); err != nil {
+		return fmt.Errorf("failed to push application: %w", err)
+	}
 
-	return errors.Wrap(err, "failed to push application")
+	return nil
 }
 
 func (c *MigratorClient) RenameService(oldName, newName string) error {
-	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
+	if _, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"rename-service", oldName, newName,
-	)
+	); err != nil {
+		return fmt.Errorf("failed to rename-service %q to %q: %w", oldName, newName, err)
+	}
 
-	return errors.Wrapf(
-		err,
-		"failed to rename-service %q to %q",
-		oldName, newName,
-	)
+	return nil
 }
 
 func (c *MigratorClient) RunTask(appName, command string) error {
 	app, err := c.GetAppByName(appName)
 	if err != nil {
-		return errors.Wrap(err, "Error")
+		return fmt.Errorf("Error: %w", err)
 	}
 
 	task, err := c.CreateTask(app, command)
 	if err != nil {
-		return errors.Wrap(err, "Error")
+		return fmt.Errorf("Error: %w", err)
 	}
 
 	finalState, err := c.waitForTask(task)
 	if err != nil {
-		return errors.Wrap(err, "Error when waiting for task to complete")
+		return fmt.Errorf("Error when waiting for task to complete: %w", err)
 	}
 
 	if finalState != "SUCCEEDED" {
-		return errors.Errorf("task completed with status %q", finalState)
+		return fmt.Errorf("task completed with status %q", finalState)
 	}
 
 	return nil
@@ -226,15 +221,13 @@ func (c *MigratorClient) ServiceExists(serviceName string) bool {
 }
 
 func (c *MigratorClient) StartApp(appName string) error {
-	_, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
+	if _, err := c.pluginAPI.CliCommandWithoutTerminalOutput(
 		"start", appName,
-	)
+	); err != nil {
+		return fmt.Errorf("failed to start application %q: %w", appName, err)
+	}
 
-	return errors.Wrapf(
-		err,
-		"failed to start application %q",
-		appName,
-	)
+	return nil
 }
 
 func (c *MigratorClient) createServiceKey(instanceName, serviceKeyName string) error {

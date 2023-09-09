@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 )
 
 //counterfeiter:generate . Client
@@ -74,7 +73,7 @@ func (m *Migrator) CheckServiceExists(donorInstanceName string) error {
 
 func (m *Migrator) CreateServiceInstance(planType, serviceName string) error {
 	if err := m.client.CreateServiceInstance(planType, serviceName); err != nil {
-		return errors.Wrap(err, "Error creating service instance")
+		return fmt.Errorf("Error creating service instance: %w", err)
 	}
 
 	return nil
@@ -87,19 +86,19 @@ func (m *Migrator) MigrateData(opts MigrateOptions) error {
 
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
 	if err != nil {
-		return errors.Errorf("Error creating temp directory: %s", err)
+		return fmt.Errorf("Error creating temp directory: %s", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
 	log.Printf("Unpacking assets for migration to %s", tmpDir)
 	if err = m.unpacker.Unpack(tmpDir); err != nil {
-		return errors.Errorf("Error extracting migrate assets: %s", err)
+		return fmt.Errorf("Error extracting migrate assets: %s", err)
 	}
 
 	log.Print("Started to push app")
 	m.appName = "migrate-app-" + uuid.NewString()
 	if err = m.client.PushApp(tmpDir, m.appName); err != nil {
-		return errors.Errorf("failed to push application: %s", err)
+		return fmt.Errorf("failed to push application: %s", err)
 	}
 	if cleanup {
 		defer func() {
@@ -110,18 +109,18 @@ func (m *Migrator) MigrateData(opts MigrateOptions) error {
 	log.Print("Successfully pushed app")
 
 	if err = m.client.BindService(m.appName, donorInstanceName); err != nil {
-		return errors.Errorf("failed to bind-service %q to application %q: %s", m.appName, donorInstanceName, err)
+		return fmt.Errorf("failed to bind-service %q to application %q: %s", m.appName, donorInstanceName, err)
 	}
 	log.Print("Successfully bound app to v1 instance")
 
 	if err = m.client.BindService(m.appName, recipientInstanceName); err != nil {
-		return errors.Errorf("failed to bind-service %q to application %q: %s", m.appName, recipientInstanceName, err)
+		return fmt.Errorf("failed to bind-service %q to application %q: %s", m.appName, recipientInstanceName, err)
 	}
 	log.Print("Successfully bound app to v2 instance")
 
 	log.Print("Starting migration app")
 	if err = m.client.StartApp(m.appName); err != nil {
-		return errors.Errorf("failed to start application %q: %s", m.appName, err)
+		return fmt.Errorf("failed to start application %q: %s", m.appName, err)
 	}
 
 	log.Print("Started to run migration task")

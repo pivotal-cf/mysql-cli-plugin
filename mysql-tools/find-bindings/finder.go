@@ -15,11 +15,12 @@ package find_bindings
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 import (
+	"errors"
+	"fmt"
 	"net/url"
 
-	cfclient "github.com/cloudfoundry-community/go-cfclient/v2"
-	multierror "github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
+	"github.com/cloudfoundry-community/go-cfclient/v2"
+	"github.com/hashicorp/go-multierror"
 )
 
 //counterfeiter:generate . Client
@@ -56,12 +57,12 @@ func NewBindingFinder(cfClient Client) *BindingFinder {
 func (bf *BindingFinder) FindBindings(serviceLabel string) ([]Binding, error) {
 	serviceGUID, err := bf.serviceGUIDForLabel(serviceLabel)
 	if err != nil {
-		return nil, errors.Wrapf(err, `failed to lookup service matching label %q`, serviceLabel)
+		return nil, fmt.Errorf(`failed to lookup service matching label %q: %w`, serviceLabel, err)
 	}
 
 	servicePlans, err := bf.servicePlansForServiceGUID(serviceGUID)
 	if err != nil {
-		return nil, errors.Wrapf(err, `failed to lookup service plans for service (guid: %q, label: %q)`, serviceGUID, serviceLabel)
+		return nil, fmt.Errorf(`failed to lookup service plans for service (guid: %q, label: %q): %w`, serviceGUID, serviceLabel, err)
 	}
 
 	var (
@@ -105,7 +106,7 @@ func (bf *BindingFinder) serviceGUIDForLabel(serviceLabel string) (serviceGUID s
 	case 1:
 		return services[0].Guid, nil
 	default:
-		return "", errors.Errorf("found %d matching services, expected 1", len(services))
+		return "", fmt.Errorf("found %d matching services, expected 1", len(services))
 	}
 }
 
@@ -130,7 +131,7 @@ func (bf *BindingFinder) serviceInstancesForServicePlans(servicePlans []cfclient
 		if err != nil {
 			errs = multierror.Append(
 				errs,
-				errors.Wrapf(err, `failed to lookup service instances for service plan (name: %q, guid: %q)`, plan.Name, plan.Guid),
+				fmt.Errorf(`failed to lookup service instances for service plan (name: %q, guid: %q): %w`, plan.Name, plan.Guid, err),
 			)
 		}
 
@@ -145,7 +146,7 @@ func (bf *BindingFinder) listServiceBindingsForInstance(instance cfclient.Servic
 	query.Set("q", "service_instance_guid:"+instance.Guid)
 	serviceBindings, err := bf.cfClient.ListServiceBindingsByQuery(query)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve service bindings for service instance (name: %q guid: %q)", instance.Name, instance.Guid)
+		return nil, fmt.Errorf("failed to retrieve service bindings for service instance (name: %q guid: %q): %w", instance.Name, instance.Guid, err)
 	}
 
 	var (
@@ -155,13 +156,13 @@ func (bf *BindingFinder) listServiceBindingsForInstance(instance cfclient.Servic
 
 	for _, b := range serviceBindings {
 		if err != nil {
-			errs = multierror.Append(errs, errors.Wrapf(err, "failed to resolve secure binding credentials for app (guid: %q)", b.AppGuid))
+			errs = multierror.Append(errs, fmt.Errorf("failed to resolve secure binding credentials for app (guid: %q): %w", b.AppGuid, err))
 			continue
 		}
 
 		app, err := bf.cfClient.GetAppByGuid(b.AppGuid)
 		if err != nil {
-			errs = multierror.Append(errs, errors.Wrapf(err, "failed to lookup app info for app guid %q", b.AppGuid))
+			errs = multierror.Append(errs, fmt.Errorf("failed to lookup app info for app guid %q: %w", b.AppGuid, err))
 			continue
 		}
 
@@ -183,7 +184,7 @@ func (bf *BindingFinder) listServiceKeysForInstance(instance cfclient.ServiceIns
 	query.Set("q", "service_instance_guid:"+instance.Guid)
 	serviceKeys, err := bf.cfClient.ListServiceKeysByQuery(query)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve service keys for service instance (name: %q guid: %q)", instance.Name, instance.Guid)
+		return nil, fmt.Errorf("failed to retrieve service keys for service instance (name: %q guid: %q): %w", instance.Name, instance.Guid, err)
 	}
 
 	var (
@@ -195,7 +196,7 @@ func (bf *BindingFinder) listServiceKeysForInstance(instance cfclient.ServiceIns
 		space, err := bf.spaceDataForGUID(instance.SpaceGuid)
 		if err != nil {
 			// XXX: Think about the error and what information to surface here
-			errs = multierror.Append(errs, errors.Wrapf(err, "failed to lookup space info for service key (name: %q instance-guid: %q)", k.Name, instance.Guid))
+			errs = multierror.Append(errs, fmt.Errorf("failed to lookup space info for service key (name: %q instance-guid: %q): %w", k.Name, instance.Guid, err))
 			continue
 		}
 

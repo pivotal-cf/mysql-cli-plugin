@@ -13,6 +13,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -20,7 +21,6 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
-	"github.com/pkg/errors"
 )
 
 func baseCmd(cmdName string, credentials Credentials) *exec.Cmd {
@@ -93,14 +93,14 @@ func ValidateHost(credentials Credentials, timeout time.Duration) ([]string, err
 				return addrs, nil
 			}
 
-			return nil, errors.Wrap(err, "Timed out - failing with error")
+			return nil, fmt.Errorf("Timed out - failing with error: %w", err)
 		case <-ticker.C:
 			addrs, err := net.LookupHost(credentials.Hostname)
 			if err == nil {
 				return addrs, nil
 			}
 
-			if _, ok := err.(*net.DNSError); !ok {
+			if errors.Is(err, &net.DNSError{}) {
 				return nil, err
 			}
 		}
@@ -121,40 +121,40 @@ func ReplaceDefinerCmd() *exec.Cmd {
 func CopyData(mysqldump, replaceDefinerCmd, mysql *exec.Cmd) error {
 	dumpOut, err := mysqldump.StdoutPipe()
 	if err != nil {
-		return errors.Wrap(err, "couldn't pipe the output of mysqldump")
+		return fmt.Errorf("couldn't pipe the output of mysqldump: %w", err)
 	}
 
 	replaceDefinerCmd.Stdin = dumpOut
 
 	replaceOut, err := replaceDefinerCmd.StdoutPipe()
 	if err != nil {
-		return errors.Wrap(err, "couldn't pipe the output of sed")
+		return fmt.Errorf("couldn't pipe the output of sed: %w", err)
 	}
 
 	mysql.Stdin = replaceOut
 
 	if err := mysqldump.Start(); err != nil {
-		return errors.Wrap(err, "couldn't start mysqldump")
+		return fmt.Errorf("couldn't start mysqldump: %w", err)
 	}
 
 	if err := replaceDefinerCmd.Start(); err != nil {
-		return errors.Wrap(err, "couldn't start sed")
+		return fmt.Errorf("couldn't start sed: %w", err)
 	}
 
 	if err := mysql.Start(); err != nil {
-		return errors.Wrap(err, "couldn't start mysql")
+		return fmt.Errorf("couldn't start mysql: %w", err)
 	}
 
 	if err := mysql.Wait(); err != nil {
-		return errors.Wrap(err, "mysql command failed")
+		return fmt.Errorf("mysql command failed: %w", err)
 	}
 
 	if err := replaceDefinerCmd.Wait(); err != nil {
-		return errors.Wrap(err, "sed command failed")
+		return fmt.Errorf("sed command failed: %w", err)
 	}
 
 	if err := mysqldump.Wait(); err != nil {
-		return errors.Wrap(err, "mysqldump command failed")
+		return fmt.Errorf("mysqldump command failed: %w", err)
 	}
 
 	return nil

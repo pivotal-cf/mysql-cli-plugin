@@ -15,8 +15,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/pkg/errors"
 )
 
 type Credentials struct {
@@ -71,10 +69,9 @@ func InstanceCredentials(instanceName, vcapCredentials string) (Credentials, err
 	}
 
 	if err := json.Unmarshal([]byte(vcapCredentials), &vcapServices); err != nil {
-		return Credentials{}, errors.Wrapf(
-			err,
-			`failed to parse VCAP_SERVICES json when looking up credentials for instance_name=%s`,
-			instanceName,
+		return Credentials{}, fmt.Errorf(
+			`failed to parse VCAP_SERVICES json when looking up credentials for instance_name=%s: %w`,
+			instanceName, err,
 		)
 	}
 
@@ -93,5 +90,5 @@ func InstanceCredentials(instanceName, vcapCredentials string) (Credentials, err
 		}
 	}
 
-	return Credentials{}, errors.Errorf("instance_name '%s' not found in VCAP_SERVICES", instanceName)
+	return Credentials{}, fmt.Errorf("instance_name '%s' not found in VCAP_SERVICES", instanceName)
 }

@@ -14,18 +14,17 @@ package discovery
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
-
-	"github.com/pkg/errors"
 )
 
 func DiscoverDatabases(db *sql.DB) ([]string, error) {
 	rows, err := db.Query(`SHOW DATABASES`)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to query the database")
+		return nil, fmt.Errorf("failed to query the database: %w", err)
 	}
 
 	var dbs []string
@@ -41,7 +40,7 @@ func DiscoverDatabases(db *sql.DB) ([]string, error) {
 	for rows.Next() {
 		var dbName string
 		if err := rows.Scan(&dbName); err != nil {
-			return nil, errors.Wrap(err, "failed to scan the list of databases")
+			return nil, fmt.Errorf("failed to scan the list of databases: %w", err)
 		}
 
 		if _, ok := filterSchemas[dbName]; ok {
@@ -52,7 +51,7 @@ func DiscoverDatabases(db *sql.DB) ([]string, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "failed to parse the list of databases")
+		return nil, fmt.Errorf("failed to parse the list of databases: %w", err)
 	}
 
 	if len(dbs) == 0 {
@@ -79,13 +78,13 @@ func discoverViews(db *sql.DB, schema string) (views []View, err error) {
 	findViewsQuery := `SELECT table_name from INFORMATION_SCHEMA.VIEWS WHERE table_schema = ?`
 	rows, err := db.Query(findViewsQuery, schema)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve views for %s schema", schema)
+		return nil, fmt.Errorf("failed to retrieve views for %s schema: %w", schema, err)
 	}
 
 	for rows.Next() {
 		var view View
 		if err := rows.Scan(&view.TableName); err != nil {
-			return nil, errors.Wrap(err, "failed to scan the list of views")
+			return nil, fmt.Errorf("failed to scan the list of views: %w", err)
 		}
 		view.Schema = schema
 
@@ -93,7 +92,7 @@ func discoverViews(db *sql.DB, schema string) (views []View, err error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "failed to prepare the list of views")
+		return nil, fmt.Errorf("failed to prepare the list of views: %w", err)
 	}
 
 	return views, nil
@@ -110,10 +109,11 @@ func DiscoverInvalidViews(db *sql.DB, schemas []string) ([]View, error) {
 		for _, view := range views {
 			checkInvalidViewQuery := fmt.Sprintf(`SHOW FIELDS FROM %s IN %s`, QuoteIdentifier(view.TableName), QuoteIdentifier(view.Schema))
 			if _, err := db.Exec(checkInvalidViewQuery); err != nil {
-				if _, ok := err.(*mysql.MySQLError); ok {
+				var mysqlErr *mysql.MySQLError
+				if errors.As(err, &mysqlErr) {
 					invalidViews = append(invalidViews, view)
 				} else {
-					return nil, errors.Wrapf(err, "Unexpected error when validating view %q.%q", view.Schema, view.TableName)
+					return nil, fmt.Errorf("Unexpected error when validating view %q.%q: %w", view.Schema, view.TableName, err)
 				}
 			}
 		}
