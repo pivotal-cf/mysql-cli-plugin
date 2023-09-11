@@ -15,27 +15,31 @@ package discovery_test
 import (
 	"database/sql"
 
-	docker "github.com/fsouza/go-dockerclient"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 
-	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers/dockertest"
+	"github.com/pivotal-cf/mysql-cli-plugin/internal/testing/docker"
+	. "github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 )
 
 var _ = Describe("Discovery Integration Tests", func() {
 	var (
 		db             *sql.DB
-		mysqlContainer *docker.Container
+		mysqlContainer string
 	)
 
 	BeforeEach(func() {
-		var err error
-		mysqlContainer, err = createMySQLContainer("mysql")
+		mysqlContainer = "mysql." + uuid.NewString()
+		Expect(createMySQLContainer(mysqlContainer)).To(Succeed())
+
+		mysqlPort, err := docker.ContainerPort(mysqlContainer, "3306/tcp")
 		Expect(err).NotTo(HaveOccurred())
 
-		db, err = dockertest.ContainerDBConnection(mysqlContainer, mySQLDockerPort)
+		dsn := `root@tcp(localhost:` + mysqlPort + `)/`
+
+		db, err = sql.Open("mysql", dsn)
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(db.Ping, "1m", "1s").Should(Succeed(),
@@ -44,9 +48,7 @@ var _ = Describe("Discovery Integration Tests", func() {
 	})
 
 	AfterEach(func() {
-		if mysqlContainer != nil {
-			dockertest.RemoveContainer(dockerClient, mysqlContainer)
-		}
+		Expect(docker.RemoveContainer(mysqlContainer)).To(Succeed())
 	})
 
 	Context("DiscoverDatabases", func() {

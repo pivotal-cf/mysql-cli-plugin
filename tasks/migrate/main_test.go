@@ -18,12 +18,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	docker "github.com/fsouza/go-dockerclient"
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 
-	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers/dockertest"
+	"github.com/pivotal-cf/mysql-cli-plugin/internal/testing/docker"
 )
 
 const dockerVcapServicesTemplate = `
@@ -65,12 +64,13 @@ const dockerVcapServicesTemplate = `
 
 var _ = Describe("Migrate Task", func() {
 	var (
-		sourceDB        *sql.DB
-		destDB          *sql.DB
-		sourceContainer *docker.Container
-		destContainer   *docker.Container
-		vcapServices    string
-		sourceChecksums string
+		sourceDB         *sql.DB
+		destDB           *sql.DB
+		containerNetwork string
+		sourceContainer  string
+		destContainer    string
+		vcapServices     string
+		sourceChecksums  string
 	)
 
 	BeforeEach(func() {
@@ -78,26 +78,41 @@ var _ = Describe("Migrate Task", func() {
 		fixturesPath, err := filepath.Abs("fixtures")
 		Expect(err).NotTo(HaveOccurred())
 
-		sourceContainer, err = createMySQLContainer(
-			"mysql.source",
-			dockertest.AddEnvVars(`MYSQL_DATABASE=service_instance_db`),
-			dockertest.AddBinds(
+		containerNetwork = "mysql-net." + uuid.NewString()
+		Expect(docker.CreateNetwork(containerNetwork)).To(Succeed())
+
+		sourceContainer = "mysql.source." + uuid.NewString()
+		destContainer = "mysql.source." + uuid.NewString()
+
+		Expect(docker.CreateContainer(docker.ContainerSpec{
+			Name:    sourceContainer,
+			Image:   "percona:5.7",
+			Network: containerNetwork,
+			Env:     []string{"MYSQL_ALLOW_EMPTY_PASSWORD=1", "MYSQL_DATABASE=service_instance_db"},
+			Volumes: []string{
 				filepath.Join(fixturesPath, "sakila-schema.sql:/docker-entrypoint-initdb.d/sakila-schema.sql"),
-			),
-		)
+			},
+		})).Error().NotTo(HaveOccurred())
+
+		Expect(docker.CreateContainer(docker.ContainerSpec{
+			Name:    destContainer,
+			Image:   "percona:5.7",
+			Network: containerNetwork,
+			Env:     []string{"MYSQL_ALLOW_EMPTY_PASSWORD=1", "MYSQL_DATABASE=service_instance_db"},
+		})).Error().NotTo(HaveOccurred())
+
+		vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, sourceContainer, destContainer, "")
+
+		sourcePort, err := docker.ContainerPort(sourceContainer, "3306/tcp")
+		Expect(err).NotTo(HaveOccurred())
+		sourceDSN := `root@tcp(localhost:` + sourcePort + `)/`
+		sourceDB, err = sql.Open("mysql", sourceDSN)
 		Expect(err).NotTo(HaveOccurred())
 
-		destContainer, err = createMySQLContainer(
-			"mysql.dest",
-			dockertest.AddEnvVars(`MYSQL_DATABASE=service_instance_db`),
-		)
+		destPort, err := docker.ContainerPort(destContainer, "3306/tcp")
 		Expect(err).NotTo(HaveOccurred())
-
-		vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "mysql.source."+sessionID, "mysql.dest."+sessionID, "")
-
-		sourceDB, err = dockertest.ContainerDBConnection(sourceContainer, mySQLDockerPort)
-		Expect(err).NotTo(HaveOccurred())
-		destDB, err = dockertest.ContainerDBConnection(destContainer, mySQLDockerPort)
+		destDSN := `root@tcp(localhost:` + destPort + `)/`
+		destDB, err = sql.Open("mysql", destDSN)
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(sourceDB.Ping, "1m", "1s").Should(Succeed(),
@@ -112,26 +127,22 @@ var _ = Describe("Migrate Task", func() {
 	})
 
 	AfterEach(func() {
-		if sourceContainer != nil {
-			dockertest.RemoveContainer(dockerClient, sourceContainer)
-		}
-
-		if destContainer != nil {
-			dockertest.RemoveContainer(dockerClient, destContainer)
-		}
+		Expect(docker.RemoveContainer(sourceContainer)).To(Succeed())
+		Expect(docker.RemoveContainer(destContainer)).To(Succeed())
+		Expect(docker.RemoveNetwork(containerNetwork)).To(Succeed())
 	})
 
 	It("migrates data between the source and destination", func() {
-		_, exitStatus, err := runCommand(
-			"migrate.command",
-			dockertest.AddBinds(
-				migrateTaskBinPath+":/usr/local/bin/migrate",
-			),
-			dockertest.WithCmd("migrate", "source", "dest"),
-			dockertest.AddEnvVars("VCAP_SERVICES="+vcapServices),
+		_, err := docker.Run(
+			"--env=VCAP_SERVICES="+vcapServices,
+			"--name=migrate.command."+uuid.NewString(),
+			"--network="+containerNetwork,
+			"--rm",
+			"--volume="+migrateTaskBinPath+":/usr/local/bin/migrate",
+			"percona:5.7",
+			"migrate", "source", "dest",
 		)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(exitStatus).To(Equal(0))
 
 		destChecksums, err := schemaChecksum(destDB, "sakila")
 		Expect(err).NotTo(HaveOccurred())
@@ -141,45 +152,49 @@ var _ = Describe("Migrate Task", func() {
 
 	Context("when resolving mysql host keep failing", func() {
 		BeforeEach(func() {
-			vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "nonexist-source", "nonexist-destination", "")
+			vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "non-existing-source", "non-existing-destination", "")
 		})
 
 		It("Validate the host and print out failure message", func() {
-			output, exitStatus, err := runCommand(
-				"migrate.command",
-				dockertest.AddBinds(
-					migrateTaskBinPath+":/usr/local/bin/migrate",
-				),
-				dockertest.WithCmd("migrate", "source", "dest"),
-				dockertest.AddEnvVars("VCAP_SERVICES="+vcapServices),
+			output, err := docker.Run(
+				"--env=VCAP_SERVICES="+vcapServices,
+				"--name=migrate.command."+uuid.NewString(),
+				"--network="+containerNetwork,
+				"--rm",
+				"--volume="+migrateTaskBinPath+":/usr/local/bin/migrate",
+				"--tty",
+				"percona:5.7",
+				"migrate", "source", "dest",
 			)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(exitStatus).To(Equal(1))
-			Eventually(output).Should(gbytes.Say(`Failed to resolve source host "nonexist-source": Timed out - failing with error: lookup nonexist-source.*: no such host`))
-			Eventually(output).Should(gbytes.Say(`Failed to resolve destination host "nonexist-destination": Timed out - failing with error: lookup nonexist-destination.*: no such host`))
+			Expect(err).To(MatchError(`exit status 1`))
+
+			Expect(output).To(SatisfyAll(
+				MatchRegexp(`Failed to resolve source host "non-existing-source": Timed out - failing with error: lookup non-existing-source.*: no such host`),
+				MatchRegexp(`Failed to resolve destination host "non-existing-destination": Timed out - failing with error: lookup non-existing-destination.*: no such host`),
+			))
 		})
 	})
 
 	Context("when a TLS CA certificate is provided", func() {
 		BeforeEach(func() {
-			vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, "mysql.source."+sessionID, "mysql.dest."+sessionID, "some-ca-cert")
+			vcapServices = fmt.Sprintf(dockerVcapServicesTemplate, sourceContainer, destContainer, "some-ca-cert")
 		})
 
 		It("accepts a --skip-tls-validation option", func() {
-			_, exitStatus, err := runCommand(
-				"migrate.command",
-				dockertest.AddBinds(
-					migrateTaskBinPath+":/usr/local/bin/migrate",
-				),
-				dockertest.WithCmd("migrate", "-skip-tls-validation", "source", "dest"),
-				dockertest.AddEnvVars("VCAP_SERVICES="+vcapServices),
+			_, err := docker.Run(
+				"--env=VCAP_SERVICES="+vcapServices,
+				"--name=migrate.command."+uuid.NewString(),
+				"--network="+containerNetwork,
+				"--rm",
+				"--volume="+migrateTaskBinPath+":/usr/local/bin/migrate",
+				"--tty",
+				"percona:5.7",
+				"migrate", "--skip-tls-validation", "source", "dest",
 			)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(exitStatus).To(Equal(0))
 
 			destChecksums, err := schemaChecksum(destDB, "sakila")
 			Expect(err).NotTo(HaveOccurred())
-
 			Expect(destChecksums).To(Equal(sourceChecksums))
 		})
 	})

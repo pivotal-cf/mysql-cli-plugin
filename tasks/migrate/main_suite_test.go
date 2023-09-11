@@ -13,21 +13,15 @@
 package main_test
 
 import (
-	"io"
 	"log"
 	"os"
 	"testing"
 
-	docker "github.com/fsouza/go-dockerclient"
 	"github.com/go-sql-driver/mysql"
-	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
-	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-
-	. "github.com/pivotal-cf/mysql-cli-plugin/test_helpers/dockertest"
 )
 
 func TestMigrate(t *testing.T) {
@@ -35,17 +29,7 @@ func TestMigrate(t *testing.T) {
 	RunSpecs(t, "Migrate Suite")
 }
 
-const (
-	mysqlDockerImage             = "percona:5.7"
-	mySQLDockerPort  docker.Port = "3306/tcp"
-)
-
-var (
-	migrateTaskBinPath string
-	dockerClient       *docker.Client
-	dockerNetwork      *docker.Network
-	sessionID          string
-)
+var migrateTaskBinPath string
 
 var _ = BeforeSuite(func() {
 	format.TruncatedDiff = false
@@ -53,13 +37,9 @@ var _ = BeforeSuite(func() {
 	log.SetOutput(GinkgoWriter)
 	_ = mysql.SetLogger(log.New(GinkgoWriter, "[mysql] ", log.Ldate|log.Ltime|log.Lshortfile))
 
-	var err error
-	dockerClient, err = docker.NewClientFromEnv()
-	Expect(err).NotTo(HaveOccurred())
-	Expect(PullImage(dockerClient, mysqlDockerImage)).To(Succeed())
-
 	Expect(os.Setenv("TMPDIR", "/tmp")).To(Succeed())
 
+	var err error
 	migrateTaskBinPath, err = gexec.BuildWithEnvironment(
 		"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate",
 		[]string{
@@ -74,74 +54,3 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	gexec.CleanupBuildArtifacts()
 })
-
-var _ = BeforeEach(func() {
-	sessionID = uuid.New().String()
-
-	var err error
-	dockerNetwork, err = CreateNetwork(dockerClient, "mysql-net."+sessionID)
-	Expect(err).NotTo(HaveOccurred())
-})
-
-var _ = AfterEach(func() {
-	Expect(dockerClient.RemoveNetwork(dockerNetwork.ID)).To(Succeed())
-})
-
-func createMySQLContainer(name string, extraOptions ...ContainerOption) (*docker.Container, error) {
-	options := []ContainerOption{
-		AddExposedPorts(mySQLDockerPort),
-		WithImage(mysqlDockerImage),
-		AddEnvVars(
-			"MYSQL_ALLOW_EMPTY_PASSWORD=1",
-		),
-		WithNetwork(dockerNetwork),
-	}
-
-	options = append(options, extraOptions...)
-
-	return RunContainer(
-		dockerClient,
-		name+"."+sessionID,
-		options...,
-	)
-}
-
-func runCommand(containerName string, extraOptions ...ContainerOption) (*gbytes.Buffer, int, error) {
-	options := []ContainerOption{
-		AddExposedPorts(mySQLDockerPort),
-		WithImage(mysqlDockerImage),
-		WithNetwork(dockerNetwork),
-	}
-
-	options = append(options, extraOptions...)
-
-	container, err := RunContainer(
-		dockerClient,
-		containerName+"."+sessionID,
-		options...,
-	)
-	if err != nil {
-		return nil, -1, err
-	}
-	defer RemoveContainer(dockerClient, container)
-
-	output := gbytes.NewBuffer()
-
-	go func() {
-		err := dockerClient.AttachToContainer(docker.AttachToContainerOptions{
-			Container:    container.ID,
-			OutputStream: io.MultiWriter(output, GinkgoWriter),
-			ErrorStream:  io.MultiWriter(output, GinkgoWriter),
-			Stream:       true,
-			Stdout:       true,
-			Stderr:       true,
-		})
-		if err != nil {
-			log.Printf("error when streaming logs: %v", err)
-		}
-	}()
-
-	exitStatus, err := dockerClient.WaitContainer(container.ID)
-
-	return output, exitStatus, err
-}
