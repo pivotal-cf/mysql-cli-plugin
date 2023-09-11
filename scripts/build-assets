@@ -77,6 +77,17 @@ function clean_app_directory() {
 }
 
 function main() {
+    local dep
+    for dep in /usr/local/src/percona-server-*/; do
+      if [[ ! -d ${dep} ]];then
+        echo >&2 "No source dependencies found in environment."
+        echo >&2 "$0 should only be run under a linux environment using the image buiilt from the top-level ./scripts/Dockerfile in this repo"
+        echo >&2 "For local development run ./scripts/build-plugin instead."
+        echo >&2 "Aborting."
+        return 1
+      fi
+    done
+
     >&2 echo "Cleaning app/ directory..."
     clean_app_directory
     >&2 echo "Installing migrate task binary into app/"
