@@ -38,7 +38,8 @@ function install_mysql_client_utils() {
       echo >&2
     fi
 
-    CMAKE_INCLUDE_PATH=/usr/include/ cmake /usr/local/src/percona-server-*/ \
+    cmake /usr/local/src/percona-server-*/ \
+      -Wno-deprecated \
       -DBUILD_CONFIG=mysql_release \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DCMAKE_INSTALL_PREFIX=/build \
@@ -48,7 +49,7 @@ function install_mysql_client_utils() {
       -DWITH_EMBEDDED_SERVER=OFF \
       -DWITH_EDITLINE=bundled \
       -DWITH_SSL=system \
-      -DWITH_ZLIB=system \
+      -DWITH_ZLIB=bundled \
       -DIGNORE_AIO_CHECK=ON \
       -DWITHOUT_SERVER=ON && \
       make --jobs 4 && \
