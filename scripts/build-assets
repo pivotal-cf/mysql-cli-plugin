@@ -17,9 +17,10 @@ set -euo pipefail
 bin_dir='app/bin'
 lib_dir='app/lib'
 
+: "${BUILD_DIR:=/build}"
+
 function install_mysql_client_utils() {
-    mkdir -p /build
-    cd "/build"
+    cd "${BUILD_DIR}"
 
     local source_directory build_cache_digest="" source_digest=""
 
@@ -31,10 +32,10 @@ function install_mysql_client_utils() {
 
     if [[ "${build_cache_digest}" != "${source_digest}" ]];then
       echo >&2 '!!! Detected stale build cache for Percona Server. Invalidating cache. !!!'
-      echo >&2 "/build/VERSION.dep (digest: ${build_cache_digest}) != ${source_directory}/MYSQL_VERSION (digest: ${source_digest})"
+      echo >&2 "${BUILD_DIR}/VERSION.dep (digest: ${build_cache_digest}) != ${source_directory}/MYSQL_VERSION (digest: ${source_digest})"
       rm -fr ./*
     else
-      echo >&2 "Re-using existing build cache in /build"
+      echo >&2 "Re-using existing build cache in ${BUILD_DIR}"
       echo >&2
     fi
 
@@ -42,7 +43,7 @@ function install_mysql_client_utils() {
       -Wno-deprecated \
       -DBUILD_CONFIG=mysql_release \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-      -DCMAKE_INSTALL_PREFIX=/build \
+      -DCMAKE_INSTALL_PREFIX=${BUILD_DIR} \
       -DFEATURE_SET=community \
       -DINSTALL_MYSQLTESTDIR= \
       -DWITH_BOOST=/usr/local/src/boost_1_59_0/ \
@@ -56,10 +57,10 @@ function install_mysql_client_utils() {
       make install
     cd -
 
-    mv /build/LICENSE "${bin_dir}"
-    mv /build/README "${bin_dir}"
-    mv /build/bin/mysql "${bin_dir}"
-    mv /build/bin/mysqldump "${bin_dir}"
+    mv ${BUILD_DIR}/LICENSE "${bin_dir}"
+    mv ${BUILD_DIR}/README "${bin_dir}"
+    mv ${BUILD_DIR}/bin/mysql "${bin_dir}"
+    mv ${BUILD_DIR}/bin/mysqldump "${bin_dir}"
     cp /usr/lib/x86_64-linux-gnu/libssl.so.1.1 ${lib_dir}
     cp /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 ${lib_dir}
     cp /lib/x86_64-linux-gnu/libtinfo.so.5 ${lib_dir}
