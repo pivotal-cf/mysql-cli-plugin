@@ -16,46 +16,35 @@ set -euo pipefail
 
 bin_dir='app/bin'
 lib_dir='app/lib'
-percona_version='5.7.33-36'
-percona_major_minor="5.7"
 
 function install_mysql_client_utils() {
-    local build_dir
-    local build_deps=(
-      cmake
-      g++
-      make \
-      libncurses5-dev
-      libssl-dev
-      zlib1g-dev
-    )
+    mkdir -p /build
+    cd "/build"
 
-    build_dir=$(mktemp -d)
+    local source_directory build_cache_digest="" source_digest=""
 
-    DEBIAN_FRONTEND=noninteractive apt-get update
+    source_directory=$(readlink -f /usr/local/src/percona-server-*/)
+    source_digest=$(sha256sum "${source_directory}/MYSQL_VERSION" | awk '{print $1}')
+    if [[ -f VERSION.dep ]];then
+      build_cache_digest=$(sha256sum VERSION.dep | awk '{print $1}')
+    fi
 
-    DEBIAN_FRONTEND=noninteractive apt-get -y \
-        install --no-install-recommends "${build_deps[@]}"
+    if [[ "${build_cache_digest}" != "${source_digest}" ]];then
+      echo >&2 '!!! Detected stale build cache for Percona Server. Invalidating cache. !!!'
+      echo >&2 "/build/VERSION.dep (digest: ${build_cache_digest}) != ${source_directory}/MYSQL_VERSION (digest: ${source_digest})"
+      rm -fr ./*
+    else
+      echo >&2 "Re-using existing build cache in /build"
+      echo >&2
+    fi
 
-    curl -Ls "http://jenkins.percona.com/downloads/boost/boost_1_59_0.tar.gz" \
-        > "${build_dir}/boost.tgz" \
-        && sha256sum -c - <<< "47f11c8844e579d02691a607fbd32540104a9ac7a2534a8ddaef50daf502baac  ${build_dir}/boost.tgz"
-
-    curl -Ls "https://www.percona.com/downloads/Percona-Server-${percona_major_minor}/Percona-Server-${percona_version}/source/tarball/percona-server-${percona_version}.tar.gz" \
-        > "${build_dir}/percona.tgz" \
-        && sha256sum -c - <<< "964e32f4a1e235421e26be81d2d24f9e659d8ef3cbd9ae6c3e85fe545bedfd5b  ${build_dir}/percona.tgz"
-
-    tar -xf "${build_dir}/boost.tgz" -C "${build_dir}" && \
-    tar -xf "${build_dir}/percona.tgz" -C "${build_dir}" && \
-
-    pushd "${build_dir}/percona-server-${percona_version}" >/dev/null
-    CMAKE_INCLUDE_PATH=/usr/include/ cmake . \
+    CMAKE_INCLUDE_PATH=/usr/include/ cmake /usr/local/src/percona-server-*/ \
       -DBUILD_CONFIG=mysql_release \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DCMAKE_INSTALL_PREFIX=/build \
       -DFEATURE_SET=community \
       -DINSTALL_MYSQLTESTDIR= \
-      -DWITH_BOOST="../boost_1_59_0" \
+      -DWITH_BOOST=/usr/local/src/boost_1_59_0/ \
       -DWITH_EMBEDDED_SERVER=OFF \
       -DWITH_EDITLINE=bundled \
       -DWITH_SSL=system \
@@ -64,7 +53,7 @@ function install_mysql_client_utils() {
       -DWITHOUT_SERVER=ON && \
       make --jobs 4 && \
       make install
-    popd >/dev/null
+    cd -
 
     mv /build/LICENSE "${bin_dir}"
     mv /build/README "${bin_dir}"
@@ -76,18 +65,6 @@ function install_mysql_client_utils() {
 }
 
 function install_migrate_task() {
-    curl --silent -L https://go.dev/dl/go1.18.10.linux-amd64.tar.gz > /tmp/golang.tgz \
-        && sha256sum -c - <<< "5e05400e4c79ef5394424c0eff5b9141cb782da25f64f79d54c98af0a37f8d49  /tmp/golang.tgz" \
-        && tar -xf /tmp/golang.tgz -C /usr/local/
-
-    GOROOT=/usr/local/go
-    PATH="$PATH:$GOROOT/bin"
-    GOPATH="$(mktemp -d)"
-    export GOPATH GOROOT PATH
-
-    mkdir -p "${GOPATH}/src/github.com/pivotal-cf/mysql-cli-plugin/"
-    cp -a . "${GOPATH}/src/github.com/pivotal-cf/mysql-cli-plugin/"
-
     GOBIN="$PWD/app/bin" go install github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate
 }
 

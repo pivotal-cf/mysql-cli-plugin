@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate $GOPATH/bin/packr --compress
+//go:generate packr --compress
 var (
 	defaultBox = packr.NewBox("../../app")
 )

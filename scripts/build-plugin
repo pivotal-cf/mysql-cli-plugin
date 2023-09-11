@@ -12,29 +12,48 @@
 # an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations under the License.
 
+set -o errexit -o nounset -o pipefail
 
-set -euo pipefail
+topdir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
-SCRIPT_DIR=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)
-ROOT_DIR=$(cd "${SCRIPT_DIR}/.." && pwd)
-VERSION="${VERSION:-0.0.1}"
+: "${VERSION:=0.0.1}"
+: "${DOCKER_DEFAULT_PLATFORM:=linux/amd64}"
 
-cd "${ROOT_DIR}"
+export DOCKER_DEFAULT_PLATFORM
 
->&2 echo "Downloading packr..."
-go get -u github.com/gobuffalo/packr/...
+run() {
+  echo >&2 "\$ $*"
+  "$@"
+}
 
->&2 echo "Building app assets..."
-docker run --rm -v "$PWD:$PWD" -w "$PWD" -t cloudfoundry/cflinuxfs3 ./scripts/build-assets
+cd "${topdir}"
 
->&2 echo "Running go generate ./... to repack app assets..."
-go generate ./...
+docker_image=$(run docker build -q -f scripts/Dockerfile .)
 
->&2 echo "Building $PWD/mysql-cli-plugin"
-go build \
-    -tags forceposix \
-    -ldflags="-X 'github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin.version=${VERSION}'" \
-    -o mysql-cli-plugin \
-    .
+echo >&2 "Building app assets..."
+run docker run --rm \
+  --mount=type=volume,src=percona-build-cache,dst=/build \
+  --mount=type=volume,src=gomod-cache,dst=/go \
+  --mount=type="bind,src=$PWD,dst=/workspace" \
+  --workdir=/workspace \
+  --tty \
+  "${docker_image}" \
+  ./scripts/build-assets
 
->&2 echo "Done!"
+echo >&2 "Running go generate ./... to repack app assets..."
+run docker run --rm \
+  --mount=type=volume,src=gomod-cache,dst=/go \
+  --mount=type="bind,src=$PWD,dst=/workspace" \
+  --workdir=/workspace \
+  --tty \
+  "${docker_image}" \
+  go generate ./...
+
+echo >&2 "Building $PWD/mysql-cli-plugin"
+run go build \
+  -tags forceposix \
+  -ldflags="-X 'github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin.version=${VERSION}'" \
+  -o mysql-cli-plugin \
+  .
+
+echo >&2 "Done!"
