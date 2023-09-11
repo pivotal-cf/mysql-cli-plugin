@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 	find_bindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"

@@ -17,7 +17,7 @@ package find_bindings
 import (
 	"net/url"
 
-	cfclient "github.com/cloudfoundry-community/go-cfclient"
+	cfclient "github.com/cloudfoundry-community/go-cfclient/v2"
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 )

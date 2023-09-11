@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
-	"github.com/cloudfoundry-community/go-cfclient"
+	"github.com/cloudfoundry-community/go-cfclient/v2"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 )
 

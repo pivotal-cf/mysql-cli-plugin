@@ -16,10 +16,10 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 
 	. "github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 )

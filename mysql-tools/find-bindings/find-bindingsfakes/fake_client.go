@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"sync"
 
-	cfclient "github.com/cloudfoundry-community/go-cfclient"
+	cfclient "github.com/cloudfoundry-community/go-cfclient/v2"
 	find_bindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 )
 

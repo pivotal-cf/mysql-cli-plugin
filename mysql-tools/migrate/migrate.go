@@ -21,7 +21,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -97,7 +97,7 @@ func (m *Migrator) MigrateData(opts MigrateOptions) error {
 	}
 
 	log.Print("Started to push app")
-	m.appName = "migrate-app-" + uuid.New()
+	m.appName = "migrate-app-" + uuid.NewString()
 	if err = m.client.PushApp(tmpDir, m.appName); err != nil {
 		return errors.Errorf("failed to push application: %s", err)
 	}
