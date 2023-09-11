@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -o errexit -o nounset -o pipefail
+
+topdir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+cd "$topdir"
+
+./scripts/run-specs -focus="SmokeTests Suite" "$@"

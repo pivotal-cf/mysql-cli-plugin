@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -o errexit
+
+topdir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+cd "$topdir"
+
+GINKGO="go run github.com/onsi/ginkgo/ginkgo"
+
+${GINKGO} -r "$@" ./specs/
