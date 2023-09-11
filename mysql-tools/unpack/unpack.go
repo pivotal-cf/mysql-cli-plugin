@@ -47,7 +47,7 @@ func NewUnpacker() *Unpacker {
 
 func (u *Unpacker) Unpack(destDir string) error {
 	err := u.Box.Walk(func(name string, file packr.File) error {
-		if err := u.Filesystem.MkdirAll(filepath.Dir(filepath.Join(destDir, name)), 0700); err != nil {
+		if err := u.Filesystem.MkdirAll(filepath.Dir(filepath.Join(destDir, name)), 0o700); err != nil {
 			return err
 		}
 
@@ -62,14 +62,13 @@ func (u *Unpacker) Unpack(destDir string) error {
 		}
 
 		if runtime.GOOS != "windows" {
-			if err := dest.Chmod(0700); err != nil {
+			if err := dest.Chmod(0o700); err != nil {
 				return err
 			}
 		}
 
 		return dest.Close()
 	})
-
 	if err != nil {
 		return errors.Errorf("Error extracting migrate assets: %s", err)
 	}

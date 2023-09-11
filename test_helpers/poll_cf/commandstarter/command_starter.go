@@ -13,14 +13,14 @@
 package commandstarter
 
 import (
+	"os/exec"
+
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers/poll_cf/internal"
-	"os/exec"
 )
 
-type CommandStarter struct {
-}
+type CommandStarter struct{}
 
 func NewCommandStarter() *CommandStarter {
 	return &CommandStarter{}

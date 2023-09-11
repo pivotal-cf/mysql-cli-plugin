@@ -171,9 +171,7 @@ var _ = Describe("Migrate Integration Tests", func() {
 		})
 
 		Context("when the --no-cleanup flag is specified", func() {
-			var (
-				destinationGUID string
-			)
+			var destinationGUID string
 
 			AfterEach(func() {
 				test_helpers.UnbindAllAppsFromService(sourceInstanceGUID)
@@ -356,5 +354,4 @@ func createInvalidMigrationState(instanceName string) {
 
 	_, err = db.Exec("ALTER TABLE migrate_fail DISCARD TABLESPACE")
 	Expect(err).NotTo(HaveOccurred())
-
 }

@@ -23,9 +23,7 @@ import (
 	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 )
 
-var (
-	VcapCredentials = os.Getenv("VCAP_SERVICES")
-)
+var VcapCredentials = os.Getenv("VCAP_SERVICES")
 
 func main() {
 	var (

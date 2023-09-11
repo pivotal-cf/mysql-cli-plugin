@@ -134,7 +134,6 @@ func createDatabases(db *sql.DB, names ...string) error {
 }
 
 func createInvalidViews(db *sql.DB, views []View) error {
-
 	for _, view := range views {
 		var err error
 		schema := QuoteIdentifier(view.Schema)

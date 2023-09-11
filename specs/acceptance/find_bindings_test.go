@@ -90,5 +90,4 @@ var _ = Describe("Find bindings Integration tests", func() {
 			))
 		})
 	})
-
 })

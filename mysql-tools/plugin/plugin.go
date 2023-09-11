@@ -207,7 +207,7 @@ func Migrate(migrator Migrator, args []string) error {
 		)
 	}
 
-	var migrationOptions = migrate.MigrateOptions{
+	migrationOptions := migrate.MigrateOptions{
 		DonorInstanceName:     donorInstanceName,
 		RecipientInstanceName: tempRecipientInstanceName,
 		Cleanup:               cleanup,
@@ -234,7 +234,7 @@ func Migrate(migrator Migrator, args []string) error {
 }
 
 func versionFromSemver(in string) plugin.VersionType {
-	var unknownVersion = plugin.VersionType{
+	unknownVersion := plugin.VersionType{
 		Major: 0,
 		Minor: 0,
 		Build: 1,

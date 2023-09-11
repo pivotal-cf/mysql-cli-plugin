@@ -13,11 +13,12 @@
 package cf
 
 import (
+	"net/url"
+	"strings"
+
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
-	"net/url"
-	"strings"
 )
 
 type FindBindingsClient struct {
@@ -131,7 +132,6 @@ func (c *FindBindingsClient) lazyInitializeCFClient() error {
 		SkipSslValidation: sslDisabled,
 		Token:             tokens[1],
 	})
-
 	if err != nil {
 		return err
 	}

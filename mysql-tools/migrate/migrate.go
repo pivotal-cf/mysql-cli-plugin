@@ -86,7 +86,6 @@ func (m *Migrator) MigrateData(opts MigrateOptions) error {
 	recipientInstanceName := opts.RecipientInstanceName
 
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "migrate_app_")
-
 	if err != nil {
 		return errors.Errorf("Error creating temp directory: %s", err)
 	}

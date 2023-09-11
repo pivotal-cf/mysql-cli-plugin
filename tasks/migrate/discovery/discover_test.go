@@ -99,9 +99,7 @@ var _ = Describe("Discovery Unit Tests", func() {
 	})
 
 	Context("DiscoverInvalidViews", func() {
-		var (
-			schemasToMigrate []string
-		)
+		var schemasToMigrate []string
 
 		BeforeEach(func() {
 			schemasToMigrate = []string{

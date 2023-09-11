@@ -168,9 +168,7 @@ var _ = Describe("MigratorClient", func() {
 			})
 
 			Context("when RECIPIENT_PRODUCT_NAME is set", func() {
-				var (
-					originalProductName string
-				)
+				var originalProductName string
 				BeforeEach(func() {
 					originalProductName = os.Getenv("RECIPIENT_PRODUCT_NAME")
 					os.Setenv("RECIPIENT_PRODUCT_NAME", "some-fake-product")
@@ -224,7 +222,6 @@ var _ = Describe("MigratorClient", func() {
 				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(0))
 			})
 		})
-
 	})
 
 	Context("DeleteServiceInstance", func() {
@@ -247,7 +244,6 @@ var _ = Describe("MigratorClient", func() {
 				Expect(fakeCFPluginAPI.CliCommandWithoutTerminalOutputCallCount()).To(Equal(1))
 			})
 		})
-
 	})
 
 	Context("CreateTask", func() {
@@ -270,7 +266,8 @@ var _ = Describe("MigratorClient", func() {
 			Expect(args).To(Equal([]string{
 				"curl", "-X", "POST", "-d",
 				`{"command":"some-command"}`,
-				"/v3/apps/6aef0cf0-c5d5-4ec1-89ae-73971d24241c/tasks"}))
+				"/v3/apps/6aef0cf0-c5d5-4ec1-89ae-73971d24241c/tasks",
+			}))
 		})
 
 		Context("when there is an error creating the task", func() {
@@ -317,7 +314,6 @@ var _ = Describe("MigratorClient", func() {
 				}, "some-command")
 				Expect(err).To(MatchError("failed to create a task: 404: some-title - some-detail"))
 			})
-
 		})
 	})
 
@@ -514,7 +510,7 @@ var _ = Describe("MigratorClient", func() {
 					client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
 
 					Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: cc error code 1: NOT-invalid-auth-token - Some other cc error besides invalid auth token`))
-					Expect(fakeCFPluginAPI.AccessTokenCallCount()).To(Equal(0)) //TODO: decouple this test
+					Expect(fakeCFPluginAPI.AccessTokenCallCount()).To(Equal(0)) // TODO: decouple this test
 				})
 			})
 
@@ -537,7 +533,7 @@ var _ = Describe("MigratorClient", func() {
 					client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
 
 					Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
-					Expect(fakeCFPluginAPI.AccessTokenCallCount()).To(Equal(3)) //TODO: decouple this test
+					Expect(fakeCFPluginAPI.AccessTokenCallCount()).To(Equal(3)) // TODO: decouple this test
 				})
 
 				Context("When automatic token refresh succeeds", func() {
@@ -552,7 +548,7 @@ var _ = Describe("MigratorClient", func() {
 						task, err := client.GetTaskByGUID("6aef0cf0-c5d5-4ec1-89ae-73971d24241c")
 						Expect(err).NotTo(HaveOccurred())
 
-						Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`)) //TODO: decouple this test
+						Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`)) // TODO: decouple this test
 						Expect(buffer).NotTo(gbytes.Say(`Attempt 2/3:`))
 
 						Expect(task.Guid).To(Equal(`some-guid`))
@@ -570,7 +566,7 @@ var _ = Describe("MigratorClient", func() {
 						Expect(err).To(HaveOccurred())
 
 						Expect(buffer).To(gbytes.Say(`failed to refresh the access token: something`))
-						Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`)) //TODO: decouple this test
+						Expect(buffer).To(gbytes.Say(`Attempt 1/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`)) // TODO: decouple this test
 						Expect(buffer).To(gbytes.Say(`Attempt 2/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
 						Expect(buffer).To(gbytes.Say(`Attempt 3/3: failed to retrieve task by GUID: \(error code 1000: CF-InvalidAuthToken - Invalid Auth Token\)`))
 					})

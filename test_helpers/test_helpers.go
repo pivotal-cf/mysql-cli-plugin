@@ -75,7 +75,7 @@ func CheckForRequiredEnvVars(envs []string) {
 	Expect(missingEnvs).To(BeEmpty(), "Missing environment variables: %s", strings.Join(missingEnvs, ", "))
 }
 
-func CreateService(serviceName string, planName string, name string, args ...string) {
+func CreateService(serviceName, planName, name string, args ...string) {
 	createServiceArgs := []string{
 		"create-service",
 		serviceName,
@@ -99,14 +99,14 @@ func DeleteService(name string) {
 	}
 }
 
-func ResourceDeleted(resourceType string, resourceName string) bool {
+func ResourceDeleted(resourceType, resourceName string) bool {
 	session := cf.Cf(resourceType, resourceName).Wait(cfCommandTimeout)
 	output := string(session.Out.Contents())
 
 	return strings.Contains(output, "not found") || strings.Contains(output, "delete in progress")
 }
 
-func WaitForService(name string, success string) {
+func WaitForService(name, success string) {
 	cf.Cf("service", name).Wait(cfCommandTimeout)
 	commandReport := fmt.Sprintf("Polling `cf service %s` for '%s'", name, success)
 	pollcf.ReportPoll(commandReport)
@@ -127,7 +127,7 @@ func AppUUID(name string) string {
 	return resourceGUID("app", name)
 }
 
-func resourceGUID(resourceType string, name string) string {
+func resourceGUID(resourceType, name string) string {
 	output := ExecuteCfCmd(resourceType, name, "--guid")
 	return strings.TrimSpace(output)
 }
@@ -253,7 +253,7 @@ func UnbindAllAppsFromService(instanceGUID string) {
 	}
 }
 
-func BindAppToService(appName string, instance string) {
+func BindAppToService(appName, instance string) {
 	session := cf.Cf("bind-service", appName, instance).Wait(cfCommandTimeout)
 	Expect(session.ExitCode()).To(Equal(0),
 		`Failed to bind-service: %s`,
@@ -261,7 +261,7 @@ func BindAppToService(appName string, instance string) {
 	)
 }
 
-func UnbindAppFromService(appName string, instance string) {
+func UnbindAppFromService(appName, instance string) {
 	session := cf.Cf("unbind-service", appName, instance).Wait(cfCommandTimeout)
 	Expect(session.ExitCode()).To(Equal(0),
 		`Failed to unbind-service: %s`,
@@ -269,7 +269,7 @@ func UnbindAppFromService(appName string, instance string) {
 	)
 }
 
-func CheckAppInfo(skipSSLValidation bool, appURI string, instance string) {
+func CheckAppInfo(skipSSLValidation bool, appURI, instance string) {
 	appInfoUri := fmt.Sprintf("https://%s/appinfo", appURI)
 	resp, err := httpClient(skipSSLValidation).Get(appInfoUri)
 	Expect(err).ToNot(HaveOccurred())
@@ -310,7 +310,7 @@ func CreateDb(skipSSLValidation bool, appURI string) map[string]string {
 	return output
 }
 
-func ReadData(skipSSLValidation bool, appURI string, id string) string {
+func ReadData(skipSSLValidation bool, appURI, id string) string {
 	getUri := fmt.Sprintf("https://%s/albums/%s", appURI, id)
 
 	resp, err := httpClient(skipSSLValidation).Get(getUri)
@@ -326,7 +326,7 @@ func ReadData(skipSSLValidation bool, appURI string, id string) string {
 	return outputAlbum.Title
 }
 
-func WriteData(skipSSLValidation bool, appURI string, value string) string {
+func WriteData(skipSSLValidation bool, appURI, value string) string {
 	postUri := fmt.Sprintf("https://%s/albums", appURI)
 
 	values := map[string]string{"title": value}
@@ -357,7 +357,6 @@ func httpClient(skipSsl bool) *http.Client {
 	} else {
 		return &http.Client{}
 	}
-
 }
 
 func ExecuteCfCmd(args ...string) string {

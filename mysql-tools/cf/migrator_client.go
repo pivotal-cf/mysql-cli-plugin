@@ -249,7 +249,6 @@ func (c *MigratorClient) deleteServiceKey(instanceName, serviceKeyName string) e
 
 func (c *MigratorClient) serviceKey(instanceName, serviceKeyName string) (string, error) {
 	output, err := c.pluginAPI.CliCommandWithoutTerminalOutput("service-key", instanceName, serviceKeyName)
-
 	if err != nil {
 		return "", err
 	}
@@ -264,7 +263,6 @@ func (c *MigratorClient) serviceKey(instanceName, serviceKeyName string) (string
 
 func (c *MigratorClient) requestTask(guid string) (*Task, error) {
 	output, err := c.pluginAPI.CliCommandWithoutTerminalOutput("curl", "/v3/tasks/"+guid)
-
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +284,7 @@ func (c *MigratorClient) requestTask(guid string) (*Task, error) {
 	return &task, err
 }
 
-func (c *MigratorClient) retryCliRequestWithBackoff(requestFunc cliTask, requestArg string, failureMessage string) (interface{}, error) {
+func (c *MigratorClient) retryCliRequestWithBackoff(requestFunc cliTask, requestArg, failureMessage string) (interface{}, error) {
 	for attempt := 0; attempt < c.MaxAttempts; attempt++ {
 		if attempt > 0 {
 			c.Sleep(time.Second << uint(attempt))
@@ -295,7 +293,6 @@ func (c *MigratorClient) retryCliRequestWithBackoff(requestFunc cliTask, request
 		response, err := requestFunc(requestArg)
 		if err != nil {
 			if strings.Contains(err.Error(), "CF-InvalidAuthToken") {
-
 				if _, e := c.pluginAPI.AccessToken(); e != nil {
 					c.Log.Printf("failed to refresh the access token: %s", e.Error())
 				}
@@ -316,7 +313,6 @@ func (c *MigratorClient) waitForOperationCompletion(operationName, instanceName 
 
 	for {
 		service, err := c.pluginAPI.GetService(instanceName)
-
 		if err != nil {
 			attempt++
 

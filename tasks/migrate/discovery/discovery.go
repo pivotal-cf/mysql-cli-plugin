@@ -15,8 +15,9 @@ package discovery
 import (
 	"database/sql"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
 	"strings"
+
+	"github.com/go-sql-driver/mysql"
 
 	"github.com/pkg/errors"
 )
@@ -82,9 +83,7 @@ func discoverViews(db *sql.DB, schema string) (views []View, err error) {
 	}
 
 	for rows.Next() {
-		var (
-			view View
-		)
+		var view View
 		if err := rows.Scan(&view.TableName); err != nil {
 			return nil, errors.Wrap(err, "failed to scan the list of views")
 		}

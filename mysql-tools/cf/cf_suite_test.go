@@ -13,10 +13,10 @@
 package cf_test
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"testing"
 )
 
 func TestCfapi(t *testing.T) {

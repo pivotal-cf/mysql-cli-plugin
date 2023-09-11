@@ -49,7 +49,6 @@ var _ = BeforeSuite(func() {
 	dockerClient, err = docker.NewClientFromEnv()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(PullImage(dockerClient, mysqlDockerImage)).To(Succeed())
-
 })
 
 var _ = BeforeEach(func() {

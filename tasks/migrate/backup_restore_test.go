@@ -20,6 +20,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/go-binmock"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate/discovery"
 )
 
@@ -141,9 +142,7 @@ var _ = Describe("Backup / Restore API", func() {
 		})
 
 		When("views to ignore are specified", func() {
-			var (
-				invalidViews []discovery.View
-			)
+			var invalidViews []discovery.View
 
 			BeforeEach(func() {
 				invalidViews = []discovery.View{
@@ -263,10 +262,8 @@ var _ = Describe("Backup / Restore API", func() {
 		})
 	})
 
-	var _ = Describe("MySQLCmd", func() {
-		var (
-			credentials Credentials
-		)
+	Describe("MySQLCmd", func() {
+		var credentials Credentials
 
 		BeforeEach(func() {
 			credentials = Credentials{
@@ -345,7 +342,7 @@ var _ = Describe("Backup / Restore API", func() {
 		})
 	})
 
-	var _ = Describe("ReplaceDefinerCmd", func() {
+	Describe("ReplaceDefinerCmd", func() {
 		It("builds the sed command", func() {
 			replace := ReplaceDefinerCmd()
 			Expect(replace).ToNot(BeNil())
@@ -355,10 +352,9 @@ var _ = Describe("Backup / Restore API", func() {
 				"s/DEFINER=.* SQL SECURITY .*/SQL SECURITY INVOKER/",
 			}))
 		})
-
 	})
 
-	var _ = Describe("CopyData", func() {
+	Describe("CopyData", func() {
 		var (
 			mySQLDumpMock      *binmock.Mock
 			mySQLDumpCmd       *exec.Cmd

@@ -30,9 +30,7 @@ func loadFixture(name string) (string, error) {
 }
 
 var _ = Describe("InstanceCredentials", func() {
-	var (
-		vcapServices string
-	)
+	var vcapServices string
 	BeforeEach(func() {
 		var err error
 		vcapServices, err = loadFixture("vcap_services.json")
@@ -117,7 +115,6 @@ var _ = Describe("InstanceCredentials", func() {
 		It("returns an error", func() {
 			_, err := InstanceCredentials("some-instance-name", vcapServices)
 			Expect(err).To(MatchError(`failed to parse VCAP_SERVICES json when looking up credentials for instance_name=some-instance-name: invalid character 'i' looking for beginning of object key string`))
-
 		})
 	})
 

@@ -127,9 +127,7 @@ func RunContainer(dockerClient *docker.Client, containerName string, options ...
 }
 
 func RunExec(dockerClient *docker.Client, exec *docker.Exec) (*ExecResult, error) {
-	var (
-		stdout, stderr bytes.Buffer
-	)
+	var stdout, stderr bytes.Buffer
 
 	err := dockerClient.StartExec(exec.ID, docker.StartExecOptions{
 		OutputStream: io.MultiWriter(ginkgo.GinkgoWriter, &stdout),
@@ -169,7 +167,6 @@ func AddExposedPorts(ports ...docker.Port) ContainerOption {
 			createOpts.Config.ExposedPorts[port] = struct{}{}
 		}
 	}
-
 }
 
 func WithCmd(cmd ...string) ContainerOption {

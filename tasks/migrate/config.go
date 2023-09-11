@@ -34,7 +34,7 @@ func (d Credentials) HasTLS() bool {
 }
 
 func (d Credentials) DSN() string {
-	var tlsConfig = "false"
+	tlsConfig := "false"
 
 	if d.HasTLS() && d.SkipTLSValidation {
 		tlsConfig = "skip-verify"

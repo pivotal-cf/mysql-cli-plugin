@@ -31,7 +31,6 @@ var _ = Describe("Unpacker", func() {
 		var err error
 		tmpDir, err = ioutil.TempDir(os.TempDir(), "test-tmp-dir_")
 		Expect(err).NotTo(HaveOccurred())
-
 	})
 
 	AfterEach(func() {

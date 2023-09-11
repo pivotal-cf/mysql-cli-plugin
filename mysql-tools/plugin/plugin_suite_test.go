@@ -2,11 +2,10 @@ package plugin_test
 
 import (
 	"log"
+	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"testing"
 )
 
 func TestPlugin(t *testing.T) {

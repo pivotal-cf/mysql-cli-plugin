@@ -92,7 +92,6 @@ var _ = Describe("CreateServiceInstance", func() {
 			Expect(fakeClient.CreateServiceInstanceCallCount()).To(Equal(1))
 		})
 	})
-
 })
 
 var _ = Describe("MigrateData", func() {
@@ -221,7 +220,6 @@ var _ = Describe("MigrateData", func() {
 				Expect(command).
 					To(MatchRegexp(`^migrate -skip-tls-validation %s %s$`, donorName, recipientName))
 			})
-
 		})
 	})
 })

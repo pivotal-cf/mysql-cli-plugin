@@ -14,9 +14,10 @@ package presentation_test
 
 import (
 	"bytes"
+	"io/ioutil"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/presentation"
-	"io/ioutil"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -24,9 +25,7 @@ import (
 )
 
 var _ = Describe("Report", func() {
-	var (
-		fixtureTable string
-	)
+	var fixtureTable string
 
 	BeforeEach(func() {
 		content, err := ioutil.ReadFile("fixtures/table.txt")

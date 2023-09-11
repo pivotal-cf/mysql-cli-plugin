@@ -25,14 +25,14 @@ type BindingSet []find_bindings.Binding
 func (bs BindingSet) ToRows() [][]string {
 	var result [][]string
 	for _, b := range bs {
-			result = append(result, []string{
-				b.ServiceInstanceName,
-				b.ServiceInstanceGuid,
-				b.OrgName,
-				b.SpaceName,
-				b.Name,
-				b.Type,
-			})
+		result = append(result, []string{
+			b.ServiceInstanceName,
+			b.ServiceInstanceGuid,
+			b.OrgName,
+			b.SpaceName,
+			b.Name,
+			b.Type,
+		})
 	}
 
 	return result

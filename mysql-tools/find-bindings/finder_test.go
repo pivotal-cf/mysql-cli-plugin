@@ -28,7 +28,7 @@ var _ = Describe("BindingFinder", func() {
 		var (
 			serviceName            string
 			expectedBindings       []find_bindings.Binding
-			fakeClient           *findbindingsfakes.FakeClient
+			fakeClient             *findbindingsfakes.FakeClient
 			service                cfclient.Service
 			servicePlans           []cfclient.ServicePlan
 			smallServiceInstances  []cfclient.ServiceInstance
@@ -46,7 +46,7 @@ var _ = Describe("BindingFinder", func() {
 			serviceName = "p.mysql"
 
 			expectedBindings = []find_bindings.Binding{
-				find_bindings.Binding{
+				{
 					Name:                "app1",
 					ServiceInstanceName: "instance1",
 					ServiceInstanceGuid: "instance1-guid",
@@ -54,7 +54,7 @@ var _ = Describe("BindingFinder", func() {
 					SpaceName:           "app1-space",
 					Type:                "AppBinding",
 				},
-				find_bindings.Binding{
+				{
 					Name:                "key1",
 					ServiceInstanceName: "instance1",
 					ServiceInstanceGuid: "instance1-guid",
@@ -62,7 +62,7 @@ var _ = Describe("BindingFinder", func() {
 					SpaceName:           "app1-space",
 					Type:                "ServiceKeyBinding",
 				},
-				find_bindings.Binding{
+				{
 					Name:                "app3",
 					ServiceInstanceName: "instance3",
 					ServiceInstanceGuid: "instance3-guid",
@@ -70,7 +70,7 @@ var _ = Describe("BindingFinder", func() {
 					SpaceName:           "app3-space",
 					Type:                "AppBinding",
 				},
-				find_bindings.Binding{
+				{
 					Name:                "key3",
 					ServiceInstanceName: "instance3",
 					ServiceInstanceGuid: "instance3-guid",
@@ -242,7 +242,7 @@ var _ = Describe("BindingFinder", func() {
 			Expect(listOfBindings).To(Equal(expectedBindings))
 		})
 
-		//TODO: add failure cases here
+		// TODO: add failure cases here
 		Context("when ListService fails", func() {
 			BeforeEach(func() {
 				fakeClient.ListServicesByQueryReturns([]cfclient.Service{}, errors.New("listServicesByQueryError"))

@@ -117,9 +117,7 @@ var _ = Describe("Migrate Integration Tests v2", func() {
 		})
 
 		Context("DB names with the containing substrings of the filtered grep will be migrated", func() {
-			var (
-				testDbName string
-			)
+			var testDbName string
 
 			BeforeEach(func() {
 				testDbName = "sysblah"
