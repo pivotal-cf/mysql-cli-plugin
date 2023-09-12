@@ -376,7 +376,7 @@ type album struct {
 }
 
 func OpenDatabaseTunnelToApp(appName string, serviceKey ServiceKey) (*sql.DB, context.CancelFunc) {
-	port := 63300 + GinkgoParallelNode()
+	port := 63300 + GinkgoParallelProcess()
 	tunnelContext, tunnelCancel := context.WithCancel(context.Background())
 	connectionString := fmt.Sprintf("%d:%s:3306", port, serviceKey.Hostname)
 	tunnelCommand := exec.CommandContext(tunnelContext, "cf", "ssh", "--skip-remote-execution", "-L", connectionString, appName)
