@@ -52,7 +52,7 @@ run docker run --rm \
 echo >&2 "Building $PWD/mysql-cli-plugin"
 run go build \
   -tags forceposix \
-  -ldflags="-X 'github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin.version=${VERSION}'" \
+  -ldflags="-s -w -X 'github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin.version=${VERSION}'" \
   -o mysql-cli-plugin \
   .
 

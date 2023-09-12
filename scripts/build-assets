@@ -73,7 +73,7 @@ install_mysql_client_utils() {
 }
 
 install_migrate_task() {
-  GOBIN="$PWD/app/bin" go install github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate
+  GOBIN="$PWD/app/bin" go install -ldflags="-s -w" github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate
 }
 
 clean_app_directory() {
