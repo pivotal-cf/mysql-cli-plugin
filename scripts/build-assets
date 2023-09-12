@@ -19,84 +19,88 @@ lib_dir='app/lib'
 
 : "${BUILD_DIR:=/build}"
 
-function install_mysql_client_utils() {
-    cd "${BUILD_DIR}"
+run() {
+  echo >&2 "\$ $*"
+  "$@"
+}
 
-    local source_directory build_cache_digest="" source_digest=""
+install_mysql_client_utils() {
+  cd "${BUILD_DIR}"
 
-    source_directory=$(readlink -f /usr/local/src/percona-server-*/)
-    source_digest=$(sha256sum "${source_directory}/MYSQL_VERSION" | awk '{print $1}')
-    if [[ -f VERSION.dep ]];then
-      build_cache_digest=$(sha256sum VERSION.dep | awk '{print $1}')
+  local source_directory build_cache_digest="" source_digest=""
+
+  source_directory=$(readlink -f /usr/local/src/percona-server-*/)
+  source_digest=$(sha256sum "${source_directory}/MYSQL_VERSION" | awk '{print $1}')
+  if [[ -f VERSION.dep ]]; then
+    build_cache_digest=$(sha256sum VERSION.dep | awk '{print $1}')
+  fi
+
+  if [[ "${build_cache_digest}" != "${source_digest}" ]]; then
+    echo >&2 '!!! Detected stale build cache for Percona Server. Invalidating cache. !!!'
+    echo >&2 "${BUILD_DIR}/VERSION.dep (digest: ${build_cache_digest}) != ${source_directory}/MYSQL_VERSION (digest: ${source_digest})"
+    rm -fr ./*
+  else
+    echo >&2 "Re-using existing build cache in ${BUILD_DIR}"
+    echo >&2
+  fi
+
+  # shellcheck disable=SC2016
+  run cmake "${source_directory}" \
+    -Wno-deprecated \
+    -DBUILD_CONFIG=mysql_release \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_INSTALL_PREFIX="${BUILD_DIR}" \
+    -DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
+    -DFEATURE_SET=community \
+    -DINSTALL_MYSQLTESTDIR= \
+    -DWITH_BOOST=/usr/local/src/boost_1_59_0/ \
+    -DWITH_EMBEDDED_SERVER=OFF \
+    -DWITH_EDITLINE=bundled \
+    -DWITH_SSL=system \
+    -DWITH_ZLIB=bundled \
+    -DIGNORE_AIO_CHECK=ON \
+    -DWITHOUT_SERVER=ON
+  run make --jobs "$(nproc)" install/strip mysql mysqldump
+  cd -
+
+  run install --directory app/bin app/lib
+  run install --no-target-directory "${BUILD_DIR}/LICENSE" app/percona.LICENSE
+  run install --no-target-directory "${BUILD_DIR}/README" app/percona.README
+  run install --target-directory=app/bin "${BUILD_DIR}/bin/mysql" "${BUILD_DIR}/bin/mysqldump"
+  run install --target-directory=app/lib \
+    /usr/lib/x86_64-linux-gnu/{libssl.so.1.1,libcrypto.so.1.1} \
+    /lib/x86_64-linux-gnu/libtinfo.so.5
+}
+
+install_migrate_task() {
+  GOBIN="$PWD/app/bin" go install github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate
+}
+
+clean_app_directory() {
+  rm -rf ${bin_dir}
+  rm -rf ${lib_dir}
+  mkdir -p ${bin_dir}
+  mkdir -p ${lib_dir}
+}
+
+main() {
+  local dep
+  for dep in /usr/local/src/percona-server-*/; do
+    if [[ ! -d ${dep} ]]; then
+      echo >&2 "No source dependencies found in environment."
+      echo >&2 "$0 should only be run under a linux environment using the image buiilt from the top-level ./scripts/Dockerfile in this repo"
+      echo >&2 "For local development run ./scripts/build-plugin instead."
+      echo >&2 "Aborting."
+      return 1
     fi
+  done
 
-    if [[ "${build_cache_digest}" != "${source_digest}" ]];then
-      echo >&2 '!!! Detected stale build cache for Percona Server. Invalidating cache. !!!'
-      echo >&2 "${BUILD_DIR}/VERSION.dep (digest: ${build_cache_digest}) != ${source_directory}/MYSQL_VERSION (digest: ${source_digest})"
-      rm -fr ./*
-    else
-      echo >&2 "Re-using existing build cache in ${BUILD_DIR}"
-      echo >&2
-    fi
-
-    # shellcheck disable=SC2016
-    cmake /usr/local/src/percona-server-*/ \
-      -Wno-deprecated \
-      -DBUILD_CONFIG=mysql_release \
-      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-      -DCMAKE_INSTALL_PREFIX=${BUILD_DIR} \
-      -DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
-      -DFEATURE_SET=community \
-      -DINSTALL_MYSQLTESTDIR= \
-      -DWITH_BOOST=/usr/local/src/boost_1_59_0/ \
-      -DWITH_EMBEDDED_SERVER=OFF \
-      -DWITH_EDITLINE=bundled \
-      -DWITH_SSL=system \
-      -DWITH_ZLIB=bundled \
-      -DIGNORE_AIO_CHECK=ON \
-      -DWITHOUT_SERVER=ON && \
-      make --jobs 4 && \
-      make install
-    cd -
-
-    mv ${BUILD_DIR}/LICENSE "${bin_dir}"
-    mv ${BUILD_DIR}/README "${bin_dir}"
-    mv ${BUILD_DIR}/bin/mysql "${bin_dir}"
-    mv ${BUILD_DIR}/bin/mysqldump "${bin_dir}"
-    cp /usr/lib/x86_64-linux-gnu/libssl.so.1.1 ${lib_dir}
-    cp /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 ${lib_dir}
-    cp /lib/x86_64-linux-gnu/libtinfo.so.5 ${lib_dir}
-}
-
-function install_migrate_task() {
-    GOBIN="$PWD/app/bin" go install github.com/pivotal-cf/mysql-cli-plugin/tasks/migrate
-}
-
-function clean_app_directory() {
-    rm -rf ${bin_dir}
-    rm -rf ${lib_dir}
-    mkdir -p ${bin_dir}
-    mkdir -p ${lib_dir}
-}
-
-function main() {
-    local dep
-    for dep in /usr/local/src/percona-server-*/; do
-      if [[ ! -d ${dep} ]];then
-        echo >&2 "No source dependencies found in environment."
-        echo >&2 "$0 should only be run under a linux environment using the image buiilt from the top-level ./scripts/Dockerfile in this repo"
-        echo >&2 "For local development run ./scripts/build-plugin instead."
-        echo >&2 "Aborting."
-        return 1
-      fi
-    done
-
-    >&2 echo "Cleaning app/ directory..."
-    clean_app_directory
-    >&2 echo "Installing migrate task binary into app/"
-    install_migrate_task
-    >&2 echo "Installing mysql client utilities into app/"
-    install_mysql_client_utils
+  echo >&2 "Cleaning app/ directory..."
+  clean_app_directory
+  echo >&2 "Installing migrate task binary into app/"
+  install_migrate_task
+  echo >&2 "Installing mysql client utilities into app/"
+  install_mysql_client_utils
 }
 
 main
