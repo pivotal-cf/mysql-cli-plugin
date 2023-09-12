@@ -26,7 +26,7 @@ import (
 
 func TestIntegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Acceptance Tests Suite")
+	RunSpecs(t, "Acceptance Tests Suite", Label("acceptance"))
 }
 
 var (

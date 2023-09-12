@@ -6,4 +6,4 @@ topdir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 cd "$topdir"
 
-./scripts/run-specs --focus="SmokeTests Suite" "$@"
+./scripts/run-specs --label-filter=smoke_tests "$@"

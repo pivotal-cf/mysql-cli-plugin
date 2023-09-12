@@ -26,7 +26,7 @@ import (
 
 func TestSmokeTests(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "SmokeTests Suite")
+	RunSpecs(t, "SmokeTests Suite", Label("smoke_tests"))
 }
 
 var (
