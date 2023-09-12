@@ -15,7 +15,7 @@ package commandstarter
 import (
 	"os/exec"
 
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers/poll_cf/internal"
 )

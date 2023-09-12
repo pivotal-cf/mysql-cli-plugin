@@ -6,6 +6,6 @@ topdir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 cd "$topdir"
 
-GINKGO="go run github.com/onsi/ginkgo/ginkgo"
+GINKGO="go run github.com/onsi/ginkgo/v2/ginkgo"
 
 ${GINKGO} -r "$@" ./specs/

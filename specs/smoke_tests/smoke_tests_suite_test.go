@@ -16,10 +16,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/config"
-	"github.com/cloudfoundry-incubator/cf-test-helpers/workflowhelpers"
-	. "github.com/onsi/ginkgo"
+	"github.com/cloudfoundry/cf-test-helpers/v2/config"
+	"github.com/cloudfoundry/cf-test-helpers/v2/workflowhelpers"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
 

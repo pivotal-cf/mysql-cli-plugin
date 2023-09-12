@@ -13,12 +13,12 @@
 package migrate_test
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate/migratefakes"
 	"github.com/pkg/errors"
 
 	. "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate/migratefakes"
 )
 
 var _ = Describe("CheckServiceExists", func() {

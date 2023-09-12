@@ -17,9 +17,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
+	"github.com/cloudfoundry/cf-test-helpers/v2/generator"
 	_ "github.com/go-sql-driver/mysql"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 

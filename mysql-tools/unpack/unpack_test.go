@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/unpack/unpackfakes"
 
