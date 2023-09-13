@@ -1,6 +1,6 @@
 module github.com/pivotal-cf/mysql-cli-plugin
 
-go 1.18
+go 1.21.1
 
 require (
 	code.cloudfoundry.org/cli v7.1.0+incompatible
