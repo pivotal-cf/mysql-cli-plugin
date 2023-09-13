@@ -7,4 +7,3 @@ applications:
   no-route: true
   env:
     PATH: "/home/vcap/app/bin:/bin:/usr/bin"
-    LD_LIBRARY_PATH: "./lib"
