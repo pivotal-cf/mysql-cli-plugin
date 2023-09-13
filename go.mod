@@ -9,7 +9,7 @@ require (
 	github.com/cloudfoundry-community/go-cfclient/v2 v2.0.0
 	github.com/cloudfoundry/cf-test-helpers/v2 v2.7.0
 	github.com/go-sql-driver/mysql v1.7.1
-	github.com/gobuffalo/packd v1.0.0
+	github.com/gobuffalo/packd v1.0.2
 	github.com/gobuffalo/packr v1.30.1
 	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-multierror v1.1.1
