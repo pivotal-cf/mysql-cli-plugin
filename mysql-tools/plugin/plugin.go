@@ -24,7 +24,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/jessevdk/go-flags"
 
-	"github.com/pivotal-cf/mysql-cli-plugin/app"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 	find_bindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
@@ -58,8 +57,13 @@ type Migrator interface {
 	CleanupOnError(recipientInstanceName string) error
 }
 
+type MigrationAppExtractor interface {
+	Unpack(directoryPath string) error
+}
+
 type MySQLPlugin struct {
-	err error
+	MigrationAppExtractor MigrationAppExtractor
+	err                   error
 }
 
 func (c *MySQLPlugin) Err() error {
@@ -97,7 +101,7 @@ USAGE:
 		finder := find_bindings.NewBindingFinder(cf.NewFindBindingsClient(cliConnection))
 		c.err = FindBindings(finder, args[2:])
 	case "migrate":
-		migrator := migrate.NewMigrator(cf.NewMigratorClient(cliConnection), app.NewExtractor())
+		migrator := migrate.NewMigrator(cf.NewMigratorClient(cliConnection), c.MigrationAppExtractor)
 		c.err = Migrate(migrator, args[2:])
 	}
 }

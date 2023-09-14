@@ -17,11 +17,15 @@ import (
 	"os"
 
 	cliplugin "code.cloudfoundry.org/cli/plugin"
+
+	"github.com/pivotal-cf/mysql-cli-plugin/app"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 )
 
 func main() {
-	mysqlPlugin := &plugin.MySQLPlugin{}
+	mysqlPlugin := &plugin.MySQLPlugin{
+		MigrationAppExtractor: app.NewExtractor(),
+	}
 	cliplugin.Start(mysqlPlugin)
 
 	if err := mysqlPlugin.Err(); err != nil {
