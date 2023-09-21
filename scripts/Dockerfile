@@ -25,8 +25,8 @@ RUN curl -Ls "https://jenkins.percona.com/downloads/boost/boost_${BOOST_VERSION}
   && tar -C /usr/local/src -xf /boost.tgz \
   && rm -f /boost.tgz
 
-ARG PERCONA_VERSION=5.7.33-36
-ARG PERCONA_DIGEST=964e32f4a1e235421e26be81d2d24f9e659d8ef3cbd9ae6c3e85fe545bedfd5b
+ARG PERCONA_VERSION=5.7.43-47
+ARG PERCONA_DIGEST=333e4ed91bab35e44ed47371c84d6467331e33f93e5965c3d2c9e9c19eb5821c
 RUN curl -Ls "https://www.percona.com/downloads/Percona-Server-${PERCONA_VERSION%.*-*}/Percona-Server-${PERCONA_VERSION}/source/tarball/percona-server-${PERCONA_VERSION}.tar.gz" >/percona.tgz \
     && echo "${PERCONA_DIGEST} /percona.tgz" \
     | sha256sum -c - \
