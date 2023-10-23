@@ -20,6 +20,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin/pluginfakes"
@@ -27,20 +28,25 @@ import (
 
 var _ = Describe("Plugin Commands", func() {
 	var (
-		fakeMigrator *pluginfakes.FakeMigrator
-		fakeFinder   *pluginfakes.FakeBindingFinder
-		logOutput    *bytes.Buffer
+		fakeMigrator  *pluginfakes.FakeMigrator
+		fakeFinder    *pluginfakes.FakeBindingFinder
+		fakeMultiSite *pluginfakes.FakeMultiSite
+		logOutput     *bytes.Buffer
+		cfConfig      string
 	)
 
 	const migrateUsage = `Usage: cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>`
 	const findUsage = `Usage: cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
+	const saveTargetUsage = `Usage: cf mysql-tools save-target <target-name>`
+	const removeTargetUsage = `Usage: cf mysql-tools remove-target <target-name>`
+	const setupReplicationUsage = `Usage: cf mysql-tools find-bindings <primary-target-name> <secondary-target-name>`
 
 	BeforeEach(func() {
 		fakeMigrator = new(pluginfakes.FakeMigrator)
 		fakeFinder = new(pluginfakes.FakeBindingFinder)
-
+		fakeMultiSite = new(pluginfakes.FakeMultiSite)
 		logOutput = &bytes.Buffer{}
-
+		cfConfig = "dummy_home/"
 		w := io.MultiWriter(GinkgoWriter, logOutput)
 		log.SetOutput(w)
 	})
@@ -244,4 +250,101 @@ var _ = Describe("Plugin Commands", func() {
 			})
 		})
 	})
+
+	Context("Multi Foundation Replication Setup", func() {
+		Context("List Targets", func() {
+			It("succeeds", func() {
+				fakeMultiSite.ListConfigsReturns([]string{"config1", "config2"}, nil)
+				err := plugin.ListTargets(fakeMultiSite)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(fakeMultiSite.ListConfigsCallCount()).To(Equal(1))
+			})
+
+			It("returns an error if the list targets fails", func() {
+				fakeMultiSite.ListConfigsReturns([]string{"config1", "config2"}, errors.New("some-error"))
+				err := plugin.ListTargets(fakeMultiSite)
+				Expect(err).To(MatchError("error listing multisite targets: some-error"))
+			})
+		})
+
+		Context("Save Target", func() {
+			It("able to save target config without an error", func() {
+				args := []string{"targetName"}
+				err := plugin.SaveTarget(fakeMultiSite, cfConfig, args)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(fakeMultiSite.SaveConfigCallCount()).To(Equal(1))
+
+				config, target := fakeMultiSite.SaveConfigArgsForCall(0)
+				Expect(config).To(Equal(cfConfig))
+				Expect(target).To(Equal("targetName"))
+			})
+
+			It("returns an error if the save target fails", func() {
+				fakeMultiSite.SaveConfigReturns(errors.New("some-error"))
+				args := []string{"targetName"}
+				err := plugin.SaveTarget(fakeMultiSite, cfConfig, args)
+				Expect(err).To(MatchError("error trying to save the target config: some-error"))
+			})
+
+			It("returns an error if not enough args are passed", func() {
+				args := []string{}
+				err := plugin.SaveTarget(fakeMultiSite, cfConfig, args)
+				Expect(err).To(MatchError(saveTargetUsage + "\n\nthe required argument `<target-name>` was not provided"))
+			})
+
+			It("returns an error if too many args are passed", func() {
+				args := []string{"targetName", "extra-arg"}
+				err := plugin.SaveTarget(fakeMultiSite, cfConfig, args)
+				Expect(err).To(MatchError(saveTargetUsage + "\n\nunexpected arguments: extra-arg"))
+			})
+
+			It("returns an error if an invalid flag is passed", func() {
+				args := []string{"targetName", "--invalid-flag"}
+				err := plugin.SaveTarget(fakeMultiSite, cfConfig, args)
+				Expect(err).To(MatchError(saveTargetUsage + "\n\nunknown flag `invalid-flag'"))
+			})
+		})
+
+		Context("Remove Target", func() {
+			It("able to remove target config without an error", func() {
+				args := []string{"targetName"}
+				err := plugin.RemoveTarget(fakeMultiSite, args)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(fakeMultiSite.RemoveConfigCallCount()).To(Equal(1))
+
+				target := fakeMultiSite.RemoveConfigArgsForCall(0)
+				Expect(target).To(Equal("targetName"))
+			})
+
+			It("returns an error if the remove target fails", func() {
+				fakeMultiSite.RemoveConfigReturns(errors.New("some-error"))
+				args := []string{"targetName"}
+				err := plugin.RemoveTarget(fakeMultiSite, args)
+				Expect(err).To(MatchError("error trying to remove the target config: some-error"))
+			})
+
+			It("returns an error if not enough args are passed", func() {
+				args := []string{}
+				err := plugin.RemoveTarget(fakeMultiSite, args)
+				Expect(err).To(MatchError(removeTargetUsage + "\n\nthe required argument `<target-name>` was not provided"))
+			})
+
+			It("returns an error if too many args are passed", func() {
+				args := []string{"targetName", "extra-arg"}
+				err := plugin.RemoveTarget(fakeMultiSite, args)
+				Expect(err).To(MatchError(removeTargetUsage + "\n\nunexpected arguments: extra-arg"))
+			})
+
+			It("returns an error if an invalid flag is passed", func() {
+				args := []string{"targetName", "--invalid-flag"}
+				err := plugin.RemoveTarget(fakeMultiSite, args)
+				Expect(err).To(MatchError(removeTargetUsage + "\n\nunknown flag `invalid-flag'"))
+			})
+		})
+
+		Context("Setup Replication", func() {
+
+		})
+	})
+
 })

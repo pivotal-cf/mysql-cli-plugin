@@ -18,8 +18,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"code.cloudfoundry.org/cli/cf/configuration/confighelpers"
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/blang/semver/v4"
 	"github.com/jessevdk/go-flags"
@@ -27,6 +29,7 @@ import (
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 	find_bindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/multisite"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/presentation"
 )
 
@@ -39,8 +42,11 @@ const (
 	usage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>
    cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
    cf mysql-tools version`
-	migrateUsage = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>`
-	findUsage    = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
+	migrateUsage          = `cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>`
+	findUsage             = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
+	saveTargetUsage       = `cf mysql-tools save-target <target-name>`
+	removeTargetUsage     = `cf mysql-tools remove-target <target-name>`
+	setupReplicationUsage = `cf mysql-tools setup-replication <primary-foundation> <primary-instance> <secondary-foundation> <secondary-instance>`
 )
 
 //counterfeiter:generate . BindingFinder
@@ -55,6 +61,14 @@ type Migrator interface {
 	MigrateData(options migrate.MigrateOptions) error
 	RenameServiceInstances(donorInstanceName, recipientInstanceName string) error
 	CleanupOnError(recipientInstanceName string) error
+}
+
+//counterfeiter:generate . MultiSite
+type MultiSite interface {
+	ListConfigs() ([]string, error)
+	SaveConfig(cfConfig, targetName string) error
+	RemoveConfig(targetName string) error
+	SetupReplication(primaryFoundation, primaryInstance, secondaryFoundation, secondaryInstance string) error
 }
 
 type MigrationAppExtractor interface {
@@ -73,6 +87,16 @@ func (c *MySQLPlugin) Err() error {
 func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
 		return
+	}
+
+	// Setting of variables each time the plugin runs
+	cfConfig, _ := confighelpers.DefaultFilePath()
+	replicationHome := filepath.Join(confighelpers.PluginRepoDir(), ".set-replication")
+	if _, err := os.Stat(replicationHome); os.IsNotExist(err) {
+		err = os.Mkdir(replicationHome, 0700)
+		if err != nil {
+			fmt.Printf("error trying to create %s to store the saved configurations: %v\n", replicationHome, err)
+		}
 	}
 
 	if len(args) < 2 {
@@ -103,6 +127,18 @@ USAGE:
 	case "migrate":
 		migrator := migrate.NewMigrator(cf.NewMigratorClient(cliConnection), c.MigrationAppExtractor)
 		c.err = Migrate(migrator, args[2:])
+	case "save-target":
+		msSetup := multisite.NewMultiSite(replicationHome)
+		c.err = SaveTarget(msSetup, cfConfig, args[2:])
+	case "list-targets":
+		msSetup := multisite.NewMultiSite(replicationHome)
+		c.err = ListTargets(msSetup)
+	case "remove-target":
+		msSetup := multisite.NewMultiSite(replicationHome)
+		c.err = RemoveTarget(msSetup, args[2:])
+	case "setup-replication":
+		msSetup := multisite.NewMultiSite(replicationHome)
+		c.err = SetupReplication(msSetup, args[2:])
 	}
 }
 
@@ -236,6 +272,110 @@ func Migrate(migrator Migrator, args []string) error {
 	}
 
 	return migrator.RenameServiceInstances(donorInstanceName, tempRecipientInstanceName)
+}
+
+func ListTargets(ms MultiSite) error {
+	configs, err := ms.ListConfigs()
+	if err != nil {
+		return fmt.Errorf("error listing multisite targets: %v", err)
+	}
+	fmt.Printf("Configured Targets:\n%v\n", configs)
+	return nil
+}
+
+func SaveTarget(ms MultiSite, cfConfig string, args []string) error {
+	var opts struct {
+		Args struct {
+			TargetName string `positional-arg-name:"<target-name>"`
+		} `positional-args:"yes" required:"yes"`
+	}
+
+	parser := flags.NewParser(&opts, flags.None)
+	parser.Name = "cf mysql-tools save-target"
+	parser.Args()
+	args, err := parser.ParseArgs(args)
+	if err != nil || len(args) != 0 {
+		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
+		if err != nil {
+			msg = err.Error()
+		}
+		return fmt.Errorf("Usage: %s\n\n%s", saveTargetUsage, msg)
+	}
+
+	targetConfigName := opts.Args.TargetName
+
+	err = ms.SaveConfig(cfConfig, targetConfigName)
+	if err != nil {
+		return fmt.Errorf("error trying to save the target config: %v", err)
+	}
+
+	return nil
+}
+
+func RemoveTarget(ms MultiSite, args []string) error {
+	var opts struct {
+		Args struct {
+			TargetName string `positional-arg-name:"<target-name>"`
+		} `positional-args:"yes" required:"yes"`
+	}
+
+	parser := flags.NewParser(&opts, flags.None)
+	parser.Name = "cf mysql-tools remove-target"
+	parser.Args()
+	args, err := parser.ParseArgs(args)
+
+	if err != nil || len(args) != 0 {
+		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
+		if err != nil {
+			msg = err.Error()
+		}
+		return fmt.Errorf("Usage: %s\n\n%s", removeTargetUsage, msg)
+	}
+
+	removeConfigName := opts.Args.TargetName
+	err = ms.RemoveConfig(removeConfigName)
+
+	if err != nil {
+		return fmt.Errorf("error trying to remove the target config: %v", err)
+	}
+
+	return nil
+}
+
+func SetupReplication(ms MultiSite, args []string) error {
+	var opts struct {
+		Args struct {
+			PrimaryFoundation   string `positional-arg-name:"<primary-foundation>"`
+			PrimaryInstance     string `positional-arg-name:"<primary-instance>"`
+			SecondaryFoundation string `positional-arg-name:"<secondary-foundation>"`
+			SecondaryInstance   string `positional-arg-name:"<secondary-instance>"`
+		} `positional-args:"yes" required:"yes"`
+	}
+	parser := flags.NewParser(&opts, flags.None)
+	parser.Name = "cf mysql-tools setup-replication"
+	parser.Args()
+	args, err := parser.ParseArgs(args)
+	if err != nil || len(args) != 0 {
+		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
+		if err != nil {
+			msg = err.Error()
+		}
+		return fmt.Errorf("Usage: %s\n\n%s", setupReplicationUsage, msg)
+	}
+
+	primaryFoundation := opts.Args.PrimaryFoundation
+	primaryInstance := opts.Args.PrimaryInstance
+	secondaryFoundation := opts.Args.SecondaryFoundation
+	secondaryInstance := opts.Args.SecondaryInstance
+
+	err = ms.SetupReplication(primaryFoundation, primaryInstance, secondaryFoundation, secondaryInstance)
+
+	if err != nil {
+		return fmt.Errorf("error establishing replication from primary %s/%s to secondary %s/%s: %v",
+			primaryFoundation, primaryInstance, secondaryFoundation, secondaryInstance, err)
+	}
+
+	return nil
 }
 
 func versionFromSemver(in string) plugin.VersionType {

@@ -27,7 +27,6 @@ func main() {
 		MigrationAppExtractor: app.NewExtractor(),
 	}
 	cliplugin.Start(mysqlPlugin)
-
 	if err := mysqlPlugin.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
