@@ -369,10 +369,8 @@ func SetupReplication(ms MultiSite, args []string) error {
 	secondaryInstance := opts.Args.SecondaryInstance
 
 	err = ms.SetupReplication(primaryFoundation, primaryInstance, secondaryFoundation, secondaryInstance)
-
 	if err != nil {
-		return fmt.Errorf("error establishing replication from primary %s/%s to secondary %s/%s: %v",
-			primaryFoundation, primaryInstance, secondaryFoundation, secondaryInstance, err)
+		return fmt.Errorf("replication setup error: %w", err)
 	}
 
 	return nil

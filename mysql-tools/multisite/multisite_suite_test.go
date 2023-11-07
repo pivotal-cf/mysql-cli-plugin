@@ -28,7 +28,7 @@ var cfHome, cfConfig, cfPluginsHome, cfReplicationHome string
 
 func TestFindBindings(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "SetupReplication Suite")
+	RunSpecs(t, "Multisite Suite")
 }
 
 var _ = BeforeSuite(func() {
