@@ -4,20 +4,21 @@ package pluginfakes
 import (
 	"sync"
 
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/multisite"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 )
 
 type FakeMultiSite struct {
-	ListConfigsStub        func() ([]string, error)
+	ListConfigsStub        func() ([]*multisite.ConfigCoreSubset, error)
 	listConfigsMutex       sync.RWMutex
 	listConfigsArgsForCall []struct {
 	}
 	listConfigsReturns struct {
-		result1 []string
+		result1 []*multisite.ConfigCoreSubset
 		result2 error
 	}
 	listConfigsReturnsOnCall map[int]struct {
-		result1 []string
+		result1 []*multisite.ConfigCoreSubset
 		result2 error
 	}
 	RemoveConfigStub        func(string) error
@@ -31,17 +32,19 @@ type FakeMultiSite struct {
 	removeConfigReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SaveConfigStub        func(string, string) error
+	SaveConfigStub        func(string, string) (*multisite.ConfigCoreSubset, error)
 	saveConfigMutex       sync.RWMutex
 	saveConfigArgsForCall []struct {
 		arg1 string
 		arg2 string
 	}
 	saveConfigReturns struct {
-		result1 error
+		result1 *multisite.ConfigCoreSubset
+		result2 error
 	}
 	saveConfigReturnsOnCall map[int]struct {
-		result1 error
+		result1 *multisite.ConfigCoreSubset
+		result2 error
 	}
 	SetupReplicationStub        func(string, string, string, string) error
 	setupReplicationMutex       sync.RWMutex
@@ -61,7 +64,7 @@ type FakeMultiSite struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMultiSite) ListConfigs() ([]string, error) {
+func (fake *FakeMultiSite) ListConfigs() ([]*multisite.ConfigCoreSubset, error) {
 	fake.listConfigsMutex.Lock()
 	ret, specificReturn := fake.listConfigsReturnsOnCall[len(fake.listConfigsArgsForCall)]
 	fake.listConfigsArgsForCall = append(fake.listConfigsArgsForCall, struct {
@@ -85,34 +88,34 @@ func (fake *FakeMultiSite) ListConfigsCallCount() int {
 	return len(fake.listConfigsArgsForCall)
 }
 
-func (fake *FakeMultiSite) ListConfigsCalls(stub func() ([]string, error)) {
+func (fake *FakeMultiSite) ListConfigsCalls(stub func() ([]*multisite.ConfigCoreSubset, error)) {
 	fake.listConfigsMutex.Lock()
 	defer fake.listConfigsMutex.Unlock()
 	fake.ListConfigsStub = stub
 }
 
-func (fake *FakeMultiSite) ListConfigsReturns(result1 []string, result2 error) {
+func (fake *FakeMultiSite) ListConfigsReturns(result1 []*multisite.ConfigCoreSubset, result2 error) {
 	fake.listConfigsMutex.Lock()
 	defer fake.listConfigsMutex.Unlock()
 	fake.ListConfigsStub = nil
 	fake.listConfigsReturns = struct {
-		result1 []string
+		result1 []*multisite.ConfigCoreSubset
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeMultiSite) ListConfigsReturnsOnCall(i int, result1 []string, result2 error) {
+func (fake *FakeMultiSite) ListConfigsReturnsOnCall(i int, result1 []*multisite.ConfigCoreSubset, result2 error) {
 	fake.listConfigsMutex.Lock()
 	defer fake.listConfigsMutex.Unlock()
 	fake.ListConfigsStub = nil
 	if fake.listConfigsReturnsOnCall == nil {
 		fake.listConfigsReturnsOnCall = make(map[int]struct {
-			result1 []string
+			result1 []*multisite.ConfigCoreSubset
 			result2 error
 		})
 	}
 	fake.listConfigsReturnsOnCall[i] = struct {
-		result1 []string
+		result1 []*multisite.ConfigCoreSubset
 		result2 error
 	}{result1, result2}
 }
@@ -178,7 +181,7 @@ func (fake *FakeMultiSite) RemoveConfigReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeMultiSite) SaveConfig(arg1 string, arg2 string) error {
+func (fake *FakeMultiSite) SaveConfig(arg1 string, arg2 string) (*multisite.ConfigCoreSubset, error) {
 	fake.saveConfigMutex.Lock()
 	ret, specificReturn := fake.saveConfigReturnsOnCall[len(fake.saveConfigArgsForCall)]
 	fake.saveConfigArgsForCall = append(fake.saveConfigArgsForCall, struct {
@@ -193,9 +196,9 @@ func (fake *FakeMultiSite) SaveConfig(arg1 string, arg2 string) error {
 		return stub(arg1, arg2)
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
-	return fakeReturns.result1
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeMultiSite) SaveConfigCallCount() int {
@@ -204,7 +207,7 @@ func (fake *FakeMultiSite) SaveConfigCallCount() int {
 	return len(fake.saveConfigArgsForCall)
 }
 
-func (fake *FakeMultiSite) SaveConfigCalls(stub func(string, string) error) {
+func (fake *FakeMultiSite) SaveConfigCalls(stub func(string, string) (*multisite.ConfigCoreSubset, error)) {
 	fake.saveConfigMutex.Lock()
 	defer fake.saveConfigMutex.Unlock()
 	fake.SaveConfigStub = stub
@@ -217,27 +220,30 @@ func (fake *FakeMultiSite) SaveConfigArgsForCall(i int) (string, string) {
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeMultiSite) SaveConfigReturns(result1 error) {
+func (fake *FakeMultiSite) SaveConfigReturns(result1 *multisite.ConfigCoreSubset, result2 error) {
 	fake.saveConfigMutex.Lock()
 	defer fake.saveConfigMutex.Unlock()
 	fake.SaveConfigStub = nil
 	fake.saveConfigReturns = struct {
-		result1 error
-	}{result1}
+		result1 *multisite.ConfigCoreSubset
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *FakeMultiSite) SaveConfigReturnsOnCall(i int, result1 error) {
+func (fake *FakeMultiSite) SaveConfigReturnsOnCall(i int, result1 *multisite.ConfigCoreSubset, result2 error) {
 	fake.saveConfigMutex.Lock()
 	defer fake.saveConfigMutex.Unlock()
 	fake.SaveConfigStub = nil
 	if fake.saveConfigReturnsOnCall == nil {
 		fake.saveConfigReturnsOnCall = make(map[int]struct {
-			result1 error
+			result1 *multisite.ConfigCoreSubset
+			result2 error
 		})
 	}
 	fake.saveConfigReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
+		result1 *multisite.ConfigCoreSubset
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeMultiSite) SetupReplication(arg1 string, arg2 string, arg3 string, arg4 string) error {

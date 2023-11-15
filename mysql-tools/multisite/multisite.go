@@ -23,39 +23,75 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 type MultiSite struct {
-	ReplicationConfigHome string
+	ReplicationConfigHome string // location of saved "configs" = CF_HOME directories
+}
+
+type ConfigCoreSubset struct {
+	OrganizationFields struct {
+		Name string
+	}
+	SpaceFields struct {
+		Name string
+	}
+	Target string
+	Name   string
 }
 
 func NewMultiSite(replicationHome string) *MultiSite {
 	return &MultiSite{ReplicationConfigHome: replicationHome}
 }
 
-func (ms *MultiSite) SaveConfig(cfConfig, targetName string) error {
-	foundationHome := filepath.Join(ms.ReplicationConfigHome, targetName, ".cf")
-	err := os.MkdirAll(foundationHome, 0700)
+func (ms *MultiSite) SaveConfig(sourceConfigFilePath, newConfigName string) (*ConfigCoreSubset, error) {
+	// Save only valid configs
+	err := validate(sourceConfigFilePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	configFile := filepath.Join(foundationHome, "config.json")
-	err = copyContents(cfConfig, configFile)
-	return err
+
+	newConfigPath := filepath.Join(ms.ReplicationConfigHome, newConfigName, ".cf")
+	// what permissions should we put on the dir?
+	// should we be testing this?
+	err = os.MkdirAll(newConfigPath, 0700)
+	if err != nil {
+		return nil, err
+	}
+	newConfigFilePath := filepath.Join(newConfigPath, "config.json")
+	err = copyContents(sourceConfigFilePath, newConfigFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return summarize(newConfigFilePath)
 }
 
-func (ms *MultiSite) ListConfigs() ([]string, error) {
-	var configs []string
+func (ms *MultiSite) ListConfigs() ([]*ConfigCoreSubset, error) {
+	var (
+		configs []*ConfigCoreSubset
+		errs    multierror.Error
+	)
 	files, err := os.ReadDir(ms.ReplicationConfigHome)
 	if err != nil {
 		return nil, err
 	}
 	for _, content := range files {
 		if content.IsDir() {
-			configs = append(configs, content.Name())
+			configName := content.Name()
+			configFilePath := filepath.Join(ms.ReplicationConfigHome, configName, ".cf", "config.json")
+			summary, err := summarize(configFilePath)
+			if err != nil {
+				errs.Errors = append(errs.Errors, err)
+				continue
+			}
+			summary.Name = configName
+			configs = append(configs, summary)
 		}
 	}
-	return configs, nil
+	return configs, errs.ErrorOrNil()
 }
 
 func (ms *MultiSite) RemoveConfig(targetName string) error {
@@ -82,6 +118,7 @@ func (ms *MultiSite) SetupReplication(primaryFoundation, primaryInstance,
 	targetF2CFHome := filepath.Join(ms.ReplicationConfigHome, secondaryFoundation)
 
 	// Validate primaryInstance
+	fmt.Printf("Validating the primary instance: '%s'.\n", primaryInstance)
 	_, err = executeCommand(targetF1CFHome, "cf", "service", primaryInstance)
 	if err != nil {
 		return fmt.Errorf("instance '%s' validation error: %w",
@@ -89,6 +126,7 @@ func (ms *MultiSite) SetupReplication(primaryFoundation, primaryInstance,
 	}
 
 	// Validate secondaryInstance
+	fmt.Printf("Validating the secondary instance: '%s'.\n", secondaryInstance)
 	_, err = executeCommand(targetF2CFHome, "cf", "service", secondaryInstance)
 	if err != nil {
 		return fmt.Errorf("instance '%s' validation error: %w",
@@ -97,6 +135,7 @@ func (ms *MultiSite) SetupReplication(primaryFoundation, primaryInstance,
 
 	// Create secondary's host-info service key
 	hostKeyName := "MSHostInfo-" + strconv.FormatInt(time.Now().UTC().Unix(), 10)
+	fmt.Printf("Creating a 'host-info' service-key: '%s' on the secondary instance: '%s'.\n", hostKeyName, secondaryInstance)
 	_, err = executeCommand(targetF2CFHome, "cf", "create-service-key",
 		secondaryInstance, hostKeyName, "-c", `{"replication-request": "host-info"}`)
 	if err != nil {
@@ -105,6 +144,7 @@ func (ms *MultiSite) SetupReplication(primaryFoundation, primaryInstance,
 	}
 
 	// Recover host-info key contents
+	fmt.Printf("Getting the 'host-info' service-key from the secondary instance: '%s'.\n", secondaryInstance)
 	keyOutput, err := executeCommand(targetF2CFHome, "cf", "service-key",
 		secondaryInstance, hostKeyName)
 	if err != nil {
@@ -113,10 +153,11 @@ func (ms *MultiSite) SetupReplication(primaryFoundation, primaryInstance,
 	}
 	keyContents, err := extractKeyContents(keyOutput)
 	if err != nil {
-		return fmt.Errorf("error extracting host-key info from output: %s\n", keyOutput)
+		return fmt.Errorf("error extracting host-key info from output: '%s'.\n", keyOutput)
 	}
 
 	// Update primary with that host-info service key
+	fmt.Printf("Updating the primary with the secondary's 'host-info' service-key: '%s'.\n", hostKeyName)
 	_, err = executeCommand(targetF1CFHome, "cf", "update-service", primaryInstance,
 		"-c", keyContents, "--wait")
 	if err != nil {
@@ -125,6 +166,7 @@ func (ms *MultiSite) SetupReplication(primaryFoundation, primaryInstance,
 
 	// Create primary's credentials service key
 	credKeyName := "MSCredInfo-" + strconv.FormatInt(time.Now().UTC().Unix(), 10)
+	fmt.Printf("Creating a 'credentials' service-key: '%s' on the primary instance: '%s'.\n", credKeyName, primaryInstance)
 	_, err = executeCommand(targetF1CFHome, "cf", "create-service-key",
 		primaryInstance, credKeyName, "-c", `{"replication-request": "credentials"}`)
 	if err != nil {
@@ -133,6 +175,7 @@ func (ms *MultiSite) SetupReplication(primaryFoundation, primaryInstance,
 	}
 
 	// Recover credentials key contents
+	fmt.Printf("Getting the 'credentials' service-key from the primary instance. '%s'.\n", primaryInstance)
 	credOutput, err := executeCommand(targetF1CFHome, "cf", "service-key",
 		primaryInstance, credKeyName)
 	if err != nil {
@@ -145,12 +188,52 @@ func (ms *MultiSite) SetupReplication(primaryFoundation, primaryInstance,
 	}
 
 	// Update secondary with that credentials service key
+	fmt.Printf("Updating the secondary instance with the primary's 'credentials' service-key: '%s'.\n", credKeyName)
 	_, err = executeCommand(targetF2CFHome, "cf", "update-service", secondaryInstance,
 		"-c", keyContents, "--wait")
 	if err != nil {
 		return fmt.Errorf("error updating secondary instance %s with credentials key %s: %w\n", secondaryInstance, keyContents, err)
 	}
 
+	return nil
+}
+
+func summarize(configFile string) (*ConfigCoreSubset, error) {
+	var summary ConfigCoreSubset
+	content, err := os.ReadFile(configFile)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal([]byte(content), &summary)
+	if err != nil {
+		return nil, err
+	}
+	return &summary, nil
+}
+
+func validate(configFilename string) error {
+	// Validate config has required values
+	var missingFields, sep string
+	sourceConfig, err := summarize(configFilename)
+	if err != nil {
+		return err
+	}
+
+	if sourceConfig.Target == "" {
+		missingFields += "API endpoint"
+		sep = ", "
+	}
+	if sourceConfig.OrganizationFields.Name == "" {
+		missingFields += sep + "Organization"
+		sep = ", "
+	}
+	if sourceConfig.SpaceFields.Name == "" {
+		missingFields += sep + "Space"
+	}
+	if missingFields != "" {
+		return fmt.Errorf("saved configuration must target Cloudfoundry "+missingFields+" (file: %s)",
+			configFilename)
+	}
 	return nil
 }
 

@@ -65,8 +65,8 @@ type Migrator interface {
 
 //counterfeiter:generate . MultiSite
 type MultiSite interface {
-	ListConfigs() ([]string, error)
-	SaveConfig(cfConfig, targetName string) error
+	ListConfigs() ([]*multisite.ConfigCoreSubset, error)
+	SaveConfig(cfConfig, targetName string) (*multisite.ConfigCoreSubset, error)
 	RemoveConfig(targetName string) error
 	SetupReplication(primaryFoundation, primaryInstance, secondaryFoundation, secondaryInstance string) error
 }
@@ -89,8 +89,6 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		return
 	}
 
-	// Setting of variables each time the plugin runs
-	cfConfig, _ := confighelpers.DefaultFilePath()
 	replicationHome := filepath.Join(confighelpers.PluginRepoDir(), ".set-replication")
 	if _, err := os.Stat(replicationHome); os.IsNotExist(err) {
 		err = os.Mkdir(replicationHome, 0700)
@@ -103,11 +101,15 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		// Unfortunately there is no good way currently to show the usage on a plugin
 		// without having `-h` added to the command line, so we hardcode it.
 		fmt.Fprintln(os.Stderr, `NAME:
-   mysql-tools - Plugin to migrate mysql instances
+   mysql-tools - Plugin to manage mysql instances
 
 USAGE:
    cf mysql-tools migrate [-h] [--no-cleanup] [--skip-tls-validation] <source-service-instance> <p.mysql-plan-type>
    cf mysql-tools find-bindings [-h] <mysql-v1-service-name>
+   cf mysql-tools save-target <target-name>
+   cf mysql-tools remove-target <target-name>
+   cf mysql-tools list-targets
+   cf mysql-tools setup-replication <primary-target-name> <primary-instance-name> <secondary-target-name> <secondary-instance-name>
    cf mysql-tools version`)
 		os.Exit(1)
 		return
@@ -129,7 +131,7 @@ USAGE:
 		c.err = Migrate(migrator, args[2:])
 	case "save-target":
 		msSetup := multisite.NewMultiSite(replicationHome)
-		c.err = SaveTarget(msSetup, cfConfig, args[2:])
+		c.err = SaveTarget(msSetup, args[2:])
 	case "list-targets":
 		msSetup := multisite.NewMultiSite(replicationHome)
 		c.err = ListTargets(msSetup)
@@ -276,20 +278,23 @@ func Migrate(migrator Migrator, args []string) error {
 
 func ListTargets(ms MultiSite) error {
 	configs, err := ms.ListConfigs()
+	fmt.Println("Targets:")
+	for _, config := range configs {
+		display(config, config.Name)
+		fmt.Println()
+	}
 	if err != nil {
 		return fmt.Errorf("error listing multisite targets: %v", err)
 	}
-	fmt.Printf("Configured Targets:\n%v\n", configs)
 	return nil
 }
 
-func SaveTarget(ms MultiSite, cfConfig string, args []string) error {
+func SaveTarget(ms MultiSite, args []string) error {
 	var opts struct {
 		Args struct {
 			TargetName string `positional-arg-name:"<target-name>"`
 		} `positional-args:"yes" required:"yes"`
 	}
-
 	parser := flags.NewParser(&opts, flags.None)
 	parser.Name = "cf mysql-tools save-target"
 	parser.Args()
@@ -304,12 +309,28 @@ func SaveTarget(ms MultiSite, cfConfig string, args []string) error {
 
 	targetConfigName := opts.Args.TargetName
 
-	err = ms.SaveConfig(cfConfig, targetConfigName)
+	cfConfigFilename, err := confighelpers.DefaultFilePath()
 	if err != nil {
-		return fmt.Errorf("error trying to save the target config: %v", err)
+		return fmt.Errorf("error saving target %s: %w", targetConfigName, err)
+	}
+	if _, err := os.Stat(cfConfigFilename); os.IsNotExist(err) {
+		return fmt.Errorf("error saving target %s: %w", targetConfigName, err)
 	}
 
+	result, err := ms.SaveConfig(cfConfigFilename, targetConfigName)
+	if err != nil {
+		return fmt.Errorf("error saving target %s: %w", targetConfigName, err)
+	}
+
+	fmt.Println("Success")
+	display(result, targetConfigName)
 	return nil
+}
+func display(subset *multisite.ConfigCoreSubset, name string) {
+	fmt.Printf("Target: %s\n", name)
+	fmt.Printf("   API: %s\n", subset.Target)
+	fmt.Printf("   Org: %s\n", subset.OrganizationFields.Name)
+	fmt.Printf(" Space: %s\n", subset.SpaceFields.Name)
 }
 
 func RemoveTarget(ms MultiSite, args []string) error {

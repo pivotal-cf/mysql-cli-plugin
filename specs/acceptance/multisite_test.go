@@ -24,7 +24,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
 
@@ -97,8 +99,26 @@ var _ = Describe("Multisite Setup Integration Tests", Serial, Label("multisite")
 				leaderFoundationHandle, leaderInstanceName,
 				followerFoundationHandle, followerInstanceName)
 			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(session.Out, "15m", "10s").Should(
+				gbytes.Say("Validating the primary instance: '%s'.\n", leaderInstanceName))
+			Eventually(session.Out, "15m", "10s").Should(
+				gbytes.Say("Validating the secondary instance: '%s'.\n", followerInstanceName))
+			Eventually(session.Out, "15m", "10s").Should(
+				gbytes.Say("Creating a 'host-info' service-key: 'MSHostInfo-.*' on the secondary instance: '%s'.\n", followerInstanceName))
+			Eventually(session.Out, "15m", "10s").Should(
+				gbytes.Say("Getting the 'host-info' service-key from the secondary instance: '%s'.\n", followerInstanceName))
+			Eventually(session.Out, "15m", "10s").Should(
+				gbytes.Say("Updating the primary with the secondary's 'host-info' service-key: 'MSHostInfo-.*'.\n"))
+			Eventually(session.Out, "15m", "10s").Should(
+				gbytes.Say("Creating a 'credentials' service-key: 'MSCredInfo-.*' on the primary instance: '%s'.\n", leaderInstanceName))
+			Eventually(session.Out, "15m", "10s").Should(
+				gbytes.Say("Getting the 'credentials' service-key from the primary instance. '%s'.\n", leaderInstanceName))
+			Eventually(session.Out, "15m", "10s").Should(
+				gbytes.Say("Updating the secondary instance with the primary's 'credentials' service-key: 'MSCredInfo-.*'.\n"))
+
 			Eventually(session, "15m", "10s").Should(gexec.Exit(0))
+			Expect(err).NotTo(HaveOccurred())
 
 			// Validate the secondary is configured as a follower
 			followerTestSetup.Setup()
