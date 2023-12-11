@@ -4,7 +4,7 @@ go 1.21.1
 
 require (
 	code.cloudfoundry.org/cli v7.1.0+incompatible
-	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/DATA-DOG/go-sqlmock v1.5.1
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cloudfoundry-community/go-cfclient/v2 v2.0.0
 	github.com/cloudfoundry/cf-test-helpers/v2 v2.8.0
