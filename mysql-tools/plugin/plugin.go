@@ -174,7 +174,6 @@ func FindBindings(bf BindingFinder, args []string) error {
 
 	parser := flags.NewParser(&opts, flags.None)
 	parser.Name = "cf mysql-tools find-bindings"
-	parser.Args()
 	args, err := parser.ParseArgs(args)
 	if err != nil || len(args) != 0 {
 		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
@@ -208,7 +207,6 @@ func Migrate(migrator Migrator, args []string) error {
 
 	parser := flags.NewParser(&opts, flags.None)
 	parser.Name = "cf mysql-tools migrate"
-	parser.Args()
 	args, err := parser.ParseArgs(args)
 	if err != nil || len(args) != 0 {
 		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
@@ -297,7 +295,6 @@ func SaveTarget(ms MultiSite, args []string) error {
 	}
 	parser := flags.NewParser(&opts, flags.None)
 	parser.Name = "cf mysql-tools save-target"
-	parser.Args()
 	args, err := parser.ParseArgs(args)
 	if err != nil || len(args) != 0 {
 		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
@@ -342,7 +339,6 @@ func RemoveTarget(ms MultiSite, args []string) error {
 
 	parser := flags.NewParser(&opts, flags.None)
 	parser.Name = "cf mysql-tools remove-target"
-	parser.Args()
 	args, err := parser.ParseArgs(args)
 
 	if err != nil || len(args) != 0 {
@@ -374,7 +370,6 @@ func SetupReplication(ms MultiSite, args []string) error {
 	}
 	parser := flags.NewParser(&opts, flags.None)
 	parser.Name = "cf mysql-tools setup-replication"
-	parser.Args()
 	args, err := parser.ParseArgs(args)
 	if err != nil || len(args) != 0 {
 		msg := fmt.Sprintf("unexpected arguments: %s", strings.Join(args, " "))
