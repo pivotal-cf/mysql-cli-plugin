@@ -42,7 +42,7 @@ var _ = Describe("Plugin Commands", func() {
 	const findUsage = `Usage: cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 	const saveTargetUsage = `Usage: cf mysql-tools save-target <target-name>`
 	const removeTargetUsage = `Usage: cf mysql-tools remove-target <target-name>`
-	const setupReplicationUsage = `Usage: cf mysql-tools find-bindings <primary-target-name> <secondary-target-name>`
+	const setupReplicationUsage = `Usage: cf mysql-tools setup-replication <primary-foundation> <primary-instance> <secondary-foundation> <secondary-instance>`
 
 	BeforeEach(func() {
 		fakeMigrator = new(pluginfakes.FakeMigrator)
@@ -510,7 +510,37 @@ var _ = Describe("Plugin Commands", func() {
 		})
 
 		Context("Setup Replication", func() {
+			passedArgs := []string{"arg1", "arg2", "arg3", "arg4"}
+			It("returns an error if called with too many arguments", func() {
+				err := plugin.SetupReplication(fakeMultiSite, append(passedArgs, "extra_arg"))
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(setupReplicationUsage + "\n\nunexpected arguments: extra_arg"))
+			})
 
+			It("returns an error if called with too few arguments", func() {
+				err := plugin.SetupReplication(fakeMultiSite, []string{"arg1", "arg2"})
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(setupReplicationUsage + "\n\nthe required arguments `<secondary-foundation>` and `<secondary-instance>` were not provided"))
+			})
+
+			It("returns an error if SetupReplication returns an error", func() {
+				fakeMultiSite.SetupReplicationReturns(errors.New("Low-level error message"))
+				err := plugin.SetupReplication(fakeMultiSite, passedArgs)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("replication setup error: Low-level error message"))
+			})
+
+			It("returns nil when there are no errors", func() {
+				Expect(plugin.SetupReplication(fakeMultiSite, passedArgs)).To(BeNil())
+			})
+
+			It("passes its positional arguments to its multisite function in the correct order", func() {
+				err := plugin.SetupReplication(fakeMultiSite, passedArgs)
+				Expect(err).NotTo(HaveOccurred())
+				rcv1, rcv2, rcv3, rcv4 := fakeMultiSite.SetupReplicationArgsForCall(0)
+				receivedArgs := []string{rcv1, rcv2, rcv3, rcv4}
+				Expect(passedArgs).To(Equal(receivedArgs))
+			})
 		})
 	})
 
