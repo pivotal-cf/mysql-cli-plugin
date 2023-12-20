@@ -96,8 +96,10 @@ var _ = Describe("Multisite Setup Integration Tests", Serial, Label("multisite")
 		})
 		It("Can setup multisite replication between two foundations", func() {
 			cmd := exec.Command("cf", "mysql-tools", "setup-replication",
-				leaderFoundationHandle, leaderInstanceName,
-				followerFoundationHandle, followerInstanceName)
+				fmt.Sprintf("--primary-target=%s", leaderFoundationHandle),
+				fmt.Sprintf("--primary-instance=%s", leaderInstanceName),
+				fmt.Sprintf("--secondary-target=%s", followerFoundationHandle),
+				fmt.Sprintf("--secondary-instance=%s", followerInstanceName))
 			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 
 			Eventually(session.Out, "15m", "10s").Should(

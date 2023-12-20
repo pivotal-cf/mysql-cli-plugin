@@ -46,7 +46,7 @@ const (
 	findUsage             = `cf mysql-tools find-bindings [-h] <mysql-v1-service-name>`
 	saveTargetUsage       = `cf mysql-tools save-target <target-name>`
 	removeTargetUsage     = `cf mysql-tools remove-target <target-name>`
-	setupReplicationUsage = `cf mysql-tools setup-replication <primary-foundation> <primary-instance> <secondary-foundation> <secondary-instance>`
+	setupReplicationUsage = `cf mysql-tools setup-replication [ --primary-target | -P ] [ --primary-instance | -p ] [ --secondary-target | -S ] [ --secondary-instance | -s ]`
 )
 
 //counterfeiter:generate . BindingFinder
@@ -361,12 +361,10 @@ func RemoveTarget(ms MultiSite, args []string) error {
 
 func SetupReplication(ms MultiSite, args []string) error {
 	var opts struct {
-		Args struct {
-			PrimaryFoundation   string `positional-arg-name:"<primary-foundation>"`
-			PrimaryInstance     string `positional-arg-name:"<primary-instance>"`
-			SecondaryFoundation string `positional-arg-name:"<secondary-foundation>"`
-			SecondaryInstance   string `positional-arg-name:"<secondary-instance>"`
-		} `positional-args:"yes" required:"yes"`
+		PrimaryTarget     string `short:"P" long:"primary-target" required:"true"`
+		PrimaryInstance   string `short:"p" long:"primary-instance" required:"true"`
+		SecondaryTarget   string `short:"S" long:"secondary-target" required:"true"`
+		SecondaryInstance string `short:"s" long:"secondary-instance" required:"true"`
 	}
 	parser := flags.NewParser(&opts, flags.None)
 	parser.Name = "cf mysql-tools setup-replication"
@@ -379,10 +377,10 @@ func SetupReplication(ms MultiSite, args []string) error {
 		return fmt.Errorf("Usage: %s\n\n%s", setupReplicationUsage, msg)
 	}
 
-	primaryFoundation := opts.Args.PrimaryFoundation
-	primaryInstance := opts.Args.PrimaryInstance
-	secondaryFoundation := opts.Args.SecondaryFoundation
-	secondaryInstance := opts.Args.SecondaryInstance
+	primaryFoundation := opts.PrimaryTarget
+	primaryInstance := opts.PrimaryInstance
+	secondaryFoundation := opts.SecondaryTarget
+	secondaryInstance := opts.SecondaryInstance
 
 	err = ms.SetupReplication(primaryFoundation, primaryInstance, secondaryFoundation, secondaryInstance)
 	if err != nil {
