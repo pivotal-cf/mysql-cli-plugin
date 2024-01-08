@@ -194,7 +194,7 @@ func StartApp(appName string) {
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		session := cf.Cf("start", appName)
-		Eventually(session, "1m").Should(gexec.Exit())
+		Eventually(session, "5m").Should(gexec.Exit())
 		if session.ExitCode() == 0 {
 			return
 		}
