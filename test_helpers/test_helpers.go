@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -189,7 +190,17 @@ func PushApp(appName, appCodePath string) {
 }
 
 func StartApp(appName string) {
-	ExecuteCfCmd("start", appName)
+	const maxAttempts = 5
+
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		session := cf.Cf("start", appName)
+		Eventually(session, "1m").Should(gexec.Exit())
+		if session.ExitCode() == 0 {
+			return
+		}
+	}
+
+	Fail("failed to start app '" + appName + "' after " + strconv.Itoa(maxAttempts) + " attempts.")
 }
 
 func DeleteApp(appName string) {
