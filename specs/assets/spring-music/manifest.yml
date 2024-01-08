@@ -1,7 +1,10 @@
 ---
 applications:
-- memory: 512M
-  disk: 256M
-  path: build/libs/spring-music.jar
+- name: spring-music
+  memory: 1G
+  #random-route: true
+  path: build/libs/spring-music-1.0.jar
   env:
-    JBP_CONFIG_OPEN_JDK_JRE: '{ memory_calculator: { stack_threads: 50 } }'
+    JBP_CONFIG_SPRING_AUTO_RECONFIGURATION: '{enabled: false}'
+    SPRING_PROFILES_ACTIVE: http2
+    JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 17.+ } }'
