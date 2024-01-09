@@ -1,98 +1,100 @@
 package org.cloudfoundry.samples.music.config;
 
-import io.pivotal.cfenv.core.CfEnv;
-import io.pivotal.cfenv.core.CfService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
+import org.springframework.cloud.Cloud;
+import org.springframework.cloud.CloudException;
+import org.springframework.cloud.CloudFactory;
+import org.springframework.cloud.service.ServiceInfo;
+import org.springframework.cloud.service.common.MysqlServiceInfo;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.MapPropertySource;
-import org.springframework.core.env.Profiles;
-import org.springframework.core.env.PropertySource;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.*;
 
 public class SpringApplicationContextInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
     private static final Log logger = LogFactory.getLog(SpringApplicationContextInitializer.class);
 
-    private static final Map<String, List<String>> profileNameToServiceTags = new HashMap<>();
+    private static final Map<Class<? extends ServiceInfo>, String> serviceTypeToProfileName = new HashMap<>();
+    private static final List<String> validLocalProfiles = Arrays.asList("mysql");
+
+    public static final String IN_MEMORY_PROFILE = "in-memory";
+
     static {
-        profileNameToServiceTags.put("mongodb", Collections.singletonList("mongodb"));
-        profileNameToServiceTags.put("postgres", Collections.singletonList("postgres"));
-        profileNameToServiceTags.put("mysql", Collections.singletonList("mysql"));
-        profileNameToServiceTags.put("redis", Collections.singletonList("redis"));
-        profileNameToServiceTags.put("oracle", Collections.singletonList("oracle"));
-        profileNameToServiceTags.put("sqlserver", Collections.singletonList("sqlserver"));
+        serviceTypeToProfileName.put(MysqlServiceInfo.class, "mysql");
     }
 
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
+        Cloud cloud = getCloud();
+
         ConfigurableEnvironment appEnvironment = applicationContext.getEnvironment();
 
-        validateActiveProfiles(appEnvironment);
+        String[] persistenceProfiles = getCloudProfile(cloud);
+        if (persistenceProfiles == null) {
+            persistenceProfiles = getActiveProfile(appEnvironment);
+        }
+        if (persistenceProfiles == null) {
+            persistenceProfiles = new String[] { IN_MEMORY_PROFILE };
+        }
 
-        addCloudProfile(appEnvironment);
-
-        excludeAutoConfiguration(appEnvironment);
+        for (String persistenceProfile : persistenceProfiles) {
+            appEnvironment.addActiveProfile(persistenceProfile);
+        }
     }
 
-    private void addCloudProfile(ConfigurableEnvironment appEnvironment) {
-        CfEnv cfEnv = new CfEnv();
+    public String[] getCloudProfile(Cloud cloud) {
+        if (cloud == null) {
+            return null;
+        }
 
         List<String> profiles = new ArrayList<>();
 
-        List<CfService> services = cfEnv.findAllServices();
-        List<String> serviceNames = services.stream()
-                .map(CfService::getName)
-                .collect(Collectors.toList());
+        List<ServiceInfo> serviceInfos = cloud.getServiceInfos();
 
-        logger.info("Found services " + StringUtils.collectionToCommaDelimitedString(serviceNames));
+        logger.info("Found serviceInfos: " + StringUtils.collectionToCommaDelimitedString(serviceInfos));
 
-        for (CfService service : services) {
-            for (String profileKey : profileNameToServiceTags.keySet()) {
-                if (service.getTags().containsAll(profileNameToServiceTags.get(profileKey))) {
-                    profiles.add(profileKey);
-                }
+        for (ServiceInfo serviceInfo : serviceInfos) {
+            if (serviceTypeToProfileName.containsKey(serviceInfo.getClass())) {
+                profiles.add(serviceTypeToProfileName.get(serviceInfo.getClass()));
             }
         }
 
         if (profiles.size() > 1) {
             throw new IllegalStateException(
                     "Only one service of the following types may be bound to this application: " +
-                            profileNameToServiceTags.values().toString() + ". " +
+                            serviceTypeToProfileName.values().toString() + ". " +
                             "These services are bound to the application: [" +
                             StringUtils.collectionToCommaDelimitedString(profiles) + "]");
         }
 
         if (profiles.size() > 0) {
-            logger.info("Setting service profile " + profiles.get(0));
-            appEnvironment.addActiveProfile(profiles.get(0));
+            return createProfileNames(profiles.get(0), "cloud");
+        }
+
+        return null;
+    }
+
+    private Cloud getCloud() {
+        try {
+            CloudFactory cloudFactory = new CloudFactory();
+            return cloudFactory.getCloud();
+        } catch (CloudException ce) {
+            return null;
         }
     }
 
-    private void validateActiveProfiles(ConfigurableEnvironment appEnvironment) {
-        Set<String> validLocalProfiles = profileNameToServiceTags.keySet();
+    private String[] getActiveProfile(ConfigurableEnvironment appEnvironment) {
+        List<String> serviceProfiles = new ArrayList<>();
 
-        List<String> serviceProfiles = Stream.of(appEnvironment.getActiveProfiles())
-                .filter(validLocalProfiles::contains)
-                .collect(Collectors.toList());
+        for (String profile : appEnvironment.getActiveProfiles()) {
+            if (validLocalProfiles.contains(profile)) {
+                serviceProfiles.add(profile);
+            }
+        }
 
         if (serviceProfiles.size() > 1) {
             throw new IllegalStateException("Only one active Spring profile may be set among the following: " +
@@ -100,45 +102,17 @@ public class SpringApplicationContextInitializer implements ApplicationContextIn
                     "These profiles are active: [" +
                     StringUtils.collectionToCommaDelimitedString(serviceProfiles) + "]");
         }
-    }
 
-    private void excludeAutoConfiguration(ConfigurableEnvironment environment) {
-        List<String> exclude = new ArrayList<>();
-        if (environment.acceptsProfiles(Profiles.of("redis"))) {
-            excludeDataSourceAutoConfiguration(exclude);
-            excludeMongoAutoConfiguration(exclude);
-        } else if (environment.acceptsProfiles(Profiles.of("mongodb"))) {
-            excludeDataSourceAutoConfiguration(exclude);
-            excludeRedisAutoConfiguration(exclude);
-        } else {
-            excludeMongoAutoConfiguration(exclude);
-            excludeRedisAutoConfiguration(exclude);
+        if (serviceProfiles.size() > 0) {
+            return createProfileNames(serviceProfiles.get(0), "local");
         }
 
-        Map<String, Object> properties = Collections.singletonMap("spring.autoconfigure.exclude",
-                StringUtils.collectionToCommaDelimitedString(exclude));
-
-        PropertySource<?> propertySource = new MapPropertySource("springMusicAutoConfig", properties);
-
-        environment.getPropertySources().addFirst(propertySource);
+        return null;
     }
 
-    private void excludeDataSourceAutoConfiguration(List<String> exclude) {
-        exclude.add(DataSourceAutoConfiguration.class.getName());
-    }
-
-    private void excludeMongoAutoConfiguration(List<String> exclude) {
-        exclude.addAll(Arrays.asList(
-                MongoAutoConfiguration.class.getName(),
-                MongoDataAutoConfiguration.class.getName(),
-                MongoRepositoriesAutoConfiguration.class.getName()
-        ));
-    }
-
-    private void excludeRedisAutoConfiguration(List<String> exclude) {
-        exclude.addAll(Arrays.asList(
-                RedisAutoConfiguration.class.getName(),
-                RedisRepositoriesAutoConfiguration.class.getName()
-        ));
+    private String[] createProfileNames(String baseName, String suffix) {
+        String[] profileNames = {baseName, baseName + "-" + suffix};
+        logger.info("Setting profile names: " + StringUtils.arrayToCommaDelimitedString(profileNames));
+        return profileNames;
     }
 }
