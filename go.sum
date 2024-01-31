@@ -9,8 +9,8 @@ github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/cloudfoundry-community/go-cfclient/v2 v2.0.0 h1:Dl5wxDBboMYkLpq++vJLIIiQw3hdKwEIsivKLfx58/g=
 github.com/cloudfoundry-community/go-cfclient/v2 v2.0.0/go.mod h1:hB1MLDqhbVF09FbBLrU430kDZZPAO9lVck00xhljoqU=
-github.com/cloudfoundry/cf-test-helpers/v2 v2.8.0 h1:aEuDiAhQdwwY2tu3ivfm4KHQBG0Kzp2m+qCNjaWDB+0=
-github.com/cloudfoundry/cf-test-helpers/v2 v2.8.0/go.mod h1:wrmHE+cHE6J72feYGE98GmsyLkYEUbK9OOkD96XK7FA=
+github.com/cloudfoundry/cf-test-helpers/v2 v2.9.0 h1:TxmjLDCIopHVo8mhp7WrwKvgnsescsDKV/R5ATr8jgI=
+github.com/cloudfoundry/cf-test-helpers/v2 v2.9.0/go.mod h1:fESCQ1sbdTejVXy9l10zh15R+BhrslRbumYT6F+VtxI=
 github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0 h1:sDMmm+q/3+BukdIpxwO365v/Rbspp2Nt5XntgQRXq8Q=
 github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0/go.mod h1:4Zcjuz89kmFXt9morQgcfYZAYZ5n8WHjt81YYWIwtTM=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
