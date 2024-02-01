@@ -15,3 +15,5 @@ ruby '~> 3.1.0'
 gem 'sinatra'
 gem 'mysql2'
 gem 'puma'
+
+gem "rackup", "~> 2.1"
