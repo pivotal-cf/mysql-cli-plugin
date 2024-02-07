@@ -26,7 +26,7 @@ import (
 
 var cfHome, cfConfig, cfPluginsHome, cfReplicationHome string
 
-func TestFindBindings(t *testing.T) {
+func TestMultiSite(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Multisite Suite")
 }
