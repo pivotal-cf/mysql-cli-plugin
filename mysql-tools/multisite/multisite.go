@@ -271,34 +271,6 @@ func executeCommand(cfHome, command string, args ...string) (string, error) {
 	return string(comOutput), nil
 }
 
-func executeWithPoll(pollMinutes, pollIntervalSecs int, targetOutput string,
-	cfHome, command string, args ...string) error {
-	var (
-		commandOutput string
-		targetFound   bool
-		err           error
-	)
-
-	pollEndTime := time.Now().Add(time.Duration(pollMinutes) * time.Minute)
-
-	for startTime := time.Now(); startTime.Compare(pollEndTime) > 0 && !targetFound && err == nil; startTime = time.Now() {
-		// Run command & look for targeted output
-		commandOutput, err = executeCommand(cfHome, command, args...)
-		if err != nil {
-			continue
-		}
-		for targetFound = strings.Contains(commandOutput, targetOutput); targetFound; {
-			continue
-		}
-
-		// Sleep for remaining polling interval
-		sleepTime := time.Duration(pollIntervalSecs)*time.Second - time.Now().Sub(startTime)*time.Second
-		time.Sleep(sleepTime)
-	}
-
-	return err
-}
-
 func extractKeyContents(keyOutput string) (string, error) {
 	outputLines := strings.SplitN(keyOutput, "\n", 3)
 	serviceKeyJson := outputLines[len(outputLines)-1]
