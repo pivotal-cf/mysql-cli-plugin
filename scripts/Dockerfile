@@ -19,7 +19,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
 
 ARG BOOST_VERSION=1_59_0
 ARG BOOST_DIGEST=47f11c8844e579d02691a607fbd32540104a9ac7a2534a8ddaef50daf502baac
-RUN curl -Ls "https://jenkins.percona.com/downloads/boost/boost_${BOOST_VERSION}.tar.gz" >/boost.tgz \
+RUN curl -Ls "http://sourceforge.net/projects/boost/files/boost/1.59.0/boost_${BOOST_VERSION}.tar.gz" >/boost.tgz \
   && echo "${BOOST_DIGEST}  /boost.tgz" \
   | sha256sum -c - \
   && tar -C /usr/local/src -xf /boost.tgz \
