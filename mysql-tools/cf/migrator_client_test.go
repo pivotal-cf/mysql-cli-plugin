@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf/cffakes"
 )
@@ -382,7 +383,7 @@ var _ = Describe("MigratorClient", func() {
 	Context("GetAppByName", func() {
 		It("returns an application by its name", func() {
 			fakeCFPluginAPI.GetCurrentSpaceReturns(plugin_models.Space{
-				plugin_models.SpaceFields{
+				SpaceFields: plugin_models.SpaceFields{
 					Guid: "some-guid",
 					Name: "some-name",
 				},
@@ -676,7 +677,7 @@ var _ = Describe("MigratorClient", func() {
 	Context("RunTask", func() {
 		BeforeEach(func() {
 			fakeCFPluginAPI.GetCurrentSpaceReturns(plugin_models.Space{
-				plugin_models.SpaceFields{
+				SpaceFields: plugin_models.SpaceFields{
 					Guid: "some-guid",
 					Name: "some-name",
 				},
