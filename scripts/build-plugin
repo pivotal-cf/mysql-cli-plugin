@@ -18,6 +18,7 @@ topdir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 : "${VERSION:=0.0.1}"
 : "${DOCKER_DEFAULT_PLATFORM:=linux/amd64}"
+: "${GIT_SHA:=$(git -C "$topdir" rev-parse --short HEAD)}"
 
 export DOCKER_DEFAULT_PLATFORM
 
@@ -43,7 +44,9 @@ run docker run --rm \
 echo >&2 "Building $PWD/mysql-cli-plugin"
 run go build \
   -tags forceposix \
-  -ldflags="-s -w -X 'github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin.version=${VERSION}'" \
+  -ldflags="-s -w
+            -X 'github.com/pivotal-cf/mysql-cli-plugin/version.Version=${VERSION}'
+            -X 'github.com/pivotal-cf/mysql-cli-plugin/version.GitSHA=${GIT_SHA}'" \
   -o mysql-cli-plugin \
   .
 
