@@ -135,6 +135,35 @@ var _ = Describe("Multisite Setup Integration Tests", Ordered, Label("multisite"
 			Expect(isFollowerMetric).To(Equal("0"))
 		})
 	})
+
+	It("can switch the replication roles between two foundations", func() {
+		session := cf.Cf("mysql-tools", "switchover",
+			fmt.Sprintf("--primary-target=%s", leaderFoundationHandle),
+			fmt.Sprintf("--primary-instance=%s", leaderInstanceName),
+			fmt.Sprintf("--secondary-target=%s", followerFoundationHandle),
+			fmt.Sprintf("--secondary-instance=%s", followerInstanceName),
+			"--force",
+		)
+
+		Eventually(session.Out, "1h", "10s").Should(
+			gbytes.Say(`Successfully switched replication roles`))
+
+		Eventually(session, "10m", "10s").Should(gexec.Exit(0))
+
+		// Validate the old primary is configured as a follower
+		workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
+			followerGUID := test_helpers.InstanceUUID(leaderInstanceName)
+			isFollowerMetric := getMetricValue(followerGUID, "_p_mysql_follower_is_follower")
+			Expect(isFollowerMetric).To(Equal("1"))
+		})
+
+		// Validate the new primary is not configured as a follower
+		workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
+			leaderGUID := test_helpers.InstanceUUID(followerInstanceName)
+			isFollowerMetric := getMetricValue(leaderGUID, "_p_mysql_follower_is_follower")
+			Expect(isFollowerMetric).To(Equal("0"))
+		})
+	})
 })
 
 func getMetricValue(instanceGuid, metric string) string {

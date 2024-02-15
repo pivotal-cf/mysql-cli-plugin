@@ -90,8 +90,8 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		c.err = commands.RemoveTarget(options, c.MultisiteConfig)
 	case "setup-replication":
 		c.err = commands.SetupReplication(options, c.MultisiteConfig)
-	case "initiate-switchover":
-		c.err = commands.SwitchoverReplication(options, c.MultisiteConfig)
+	case "switchover":
+		c.err = commands.SwitchoverReplication(options, c.MultisiteConfig, os.Stdout, os.Stdin)
 	}
 }
 
