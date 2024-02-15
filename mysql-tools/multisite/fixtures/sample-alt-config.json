@@ -1,0 +1,43 @@
+{
+  "AccessToken": "bearer ALT-SECRET",
+  "APIVersion": "3.154.0",
+  "AsyncTimeout": 0,
+  "AuthorizationEndpoint": "https://login.sample.alt.foundation.tld",
+  "CFOnK8s": {
+    "Enabled": false,
+    "AuthInfo": ""
+  },
+  "ColorEnabled": "",
+  "ConfigVersion": 4,
+  "DopplerEndPoint": "wss://doppler.sample.alt.foundation.tld:443",
+  "Locale": "",
+  "LogCacheEndPoint": "https://log-cache.sample.alt.foundation.tld",
+  "MinCLIVersion": "",
+  "MinRecommendedCLIVersion": "",
+  "NetworkPolicyV1Endpoint": "https://api.sample.alt.foundation.tld/networking/v1/external",
+  "OrganizationFields": {
+    "GUID": "6f2f70bd-1085-42bf-b46c-8b838abdbf40",
+    "Name": "alt-sample-org"
+  },
+  "PluginRepos": [
+    {
+      "Name": "CF-Community",
+      "URL": "https://plugins.cloudfoundry.org"
+    }
+  ],
+  "RefreshToken": "SECRET",
+  "RoutingAPIEndpoint": "https://api.sample.alt.foundation.tld/routing",
+  "SpaceFields": {
+    "GUID": "22c8c12b-30d9-4892-8db7-27f485961097",
+    "Name": "alt-sample-space",
+    "AllowSSH": false
+  },
+  "SSHOAuthClient": "ssh-proxy",
+  "SSLDisabled": false,
+  "Target": "https://api.sample.alt.foundation.tld",
+  "Trace": "",
+  "UaaEndpoint": "https://uaa.sample.alt.foundation.tld",
+  "UAAGrantType": "",
+  "UAAOAuthClient": "cf",
+  "UAAOAuthClientSecret": ""
+}
