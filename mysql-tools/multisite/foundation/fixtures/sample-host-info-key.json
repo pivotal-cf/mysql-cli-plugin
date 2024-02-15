@@ -1,0 +1,15 @@
+Some cf output...
+
+{
+  "credentials": {
+    "replication": {
+      "peer-info": {
+        "hostname": "4b9b01ba-47a5-4bf3-98ee-10533af31959.mysql.service.internal",
+        "ip": "10.0.16.11",
+        "system_domain": "bali.dedicated-mysql.cf-app.com",
+        "uuid": "4b9b01ba-47a5-4bf3-98ee-10533af31959"
+      },
+      "role": "leader"
+    }
+  }
+}
