@@ -19,6 +19,10 @@ var _ = Describe("Version", func() {
 		defer wr.Close()
 		defer rd.Close()
 
+		tmp := os.Stdout
+		defer func() {
+			os.Stdout = tmp
+		}()
 		os.Stdout = wr
 
 		err = commands.Version()
