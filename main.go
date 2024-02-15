@@ -19,13 +19,22 @@ import (
 	cliplugin "code.cloudfoundry.org/cli/plugin"
 
 	"github.com/pivotal-cf/mysql-cli-plugin/app"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/multisite"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin"
 )
 
 func main() {
+	multisiteCfg, err := multisite.NewConfig()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
 	mysqlPlugin := &plugin.MySQLPlugin{
 		MigrationAppExtractor: app.NewExtractor(),
+		MultisiteConfig:       multisiteCfg,
 	}
+
 	cliplugin.Start(mysqlPlugin)
 	if err := mysqlPlugin.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())

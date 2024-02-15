@@ -16,23 +16,23 @@ const (
 	RemoveTargetUsage = `Usage: cf mysql-tools remove-target <target-name>`
 )
 
-//counterfeiter:generate -o fakes/fake_multisite.go . MultiSite
-type MultiSite interface {
-	ListConfigs() ([]*multisite.ConfigCoreSubset, error)
-	SaveConfig(cfConfig, targetName string) (*multisite.ConfigCoreSubset, error)
+//counterfeiter:generate -o fakes/fake_multisite_config.go . MultisiteConfig
+type MultisiteConfig interface {
+	ListConfigs() ([]multisite.Target, error)
+	SaveConfig(configPath, targetName string) (multisite.Target, error)
 	RemoveConfig(targetName string) error
-	SetupReplication(primaryFoundation, primaryInstance, secondaryFoundation, secondaryInstance string) error
+	ConfigDir(targetName string) (path string)
 }
 
-func ListTargets(ms MultiSite) error {
+func ListTargets(cfg MultisiteConfig) error {
 
-	configs, err := ms.ListConfigs()
+	configs, err := cfg.ListConfigs()
 	fmt.Println("Targets:")
 	for _, config := range configs {
-		fmt.Printf("Target: %s\n", config.Name)
-		fmt.Printf("   API: %s\n", config.Target)
-		fmt.Printf("   Org: %s\n", config.OrganizationFields.Name)
-		fmt.Printf(" Space: %s\n", config.SpaceFields.Name)
+		fmt.Printf(" Name: %s\n", config.Name)
+		fmt.Printf("  API: %s\n", config.API)
+		fmt.Printf("  Org: %s\n", config.Organization)
+		fmt.Printf("Space: %s\n", config.Space)
 		fmt.Println()
 	}
 	if err != nil {
@@ -41,7 +41,7 @@ func ListTargets(ms MultiSite) error {
 	return nil
 }
 
-func SaveTarget(args []string, ms MultiSite) error {
+func SaveTarget(args []string, cfg MultisiteConfig) error {
 	var opts struct {
 		Args struct {
 			TargetName string `positional-arg-name:"<target-name>"`
@@ -68,21 +68,21 @@ func SaveTarget(args []string, ms MultiSite) error {
 		return fmt.Errorf("error saving target %s: %w", targetConfigName, err)
 	}
 
-	result, err := ms.SaveConfig(cfConfigFilename, targetConfigName)
+	result, err := cfg.SaveConfig(cfConfigFilename, targetConfigName)
 	if err != nil {
 		return fmt.Errorf("error saving target %s: %w", targetConfigName, err)
 	}
 
 	fmt.Println("Success")
-	fmt.Printf("Target: %s\n", targetConfigName)
-	fmt.Printf("   API: %s\n", result.Target)
-	fmt.Printf("   Org: %s\n", result.OrganizationFields.Name)
-	fmt.Printf(" Space: %s\n", result.SpaceFields.Name)
+	fmt.Printf(" Name: %s\n", targetConfigName)
+	fmt.Printf("  API: %s\n", result.API)
+	fmt.Printf("  Org: %s\n", result.Organization)
+	fmt.Printf("Space: %s\n", result.Space)
 
 	return nil
 }
 
-func RemoveTarget(args []string, ms MultiSite) error {
+func RemoveTarget(args []string, cfg MultisiteConfig) error {
 	var opts struct {
 		Args struct {
 			TargetName string `positional-arg-name:"<target-name>"`
@@ -102,7 +102,7 @@ func RemoveTarget(args []string, ms MultiSite) error {
 	}
 
 	removeConfigName := opts.Args.TargetName
-	err = ms.RemoveConfig(removeConfigName)
+	err = cfg.RemoveConfig(removeConfigName)
 
 	if err != nil {
 		return fmt.Errorf("error trying to remove the target config: %v", err)

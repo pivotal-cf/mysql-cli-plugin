@@ -15,16 +15,13 @@ package plugin
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"code.cloudfoundry.org/cli/cf/configuration/confighelpers"
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/blang/semver/v4"
 
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/cf"
 	findbindings "github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/find-bindings"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/migrate"
-	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/multisite"
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/plugin/commands"
 	"github.com/pivotal-cf/mysql-cli-plugin/version"
 )
@@ -49,6 +46,7 @@ type MigrationAppExtractor interface {
 
 type MySQLPlugin struct {
 	MigrationAppExtractor MigrationAppExtractor
+	MultisiteConfig       commands.MultisiteConfig
 	err                   error
 }
 
@@ -59,14 +57,6 @@ func (c *MySQLPlugin) Err() error {
 func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 	if args[0] == "CLI-MESSAGE-UNINSTALL" {
 		return
-	}
-
-	replicationHome := filepath.Join(confighelpers.PluginRepoDir(), ".set-replication")
-	if _, err := os.Stat(replicationHome); os.IsNotExist(err) {
-		err = os.Mkdir(replicationHome, 0700)
-		if err != nil {
-			fmt.Printf("error trying to create %s to store the saved configurations: %v\n", replicationHome, err)
-		}
 	}
 
 	if len(args) < 2 {
@@ -93,13 +83,15 @@ func (c *MySQLPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 			migrate.NewMigrator(cf.NewMigratorClient(cliConnection), c.MigrationAppExtractor),
 		)
 	case "save-target":
-		c.err = commands.SaveTarget(options, multisite.NewMultiSite(replicationHome))
+		c.err = commands.SaveTarget(options, c.MultisiteConfig)
 	case "list-targets":
-		c.err = commands.ListTargets(multisite.NewMultiSite(replicationHome))
+		c.err = commands.ListTargets(c.MultisiteConfig)
 	case "remove-target":
-		c.err = commands.RemoveTarget(options, multisite.NewMultiSite(replicationHome))
+		c.err = commands.RemoveTarget(options, c.MultisiteConfig)
 	case "setup-replication":
-		c.err = commands.SetupReplication(options, multisite.NewMultiSite(replicationHome))
+		c.err = commands.SetupReplication(options, c.MultisiteConfig)
+	case "initiate-switchover":
+		c.err = commands.SwitchoverReplication(options, c.MultisiteConfig)
 	}
 }
 

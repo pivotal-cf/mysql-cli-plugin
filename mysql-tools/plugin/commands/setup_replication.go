@@ -2,16 +2,21 @@ package commands
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
+
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/multisite"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/multisite/foundation"
 )
 
 const (
 	SetupReplicationUsage = `cf mysql-tools setup-replication [ --primary-target | -P ] [ --primary-instance | -p ] [ --secondary-target | -S ] [ --secondary-instance | -s ]`
 )
 
-func SetupReplication(args []string, ms MultiSite) error {
+func SetupReplication(args []string, cfg MultisiteConfig) error {
 	var opts struct {
 		PrimaryTarget     string `short:"P" long:"primary-target" required:"true"`
 		PrimaryInstance   string `short:"p" long:"primary-instance" required:"true"`
@@ -29,14 +34,13 @@ func SetupReplication(args []string, ms MultiSite) error {
 		return fmt.Errorf("Usage: %s\n\n%s", SetupReplicationUsage, msg)
 	}
 
-	primaryFoundation := opts.PrimaryTarget
-	primaryInstance := opts.PrimaryInstance
-	secondaryFoundation := opts.SecondaryTarget
-	secondaryInstance := opts.SecondaryInstance
+	logger := log.New(os.Stdout, "", log.LstdFlags)
+	primary := foundation.New(opts.PrimaryTarget, cfg.ConfigDir(opts.PrimaryTarget))
+	secondary := foundation.New(opts.SecondaryTarget, cfg.ConfigDir(opts.SecondaryTarget))
+	workflow := multisite.NewWorkflow(primary, secondary, logger)
 
-	err = ms.SetupReplication(primaryFoundation, primaryInstance, secondaryFoundation, secondaryInstance)
-	if err != nil {
-		return fmt.Errorf("replication setup error: %w", err)
+	if err = workflow.SetupReplication(opts.PrimaryInstance, opts.SecondaryInstance); err != nil {
+		return err
 	}
 
 	return nil

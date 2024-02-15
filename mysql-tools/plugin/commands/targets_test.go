@@ -23,30 +23,22 @@ var _ = Describe("Environment Targeting Commands", func() {
 		savedTarget   = "SavedTarget"
 	)
 
-	var fakeMultiSite *fakes.FakeMultiSite
+	var fakeMultiSiteCfg *fakes.FakeMultisiteConfig
 
-	var returnedConfigSummary = multisite.ConfigCoreSubset{
-		OrganizationFields: struct {
-			Name string
-		}{
-			Name: savedOrg,
-		},
-		SpaceFields: struct {
-			Name string
-		}{
-			Name: savedSpace,
-		},
-		Target: savedEndpoint,
-		Name:   savedTarget,
+	var exampleTarget = multisite.Target{
+		Name:         savedTarget,
+		Organization: savedOrg,
+		Space:        savedSpace,
+		API:          savedEndpoint,
 	}
 
 	BeforeEach(func() {
-		fakeMultiSite = new(fakes.FakeMultiSite)
+		fakeMultiSiteCfg = new(fakes.FakeMultisiteConfig)
 	})
 
 	Context("ListTargets", func() {
 		It("Prints a summary when successful", func() {
-			fakeMultiSite.ListConfigsReturns([]*multisite.ConfigCoreSubset{&returnedConfigSummary}, nil)
+			fakeMultiSiteCfg.ListConfigsReturns([]multisite.Target{exampleTarget}, nil)
 
 			r, w, _ := os.Pipe()
 			tmp := os.Stdout
@@ -55,8 +47,8 @@ var _ = Describe("Environment Targeting Commands", func() {
 			}()
 
 			os.Stdout = w
-			err := commands.ListTargets(fakeMultiSite)
-			w.Close()
+			err := commands.ListTargets(fakeMultiSiteCfg)
+			_ = w.Close()
 			Expect(err).NotTo(HaveOccurred())
 
 			By("showing a summary of the saved config")
@@ -66,10 +58,10 @@ var _ = Describe("Environment Targeting Commands", func() {
 			Expect(string(stdout)).To(ContainSubstring(savedOrg))
 			Expect(string(stdout)).To(ContainSubstring(savedOrg))
 			Expect(string(stdout)).To(ContainSubstring(savedTarget))
-			Expect(fakeMultiSite.ListConfigsCallCount()).To(Equal(1))
+			Expect(fakeMultiSiteCfg.ListConfigsCallCount()).To(Equal(1))
 		})
 		It("Prints a summary when there is an error", func() {
-			fakeMultiSite.ListConfigsReturns([]*multisite.ConfigCoreSubset{&returnedConfigSummary}, errors.New("some-error"))
+			fakeMultiSiteCfg.ListConfigsReturns([]multisite.Target{exampleTarget}, errors.New("some-error"))
 
 			r, w, _ := os.Pipe()
 			tmp := os.Stdout
@@ -78,8 +70,8 @@ var _ = Describe("Environment Targeting Commands", func() {
 			}()
 
 			os.Stdout = w
-			err := commands.ListTargets(fakeMultiSite)
-			w.Close()
+			err := commands.ListTargets(fakeMultiSiteCfg)
+			_ = w.Close()
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError("error listing multisite targets: some-error"))
 
@@ -90,10 +82,10 @@ var _ = Describe("Environment Targeting Commands", func() {
 			Expect(string(stdout)).To(ContainSubstring(savedOrg))
 			Expect(string(stdout)).To(ContainSubstring(savedOrg))
 			Expect(string(stdout)).To(ContainSubstring(savedTarget))
-			Expect(fakeMultiSite.ListConfigsCallCount()).To(Equal(1))
+			Expect(fakeMultiSiteCfg.ListConfigsCallCount()).To(Equal(1))
 		})
 		It("prints nothing when there are no configs", func() {
-			fakeMultiSite.ListConfigsReturns([]*multisite.ConfigCoreSubset{}, nil)
+			fakeMultiSiteCfg.ListConfigsReturns(nil, nil)
 
 			r, w, _ := os.Pipe()
 			tmp := os.Stdout
@@ -102,21 +94,20 @@ var _ = Describe("Environment Targeting Commands", func() {
 			}()
 
 			os.Stdout = w
-			err := commands.ListTargets(fakeMultiSite)
-			w.Close()
+			err := commands.ListTargets(fakeMultiSiteCfg)
+			_ = w.Close()
 			Expect(err).NotTo(HaveOccurred())
 
 			By("showing a summary of the saved config")
 			stdout, _ := io.ReadAll(r)
 			Expect(string(stdout)).To(ContainSubstring("Targets:"))
-			Expect(fakeMultiSite.ListConfigsCallCount()).To(Equal(1))
-
+			Expect(fakeMultiSiteCfg.ListConfigsCallCount()).To(Equal(1))
 		})
 	})
 
 	Context("SaveTarget", func() {
 		BeforeEach(func() {
-			fakeMultiSite.SaveConfigReturns(&returnedConfigSummary, nil)
+			fakeMultiSiteCfg.SaveConfigReturns(exampleTarget, nil)
 		})
 
 		When("CF_HOME is set to a directory", func() {
@@ -167,12 +158,12 @@ var _ = Describe("Environment Targeting Commands", func() {
 					}()
 
 					os.Stdout = w
-					err = commands.SaveTarget(args, fakeMultiSite)
+					err = commands.SaveTarget(args, fakeMultiSiteCfg)
 					_ = w.Close()
 					Expect(err).To(Not(HaveOccurred()))
 
 					By("constructing the path to the saved cf config file")
-					inputConfigFile, target := fakeMultiSite.SaveConfigArgsForCall(0)
+					inputConfigFile, target := fakeMultiSiteCfg.SaveConfigArgsForCall(0)
 					Expect(inputConfigFile).To(Equal(filepath.Join(testCFHome, ".cf", "config.json")))
 					Expect(target).To(Equal("targetName"))
 
@@ -184,10 +175,10 @@ var _ = Describe("Environment Targeting Commands", func() {
 					Expect(string(stdout)).To(ContainSubstring(savedSpace))
 				})
 				It("surfaces any underlying multisite errors", func() {
-					fakeMultiSite.SaveConfigReturns(nil, errors.New("low-level save error"))
+					fakeMultiSiteCfg.SaveConfigReturns(multisite.Target{}, errors.New("low-level save error"))
 					args := []string{"targetName"}
 
-					err := commands.SaveTarget(args, fakeMultiSite)
+					err := commands.SaveTarget(args, fakeMultiSiteCfg)
 					Expect(err).To(MatchError("error saving target targetName: low-level save error"))
 				})
 			})
@@ -218,29 +209,29 @@ var _ = Describe("Environment Targeting Commands", func() {
 			It("errors without ever calling Multisite", func() {
 				args := []string{"targetName"}
 
-				err := commands.SaveTarget(args, fakeMultiSite)
+				err := commands.SaveTarget(args, fakeMultiSiteCfg)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(ContainSubstring("no such file or directory")))
-				Expect(fakeMultiSite.SaveConfigCallCount()).To(Equal(0))
+				Expect(fakeMultiSiteCfg.SaveConfigCallCount()).To(Equal(0))
 			})
 		})
 		// When("no CF_HOME is set"), plugin uses default ${HOME}/.cf
 
 		It("errors if not enough args are passed", func() {
 			var args []string
-			err := commands.SaveTarget(args, fakeMultiSite)
+			err := commands.SaveTarget(args, fakeMultiSiteCfg)
 			Expect(err).To(MatchError("Usage: " + commands.SaveTargetUsage + "\n\nthe required argument `<target-name>` was not provided"))
 		})
 
 		It("errors if too many args are passed", func() {
 			args := []string{"targetName", "extra-arg"}
-			err := commands.SaveTarget(args, fakeMultiSite)
+			err := commands.SaveTarget(args, fakeMultiSiteCfg)
 			Expect(err).To(MatchError("Usage: " + commands.SaveTargetUsage + "\n\nunexpected arguments: extra-arg"))
 		})
 
 		It("errors if an invalid flag is passed", func() {
 			args := []string{"targetName", "--invalid-flag"}
-			err := commands.SaveTarget(args, fakeMultiSite)
+			err := commands.SaveTarget(args, fakeMultiSiteCfg)
 			Expect(err).To(MatchError("Usage: " + commands.SaveTargetUsage + "\n\nunknown flag `invalid-flag'"))
 		})
 	})
@@ -248,36 +239,36 @@ var _ = Describe("Environment Targeting Commands", func() {
 	Context("RemoveTarget", func() {
 		It("able to remove target config without an error", func() {
 			args := []string{"targetName"}
-			err := commands.RemoveTarget(args, fakeMultiSite)
+			err := commands.RemoveTarget(args, fakeMultiSiteCfg)
 			Expect(err).To(Not(HaveOccurred()))
-			Expect(fakeMultiSite.RemoveConfigCallCount()).To(Equal(1))
+			Expect(fakeMultiSiteCfg.RemoveConfigCallCount()).To(Equal(1))
 
-			target := fakeMultiSite.RemoveConfigArgsForCall(0)
+			target := fakeMultiSiteCfg.RemoveConfigArgsForCall(0)
 			Expect(target).To(Equal("targetName"))
 		})
 
 		It("errors if the remove target fails", func() {
-			fakeMultiSite.RemoveConfigReturns(errors.New("some-error"))
+			fakeMultiSiteCfg.RemoveConfigReturns(errors.New("some-error"))
 			args := []string{"targetName"}
-			err := commands.RemoveTarget(args, fakeMultiSite)
+			err := commands.RemoveTarget(args, fakeMultiSiteCfg)
 			Expect(err).To(MatchError("error trying to remove the target config: some-error"))
 		})
 
 		It("errors if not enough args are passed", func() {
-			args := []string{}
-			err := commands.RemoveTarget(args, fakeMultiSite)
+			var args []string
+			err := commands.RemoveTarget(args, fakeMultiSiteCfg)
 			Expect(err).To(MatchError("Usage: " + commands.RemoveTargetUsage + "\n\nthe required argument `<target-name>` was not provided"))
 		})
 
 		It("errors if too many args are passed", func() {
 			args := []string{"targetName", "extra-arg"}
-			err := commands.RemoveTarget(args, fakeMultiSite)
+			err := commands.RemoveTarget(args, fakeMultiSiteCfg)
 			Expect(err).To(MatchError("Usage: " + commands.RemoveTargetUsage + "\n\nunexpected arguments: extra-arg"))
 		})
 
 		It("errors if an invalid flag is passed", func() {
 			args := []string{"targetName", "--invalid-flag"}
-			err := commands.RemoveTarget(args, fakeMultiSite)
+			err := commands.RemoveTarget(args, fakeMultiSiteCfg)
 			Expect(err).To(MatchError("Usage: " + commands.RemoveTargetUsage + "\n\nunknown flag `invalid-flag'"))
 		})
 
