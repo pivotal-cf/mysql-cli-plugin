@@ -3,12 +3,9 @@ package contract_tests
 import (
 	"encoding/json"
 	"os"
-	"testing"
 
 	"github.com/cloudfoundry/cf-test-helpers/v2/cf"
-	"github.com/cloudfoundry/cf-test-helpers/v2/config"
 	"github.com/cloudfoundry/cf-test-helpers/v2/generator"
-	"github.com/cloudfoundry/cf-test-helpers/v2/workflowhelpers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -17,28 +14,6 @@ import (
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/multisite/foundation"
 	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
-
-func TestFoundation(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Foundation Test Suite")
-}
-
-var (
-	Config    *config.Config
-	TestSetup *workflowhelpers.ReproducibleTestSuiteSetup
-)
-
-var _ = BeforeSuite(func() {
-	Config = config.LoadConfig()
-	TestSetup = workflowhelpers.NewTestSuiteSetup(Config)
-	TestSetup.Setup()
-})
-
-var _ = AfterSuite(func() {
-	if TestSetup != nil {
-		TestSetup.Teardown()
-	}
-})
 
 var _ = Describe("Foundation", Ordered, func() {
 	var api foundation.Handler
@@ -60,6 +35,10 @@ var _ = Describe("Foundation", Ordered, func() {
 			"-c", "./fixtures/sample-host-info-key.json",
 		)
 		test_helpers.WaitForService(serviceInstanceName, `[Ss]tatus:\s+create succeeded`)
+		DeferCleanup(func() {
+			exitCode := cf.Cf("delete-service", serviceInstanceName, "--force", "--wait").Wait("20m").ExitCode()
+			Expect(exitCode).To(Equal(0))
+		})
 	})
 
 	Context("UpdateServiceAndWait", func() {
