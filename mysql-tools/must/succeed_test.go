@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/pivotal/dedicated-mysql-adapter/must"
+	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/must"
 )
 
 func TestMust(t *testing.T) {
