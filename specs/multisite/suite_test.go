@@ -20,7 +20,7 @@ var (
 
 func TestMultisite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Multisite System Tests")
+	RunSpecs(t, "Multisite System Tests", Label("multisite"))
 }
 
 var _ = BeforeSuite(func() {
