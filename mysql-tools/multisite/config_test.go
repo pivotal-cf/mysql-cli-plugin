@@ -43,7 +43,7 @@ var _ = Describe("Config", func() {
 			})
 		})
 
-		When("CF_HOME is set", func() {
+		When("CF_HOME is set, but CF_PLUGIN_HOME is not", func() {
 			var cfHome string
 			BeforeEach(func() {
 				var err error
@@ -51,6 +51,7 @@ var _ = Describe("Config", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(os.Setenv("CF_HOME", cfHome)).To(Succeed())
+				Expect(os.Unsetenv("CF_PLUGIN_HOME")).To(Succeed())
 				DeferCleanup(func() {
 					Expect(os.Unsetenv("CF_HOME")).To(Succeed())
 				})
@@ -89,6 +90,7 @@ var _ = Describe("Config", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(os.Setenv("CF_PLUGIN_HOME", cfPluginHome)).To(Succeed())
+				Expect(os.Unsetenv("CF_HOME")).To(Succeed())
 				DeferCleanup(func() {
 					Expect(os.Unsetenv("CF_PLUGIN_HOME")).To(Succeed())
 				})
