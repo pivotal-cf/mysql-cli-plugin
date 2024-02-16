@@ -37,6 +37,7 @@ cf mysql-tools save-target <target-name>
 cf mysql-tools remove-target <target-name>
 cf mysql-tools list-targets
 cf mysql-tools setup-replication [ --primary-target | -P ] [ --primary-instance | -p ] [ --secondary-target | -S ] [ --secondary-instance | -s ]
+cf mysql-tools switchover [ --primary-target | -P ] [ --primary-instance | -p ] [ --secondary-target | -S ] [ --secondary-instance | -s ] [ --force | -f ]
 cf mysql-tools version`
 )
 
