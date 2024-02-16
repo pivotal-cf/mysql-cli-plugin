@@ -95,7 +95,7 @@ var _ = Describe("Foundation", Ordered, func() {
 			}()
 
 			err := api.InstanceExists("some-instance")
-			Expect(err).To(MatchError(MatchRegexp(`(?ms)error checking whether instance exists: cf service failed: exit status 1\noutput:\n.*FAILED`)))
+			Expect(err).To(MatchError(MatchRegexp(`(?s)error when checking whether instance exists: cf service failed: exit status 1\noutput:\n.*FAILED`)))
 		})
 	})
 
