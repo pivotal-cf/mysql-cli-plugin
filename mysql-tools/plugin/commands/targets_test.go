@@ -100,7 +100,7 @@ var _ = Describe("Environment Targeting Commands", func() {
 
 			By("showing a summary of the saved config")
 			stdout, _ := io.ReadAll(r)
-			Expect(string(stdout)).To(ContainSubstring("Targets:"))
+			Expect(string(stdout)).To(Equal("No saved targets.\n"))
 			Expect(fakeMultiSiteCfg.ListConfigsCallCount()).To(Equal(1))
 		})
 	})

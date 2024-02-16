@@ -27,6 +27,12 @@ type MultisiteConfig interface {
 func ListTargets(cfg MultisiteConfig) error {
 
 	configs, err := cfg.ListConfigs()
+
+	if len(configs) == 0 {
+		fmt.Println("No saved targets")
+		return nil
+	}
+
 	fmt.Println("Targets:")
 	for _, config := range configs {
 		fmt.Printf(" Name: %s\n", config.Name)
