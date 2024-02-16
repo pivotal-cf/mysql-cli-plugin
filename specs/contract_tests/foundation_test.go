@@ -12,7 +12,6 @@ import (
 	"github.com/onsi/gomega/gstruct"
 
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/multisite/foundation"
-	"github.com/pivotal-cf/mysql-cli-plugin/test_helpers"
 )
 
 var _ = Describe("Foundation", Ordered, func() {
@@ -26,15 +25,17 @@ var _ = Describe("Foundation", Ordered, func() {
 		api = foundation.New("foundation-name", cfHomeDir)
 
 		serviceInstanceName = generator.PrefixedRandomName("plugin", "contract-test")
-		test_helpers.CreateService(
+		Expect(cf.Cf(
+			"create-service",
 			"p.mysql",
 			os.Getenv("SINGLE_NODE_PLAN_NAME"),
 			serviceInstanceName,
 			// Register a fake "follower" w/ this instance so creating a credentials key will work without
 			// an extra update-service
-			"-c", "./fixtures/sample-host-info-key.json",
-		)
-		test_helpers.WaitForService(serviceInstanceName, `[Ss]tatus:\s+create succeeded`)
+			`-c=./fixtures/sample-host-info-key.json`,
+			"--wait",
+		).Wait("20m").ExitCode()).To(Equal(0), `cf create-service failed unexpectedly`)
+
 		DeferCleanup(func() {
 			exitCode := cf.Cf("delete-service", serviceInstanceName, "--force", "--wait").Wait("20m").ExitCode()
 			Expect(exitCode).To(Equal(0))
