@@ -29,7 +29,7 @@ func ListTargets(cfg MultisiteConfig) error {
 	configs, err := cfg.ListConfigs()
 
 	if len(configs) == 0 {
-		fmt.Println("No saved targets")
+		fmt.Println("No saved targets.")
 		return nil
 	}
 
