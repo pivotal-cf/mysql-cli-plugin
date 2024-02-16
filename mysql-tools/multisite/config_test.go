@@ -65,10 +65,20 @@ var _ = Describe("Config", func() {
 		})
 
 		When("one of the config file paths does not exist", func() {
+			copyFile := func(srcPath, dstPath string) error {
+				contents, err := os.ReadFile(srcPath)
+				if err != nil {
+					return err
+				}
+
+				return os.WriteFile(dstPath, contents, 0644)
+			}
+
 			BeforeEach(func() {
 				Expect(os.MkdirAll(subject.Dir+"/testfoundation1/.cf", 0700)).To(Succeed())
 				testConfig := filepath.Join(subject.Dir, "testfoundation1", ".cf", "config.json")
-				Expect(os.Link("fixtures/sample-config.json", testConfig)).To(Succeed())
+
+				Expect(copyFile("fixtures/sample-config.json", testConfig)).To(Succeed())
 
 				Expect(os.MkdirAll(subject.Dir+"/testfoundation2/.cf", 0700)).To(Succeed())
 			})
