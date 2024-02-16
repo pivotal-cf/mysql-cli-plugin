@@ -69,15 +69,10 @@ func (t *Target) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func NewConfig() (Config, error) {
-	cfCliConfig, err := confighelpers.DefaultFilePath()
-	if err != nil {
-		return Config{}, err
+func NewConfig() Config {
+	return Config{
+		Dir: filepath.Join(confighelpers.PluginRepoDir(), ".cf", ".mysql-tools"),
 	}
-
-	dir := filepath.Join(filepath.Dir(cfCliConfig), ".mysql-tools")
-
-	return Config{Dir: dir}, nil
 }
 
 func (c Config) ListConfigs() (targets []Target, errs error) {

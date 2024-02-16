@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 
 	"github.com/pivotal-cf/mysql-cli-plugin/mysql-tools/multisite"
 )
@@ -21,6 +22,83 @@ var _ = Describe("Config", func() {
 		})
 
 		subject = multisite.Config{Dir: t}
+
+		format.TruncatedDiff = false
+	})
+
+	Context("NewConfig", func() {
+		When("CF_HOME and CF_PLUGIN_HOME are unset", func() {
+			BeforeEach(func() {
+				Expect(os.Unsetenv("CF_HOME")).To(Succeed())
+				Expect(os.Unsetenv("CF_PLUGIN_HOME")).To(Succeed())
+			})
+
+			It("uses the expected cf cli config directory", func() {
+				cfg := multisite.NewConfig()
+
+				homedir, err := os.UserHomeDir()
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(cfg.Dir).To(Equal(filepath.Join(homedir, ".cf", ".mysql-tools")))
+			})
+		})
+
+		When("CF_HOME is set", func() {
+			var cfHome string
+			BeforeEach(func() {
+				var err error
+				cfHome, err = os.MkdirTemp("", "cf_home_")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(os.Setenv("CF_HOME", cfHome)).To(Succeed())
+				DeferCleanup(func() {
+					Expect(os.Unsetenv("CF_HOME")).To(Succeed())
+				})
+			})
+
+			It("uses the expected cf cli config directory", func() {
+				cfg := multisite.NewConfig()
+				Expect(cfg.Dir).To(Equal(filepath.Join(cfHome, ".cf", ".mysql-tools")))
+			})
+
+			When("CF_PLUGIN_HOME is also set", func() {
+				var cfPluginHome string
+				BeforeEach(func() {
+					var err error
+					cfPluginHome, err = os.MkdirTemp("", "cf_plugin_home_")
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(os.Setenv("CF_PLUGIN_HOME", cfPluginHome)).To(Succeed())
+					DeferCleanup(func() {
+						Expect(os.Unsetenv("CF_PLUGIN_HOME")).To(Succeed())
+					})
+				})
+
+				It("uses the expected cf cli config directory", func() {
+					cfg := multisite.NewConfig()
+					Expect(cfg.Dir).To(Equal(filepath.Join(cfPluginHome, ".cf", ".mysql-tools")))
+				})
+			})
+		})
+
+		When("CF_PLUGIN_HOME is set without CF_HOME", func() {
+			var cfPluginHome string
+			BeforeEach(func() {
+				var err error
+				cfPluginHome, err = os.MkdirTemp("", "cf_plugin_home_")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(os.Setenv("CF_PLUGIN_HOME", cfPluginHome)).To(Succeed())
+				DeferCleanup(func() {
+					Expect(os.Unsetenv("CF_PLUGIN_HOME")).To(Succeed())
+				})
+			})
+
+			It("uses the expected cf cli config directory", func() {
+				cfg := multisite.NewConfig()
+				Expect(cfg.Dir).To(Equal(filepath.Join(cfPluginHome, ".cf", ".mysql-tools")))
+			})
+		})
 	})
 
 	Context("ConfigDir", func() {

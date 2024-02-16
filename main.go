@@ -24,15 +24,9 @@ import (
 )
 
 func main() {
-	multisiteCfg, err := multisite.NewConfig()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-
 	mysqlPlugin := &plugin.MySQLPlugin{
 		MigrationAppExtractor: app.NewExtractor(),
-		MultisiteConfig:       multisiteCfg,
+		MultisiteConfig:       multisite.NewConfig(),
 	}
 
 	cliplugin.Start(mysqlPlugin)
