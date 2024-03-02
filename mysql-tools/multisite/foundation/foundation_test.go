@@ -1,6 +1,7 @@
 package foundation_test
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -36,7 +37,7 @@ var _ = Describe("Foundation", Label("unit"), func() {
 				return "OK", nil
 			}
 
-			err := subject.UpdateServiceAndWait("some-instance", `{ "some-param": "value" }`)
+			err := subject.UpdateServiceAndWait("some-instance", `{ "some-param": "value" }`, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(capturedArgs).To(Equal([]string{
@@ -59,11 +60,38 @@ var _ = Describe("Foundation", Label("unit"), func() {
 			})
 
 			It("returns an error", func() {
-				err := subject.UpdateServiceAndWait("some-instance", `{ "some-param": "value" }`)
+				err := subject.UpdateServiceAndWait("some-instance", `{ "some-param": "value" }`, nil)
 				Expect(err).To(MatchError(`some update-service error`))
 			})
 		})
+
+		When("a plan is provided", func() {
+			It("invokes the plan change", func() {
+				var capturedArgs []string
+				subject.CF = func(cfHomeDir string, args ...string) (string, error) {
+					capturedArgs = args
+
+					return "OK", nil
+				}
+
+				planName := "somePlan"
+
+				err := subject.UpdateServiceAndWait("some-instance", `{ "some-param": "value" }`, &planName)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(capturedArgs).To(Equal([]string{
+					"update-service",
+					"some-instance",
+					"-c",
+					`{ "some-param": "value" }`,
+					"--wait",
+					"-p",
+					planName,
+				}))
+			})
+		})
 	})
+
 	Context("CreateHostInfoKey", func() {
 		BeforeEach(func() {
 			subject.CF = func(_ string, args ...string) (string, error) {
@@ -249,6 +277,48 @@ var _ = Describe("Foundation", Label("unit"), func() {
 		})
 	})
 
+	Context("InstancePlanName", func() {
+		It("returns tne instance plan name", func() {
+			cfCommandOutput := `name:            MYSQL-4-LEADER-11b8f63057e92a33
+guid:            df4e3ab5-510d-4f76-abae-7ef5b5fc82e6
+type:            managed
+broker:          dedicated-mysql-broker
+offering:        p.mysql
+plan:            expectedPlan
+tags:
+offering tags:   mysql`
+			subject.CF = func(cfHomeDir string, args ...string) (string, error) {
+				return cfCommandOutput, nil
+			}
+
+			planName, err := subject.InstancePlanName("some-instance")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(planName).To(Equal("expectedPlan"))
+		})
+		It("errors if the instance is not found", func() {
+			cfCommandOutput := `Showing info of service notthere in org system / space system as admin...
+
+Service instance 'not-there' not found
+FAILED`
+			subject.CF = func(cfHomeDir string, args ...string) (string, error) {
+				return cfCommandOutput, nil
+			}
+
+			_, err := subject.InstancePlanName("not-there")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("plan not found for service instance 'not-there'"))
+		})
+		It("errors if an unexpected CF error occurs", func() {
+			subject.CF = func(cfHomeDir string, args ...string) (string, error) {
+				return "", errors.New("Unexpected CF error")
+			}
+
+			_, err := subject.InstancePlanName("instanceName")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("error when checking plan name of instance 'instanceName': Unexpected CF error"))
+		})
+	})
+
 	Context("InstanceExists", func() {
 		It("succeeds if an instance exists", func() {
 			subject.CF = func(cfHomeDir string, args ...string) (string, error) {
@@ -282,6 +352,33 @@ var _ = Describe("Foundation", Label("unit"), func() {
 			It("still returns an error", func() {
 				err := subject.InstanceExists("some-other-instance")
 				Expect(err).To(MatchError(`error when checking whether instance exists: some tcp timeout message`))
+			})
+		})
+	})
+
+	Context("PlanExists", func() {
+		It("succeeds if the provided plan exists", func() {
+			subject.CF = func(cfHomeDir string, args ...string) (string, error) {
+				return "Getting service plan information for service offering p.mysql in org system / space system as admin...\n\nbroker: dedicated-mysql-broker\n   plan            description                                                                                                 free or paid   costs\n   singlenode-80   Instance properties: 1 CPU, 3.75 GB RAM, 5 GB Storage                                                       free\n   lf-80           MySQL 8.0 Leader/Follower instances with: 1 CPU, 3.75 GB RAM, 5 GB storage                                  free\n   ha-80           High availability Percona XtraDB Cluster 8.0 on 3 instances, each with: 1 CPU, 3.75 GB RAM, 15 GB storage   free\n   multisite-80    A single node instance with: 1 CPU, 3.75 GB RAM, 15 GB storage.                                             free", nil
+			}
+
+			exists, err := subject.PlanExists("singlenode-80")
+			Expect(exists).To(BeTrue())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		When("the plan does not exist", func() {
+			BeforeEach(func() {
+				subject.CF = func(cfHomeDir string, args ...string) (string, error) {
+					return "Getting service plan information for service offering p.mysql in org system / space system as admin...\n\nbroker: dedicated-mysql-broker\n   plan            description                                                                                                 free or paid   costs\n   singlenode-80   Instance properties: 1 CPU, 3.75 GB RAM, 5 GB Storage                                                       free\n   lf-80           MySQL 8.0 Leader/Follower instances with: 1 CPU, 3.75 GB RAM, 5 GB storage                                  free\n   ha-80           High availability Percona XtraDB Cluster 8.0 on 3 instances, each with: 1 CPU, 3.75 GB RAM, 15 GB storage   free\n   multisite-80    A single node instance with: 1 CPU, 3.75 GB RAM, 15 GB storage.                                             free", nil
+				}
+			})
+
+			It("returns a helpful error", func() {
+				exists, err := subject.PlanExists("DNE-plan")
+				Expect(exists).To(BeFalse())
+
+				Expect(err).To(MatchError(`[some-name] Plan 'DNE-plan' does not exist`))
 			})
 		})
 	})

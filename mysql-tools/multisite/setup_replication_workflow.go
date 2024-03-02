@@ -18,7 +18,7 @@ func (w Workflow) SetupReplication(primaryInstance string, secondaryInstance str
 	}
 
 	w.Logger.Printf("[%s] Registering secondary instance information on primary instance '%s'", w.Foundation1.ID(), primaryInstance)
-	if err = w.Foundation1.UpdateServiceAndWait(primaryInstance, hostKey); err != nil {
+	if err = w.Foundation1.UpdateServiceAndWait(primaryInstance, hostKey, nil); err != nil {
 		return err
 	}
 
@@ -29,7 +29,7 @@ func (w Workflow) SetupReplication(primaryInstance string, secondaryInstance str
 	}
 
 	w.Logger.Printf("[%s] Updating secondary instance '%s' with replication configuration", w.Foundation2.ID(), secondaryInstance)
-	if err = w.Foundation2.UpdateServiceAndWait(secondaryInstance, credKey); err != nil {
+	if err = w.Foundation2.UpdateServiceAndWait(secondaryInstance, credKey, nil); err != nil {
 		return err
 	}
 

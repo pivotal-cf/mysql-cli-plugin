@@ -123,6 +123,24 @@ func InstanceUUID(name string) string {
 	return resourceGUID("service", name)
 }
 
+func InstancePlanName(name string) string {
+	out := ExecuteCfCmd("service", name)
+
+	for _, line := range strings.Split(out, "\n") {
+		// Check if the line contains the plan
+		if strings.Contains(line, "plan:") {
+			// Split the line to get the plan value
+			parts := strings.Split(line, ":")
+			if len(parts) > 1 {
+				// Trim any leading/trailing whitespace from the plan value
+				plan := strings.TrimSpace(parts[1])
+				return plan
+			}
+		}
+	}
+	return ""
+}
+
 func AppUUID(name string) string {
 	return resourceGUID("app", name)
 }

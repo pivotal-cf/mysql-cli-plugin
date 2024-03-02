@@ -60,11 +60,11 @@ var _ = Describe("SetupReplication", func() {
 			`logger.Printf("[foundation2] Retrieving information for secondary instance 'secondaryInstance'")`,
 			`foundation2.CreateHostInfoKey("secondaryInstance")`,
 			`logger.Printf("[foundation1] Registering secondary instance information on primary instance 'primaryInstance'")`,
-			fmt.Sprintf(`foundation1.UpdateServiceAndWait("primaryInstance", %q)`, fakeFoundation2.CreateHostInfoKeyResult.Key),
+			fmt.Sprintf(`foundation1.UpdateServiceAndWait("primaryInstance", %q, <nil>)`, fakeFoundation2.CreateHostInfoKeyResult.Key),
 			`logger.Printf("[foundation1] Retrieving replication configuration from primary instance 'primaryInstance'")`,
 			`foundation1.CreateCredentialsKey("primaryInstance")`,
 			`logger.Printf("[foundation2] Updating secondary instance 'secondaryInstance' with replication configuration")`,
-			fmt.Sprintf(`foundation2.UpdateServiceAndWait("secondaryInstance", %q)`, fakeFoundation1.CreateCredentialsKeyResult.Key),
+			fmt.Sprintf(`foundation2.UpdateServiceAndWait("secondaryInstance", %q, <nil>)`, fakeFoundation1.CreateCredentialsKeyResult.Key),
 			`logger.Printf("Successfully configured replication")`,
 		}))
 	})
@@ -156,7 +156,7 @@ var _ = Describe("SetupReplication", func() {
 				`logger.Printf("[foundation2] Retrieving information for secondary instance 'db1'")`,
 				`foundation2.CreateHostInfoKey("db1")`,
 				`logger.Printf("[foundation1] Registering secondary instance information on primary instance 'db0'")`,
-				fmt.Sprintf(`foundation1.UpdateServiceAndWait("db0", %q)`, fakeFoundation2.CreateHostInfoKeyResult.Key),
+				fmt.Sprintf(`foundation1.UpdateServiceAndWait("db0", %q, <nil>)`, fakeFoundation2.CreateHostInfoKeyResult.Key),
 			}))
 		})
 	})
@@ -182,7 +182,7 @@ var _ = Describe("SetupReplication", func() {
 				`logger.Printf("[foundation2] Retrieving information for secondary instance 'db1'")`,
 				`foundation2.CreateHostInfoKey("db1")`,
 				`logger.Printf("[foundation1] Registering secondary instance information on primary instance 'db0'")`,
-				fmt.Sprintf(`foundation1.UpdateServiceAndWait("db0", %q)`, fakeFoundation2.CreateHostInfoKeyResult.Key),
+				fmt.Sprintf(`foundation1.UpdateServiceAndWait("db0", %q, <nil>)`, fakeFoundation2.CreateHostInfoKeyResult.Key),
 				`logger.Printf("[foundation1] Retrieving replication configuration from primary instance 'db0'")`,
 				`foundation1.CreateCredentialsKey("db0")`,
 			}))
@@ -210,11 +210,11 @@ var _ = Describe("SetupReplication", func() {
 				`logger.Printf("[foundation2] Retrieving information for secondary instance 'db1'")`,
 				`foundation2.CreateHostInfoKey("db1")`,
 				`logger.Printf("[foundation1] Registering secondary instance information on primary instance 'db0'")`,
-				fmt.Sprintf(`foundation1.UpdateServiceAndWait("db0", %q)`, fakeFoundation2.CreateHostInfoKeyResult.Key),
+				fmt.Sprintf(`foundation1.UpdateServiceAndWait("db0", %q, <nil>)`, fakeFoundation2.CreateHostInfoKeyResult.Key),
 				`logger.Printf("[foundation1] Retrieving replication configuration from primary instance 'db0'")`,
 				`foundation1.CreateCredentialsKey("db0")`,
 				`logger.Printf("[foundation2] Updating secondary instance 'db1' with replication configuration")`,
-				fmt.Sprintf(`foundation2.UpdateServiceAndWait("db1", %q)`, fakeFoundation1.CreateCredentialsKeyResult.Key),
+				fmt.Sprintf(`foundation2.UpdateServiceAndWait("db1", %q, <nil>)`, fakeFoundation1.CreateCredentialsKeyResult.Key),
 			}))
 		})
 	})

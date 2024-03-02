@@ -14,6 +14,16 @@ type FakeFoundation struct {
 		Err error
 	}
 
+	InstancePlanNameResult struct {
+		PlanName string
+		Err      error
+	}
+
+	PlanExistsResult struct {
+		PlanExists bool
+		Err        error
+	}
+
 	UpdateServiceResult struct {
 		ErrFunc func(instanceName, arbitraryParams string) error
 		Err     error
@@ -34,9 +44,13 @@ func (f *FakeFoundation) ID() string {
 	return f.FoundationName
 }
 
-func (f *FakeFoundation) UpdateServiceAndWait(instanceName, arbitraryParams string) error {
-	*f.Operations = append(*f.Operations, fmt.Sprintf(f.FoundationName+".UpdateServiceAndWait(%q, %q)",
-		instanceName, arbitraryParams))
+func (f *FakeFoundation) UpdateServiceAndWait(instanceName string, arbitraryParams string, planName *string) error {
+	planString := "<nil>"
+	if planName != nil {
+		planString = *planName
+	}
+	*f.Operations = append(*f.Operations, fmt.Sprintf(f.FoundationName+".UpdateServiceAndWait(%q, %q, %s)",
+		instanceName, arbitraryParams, planString))
 
 	if f.UpdateServiceResult.ErrFunc != nil {
 		return f.UpdateServiceResult.ErrFunc(instanceName, arbitraryParams)
@@ -66,6 +80,20 @@ func (f *FakeFoundation) InstanceExists(instanceName string) (err error) {
 	*f.Operations = append(*f.Operations, op)
 
 	return f.InstanceExistsResult.Err
+}
+
+func (f *FakeFoundation) InstancePlanName(instanceName string) (planName string, err error) {
+	op := fmt.Sprintf("%s.InstancePlanName(%q)", f.FoundationName, instanceName)
+	*f.Operations = append(*f.Operations, op)
+
+	return f.InstancePlanNameResult.PlanName, f.InstancePlanNameResult.Err
+}
+
+func (f *FakeFoundation) PlanExists(planName string) (exists bool, err error) {
+	op := fmt.Sprintf("%s.PlanExists(%q)", f.FoundationName, planName)
+	*f.Operations = append(*f.Operations, op)
+
+	return f.PlanExistsResult.PlanExists, f.PlanExistsResult.Err
 }
 
 var _ multisite.ServiceAPI = (*FakeFoundation)(nil)

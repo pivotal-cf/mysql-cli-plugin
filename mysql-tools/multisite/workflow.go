@@ -2,10 +2,12 @@ package multisite
 
 type ServiceAPI interface {
 	ID() string
-	UpdateServiceAndWait(instanceName string, arbitraryParams string) error
+	UpdateServiceAndWait(instanceName string, arbitraryParams string, planName *string) error
 	CreateHostInfoKey(instanceName string) (key string, err error)
 	CreateCredentialsKey(instanceName string) (key string, err error)
 	InstanceExists(instanceName string) error
+	InstancePlanName(instanceName string) (planName string, err error)
+	PlanExists(planName string) (exists bool, err error)
 }
 
 type Logger interface {

@@ -28,8 +28,13 @@ func (h Handler) ID() string {
 	return h.Name
 }
 
-func (h Handler) UpdateServiceAndWait(instanceName string, arbitraryParams string) error {
-	if _, err := h.CF(h.CfHomeDir, "update-service", instanceName, "-c", arbitraryParams, "--wait"); err != nil {
+func (h Handler) UpdateServiceAndWait(instanceName string, arbitraryParams string, planName *string) error {
+	var cfArgs = []string{"update-service", instanceName, "-c", arbitraryParams, "--wait"}
+
+	if planName != nil {
+		cfArgs = append(cfArgs, "-p", *planName)
+	}
+	if _, err := h.CF(h.CfHomeDir, cfArgs...); err != nil {
 		return err
 	}
 
@@ -78,6 +83,39 @@ func (h Handler) InstanceExists(instanceName string) error {
 	}
 
 	return nil
+}
+
+func (h Handler) InstancePlanName(instanceName string) (string, error) {
+	out, err := h.CF(h.CfHomeDir, "service", instanceName)
+	if err != nil {
+		return "", fmt.Errorf("error when checking plan name of instance '%s': %w", instanceName, err)
+	}
+
+	for _, line := range strings.Split(out, "\n") {
+		// Check if the line contains the plan
+		if strings.Contains(line, "plan:") {
+			// Split the line to get the plan value
+			parts := strings.Split(line, ":")
+			if len(parts) > 1 {
+				// Trim any leading/trailing whitespace from the plan value
+				plan := strings.TrimSpace(parts[1])
+				return plan, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("plan not found for service instance '%s'", instanceName)
+}
+
+func (h Handler) PlanExists(planName string) (bool, error) {
+	out, err := h.CF(h.CfHomeDir, "marketplace", "-e", "p.mysql")
+	if err != nil {
+		return false, err
+	}
+	if !strings.Contains(out, planName) {
+		return false, fmt.Errorf(`[%s] Plan '%s' does not exist`, h.ID(), planName)
+	}
+	return true, nil
 }
 
 func extractNestedKey(rawServiceKey string) (usefulContents string, err error) {

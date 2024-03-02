@@ -40,19 +40,23 @@ var _ = Describe("Multisite Setup Integration Tests", Ordered, Label("multisite"
 	var (
 		leaderInstanceName   string
 		followerInstanceName string
+		leaderPlanName       string
+		followerPlanName     string
 	)
 
 	BeforeAll(func() {
+		leaderPlanName = os.Getenv("LEADER_PLAN_NAME")
+		followerPlanName = os.Getenv("FOLLOWER_PLAN_NAME")
 		By("initiating leader instance creation")
 		workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
 			leaderInstanceName = generator.PrefixedRandomName("MYSQL", "MS_LEADER")
-			test_helpers.CreateService(os.Getenv("SERVICE_NAME"), os.Getenv("SINGLE_NODE_PLAN_NAME"), leaderInstanceName, "-c", `{"enable_external_access": true}`)
+			test_helpers.CreateService(os.Getenv("SERVICE_NAME"), leaderPlanName, leaderInstanceName, "-c", `{"enable_external_access": true}`)
 		})
 
 		By("initiating follower instance creation")
 		workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
 			followerInstanceName = generator.PrefixedRandomName("MYSQL", "MS_FOLLOWER")
-			test_helpers.CreateService(os.Getenv("SERVICE_NAME"), os.Getenv("SINGLE_NODE_PLAN_NAME"), followerInstanceName, "-c", `{"enable_external_access": true}`)
+			test_helpers.CreateService(os.Getenv("SERVICE_NAME"), followerPlanName, followerInstanceName, "-c", `{"enable_external_access": true}`)
 		})
 
 		By("waiting for leader instance creation")
@@ -163,6 +167,17 @@ var _ = Describe("Multisite Setup Integration Tests", Ordered, Label("multisite"
 			isFollowerMetric := getMetricValue(leaderGUID, "_p_mysql_follower_is_follower")
 			Expect(isFollowerMetric).To(Equal("0"))
 		})
+
+		workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
+			planName := test_helpers.InstancePlanName(leaderInstanceName)
+			Expect(planName).To(Equal(followerPlanName))
+		})
+
+		workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
+			planName := test_helpers.InstancePlanName(followerInstanceName)
+			Expect(planName).To(Equal(leaderPlanName))
+		})
+
 	})
 })
 

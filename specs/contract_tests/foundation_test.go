@@ -44,7 +44,7 @@ var _ = Describe("Foundation", Ordered, func() {
 
 	Context("UpdateServiceAndWait", func() {
 		It("updates a service instance with arbitrary params", func() {
-			err := api.UpdateServiceAndWait(serviceInstanceName, `{}`)
+			err := api.UpdateServiceAndWait(serviceInstanceName, `{}`, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			session := cf.Cf("service", serviceInstanceName).Wait("15m")
@@ -52,7 +52,7 @@ var _ = Describe("Foundation", Ordered, func() {
 		})
 
 		It("updates a service instance with arbitrary params", func() {
-			err := api.UpdateServiceAndWait(serviceInstanceName, `{ "invalid-arbitrary-params": "value"}`)
+			err := api.UpdateServiceAndWait(serviceInstanceName, `{ "invalid-arbitrary-params": "value"}`, nil)
 			Expect(err).To(MatchError(HavePrefix("cf update-service failed: exit status 1")))
 		})
 	})
