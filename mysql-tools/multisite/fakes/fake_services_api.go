@@ -20,8 +20,7 @@ type FakeFoundation struct {
 	}
 
 	PlanExistsResult struct {
-		PlanExists bool
-		Err        error
+		Err error
 	}
 
 	UpdateServiceResult struct {
@@ -89,11 +88,11 @@ func (f *FakeFoundation) InstancePlanName(instanceName string) (planName string,
 	return f.InstancePlanNameResult.PlanName, f.InstancePlanNameResult.Err
 }
 
-func (f *FakeFoundation) PlanExists(planName string) (exists bool, err error) {
+func (f *FakeFoundation) PlanExists(planName string) (err error) {
 	op := fmt.Sprintf("%s.PlanExists(%q)", f.FoundationName, planName)
 	*f.Operations = append(*f.Operations, op)
 
-	return f.PlanExistsResult.PlanExists, f.PlanExistsResult.Err
+	return f.PlanExistsResult.Err
 }
 
 var _ multisite.ServiceAPI = (*FakeFoundation)(nil)

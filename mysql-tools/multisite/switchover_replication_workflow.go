@@ -16,7 +16,7 @@ func (w Workflow) SwitchoverReplication(primaryInstance string, secondaryInstanc
 	}
 
 	w.Logger.Printf("[%s] Checking whether plan '%s' exists", w.Foundation2.ID(), leaderPlanName)
-	if _, err = w.Foundation2.PlanExists(leaderPlanName); err != nil {
+	if err = w.Foundation2.PlanExists(leaderPlanName); err != nil {
 		return err
 	}
 
@@ -31,7 +31,7 @@ func (w Workflow) SwitchoverReplication(primaryInstance string, secondaryInstanc
 	}
 
 	w.Logger.Printf("[%s] Checking whether plan '%s' exists", w.Foundation1.ID(), followerPlanName)
-	if _, err = w.Foundation1.PlanExists(followerPlanName); err != nil {
+	if err = w.Foundation1.PlanExists(followerPlanName); err != nil {
 		return err
 	}
 

@@ -7,7 +7,7 @@ type ServiceAPI interface {
 	CreateCredentialsKey(instanceName string) (key string, err error)
 	InstanceExists(instanceName string) error
 	InstancePlanName(instanceName string) (planName string, err error)
-	PlanExists(planName string) (exists bool, err error)
+	PlanExists(planName string) (err error)
 }
 
 type Logger interface {

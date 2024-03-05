@@ -107,15 +107,15 @@ func (h Handler) InstancePlanName(instanceName string) (string, error) {
 	return "", fmt.Errorf("plan not found for service instance '%s'", instanceName)
 }
 
-func (h Handler) PlanExists(planName string) (bool, error) {
+func (h Handler) PlanExists(planName string) (err error) {
 	out, err := h.CF(h.CfHomeDir, "marketplace", "-e", "p.mysql")
 	if err != nil {
-		return false, err
+		return err
 	}
 	if !strings.Contains(out, planName) {
-		return false, fmt.Errorf(`[%s] Plan '%s' does not exist`, h.ID(), planName)
+		return fmt.Errorf(`[%s] Plan '%s' does not exist`, h.ID(), planName)
 	}
-	return true, nil
+	return nil
 }
 
 func extractNestedKey(rawServiceKey string) (usefulContents string, err error) {

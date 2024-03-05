@@ -362,8 +362,7 @@ FAILED`
 				return "Getting service plan information for service offering p.mysql in org system / space system as admin...\n\nbroker: dedicated-mysql-broker\n   plan            description                                                                                                 free or paid   costs\n   singlenode-80   Instance properties: 1 CPU, 3.75 GB RAM, 5 GB Storage                                                       free\n   lf-80           MySQL 8.0 Leader/Follower instances with: 1 CPU, 3.75 GB RAM, 5 GB storage                                  free\n   ha-80           High availability Percona XtraDB Cluster 8.0 on 3 instances, each with: 1 CPU, 3.75 GB RAM, 15 GB storage   free\n   multisite-80    A single node instance with: 1 CPU, 3.75 GB RAM, 15 GB storage.                                             free", nil
 			}
 
-			exists, err := subject.PlanExists("singlenode-80")
-			Expect(exists).To(BeTrue())
+			err := subject.PlanExists("singlenode-80")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -375,8 +374,7 @@ FAILED`
 			})
 
 			It("returns a helpful error", func() {
-				exists, err := subject.PlanExists("DNE-plan")
-				Expect(exists).To(BeFalse())
+				err := subject.PlanExists("DNE-plan")
 
 				Expect(err).To(MatchError(`[some-name] Plan 'DNE-plan' does not exist`))
 			})

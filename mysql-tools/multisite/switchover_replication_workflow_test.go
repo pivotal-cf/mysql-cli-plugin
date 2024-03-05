@@ -48,10 +48,8 @@ var _ = Describe("SwitchoverReplication", func() {
 	})
 
 	It("works with single-node plans", func() {
-		fakeFoundation1.PlanExistsResult.PlanExists = true
 		fakeFoundation1.InstancePlanNameResult.PlanName = "single-node-plan"
 
-		fakeFoundation2.PlanExistsResult.PlanExists = true
 		fakeFoundation2.InstancePlanNameResult.PlanName = "single-node-plan"
 
 		err := workflow.SwitchoverReplication("db0", "db1")
@@ -94,10 +92,8 @@ var _ = Describe("SwitchoverReplication", func() {
 		followerPlanName := "single-node-plan"
 		leaderPlanName := "HA-plan"
 
-		fakeFoundation2.PlanExistsResult.PlanExists = true
 		fakeFoundation2.InstancePlanNameResult.PlanName = followerPlanName
 
-		fakeFoundation1.PlanExistsResult.PlanExists = true
 		fakeFoundation1.InstancePlanNameResult.PlanName = leaderPlanName
 
 		err := workflow.SwitchoverReplication("db0", "db1")
@@ -167,7 +163,6 @@ var _ = Describe("SwitchoverReplication", func() {
 	When("the secondary instance does not exist", func() {
 		BeforeEach(func() {
 			fakeFoundation1.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation2.PlanExistsResult.PlanExists = true
 			fakeFoundation2.InstanceExistsResult.Err = fmt.Errorf("secondary instance does not exist error")
 		})
 
@@ -194,9 +189,7 @@ var _ = Describe("SwitchoverReplication", func() {
 	When("Demoting the original primary fails", func() {
 		BeforeEach(func() {
 			fakeFoundation1.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation2.PlanExistsResult.PlanExists = true
 			fakeFoundation2.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation1.PlanExistsResult.PlanExists = true
 			fakeFoundation1.UpdateServiceResult.Err = fmt.Errorf("some demotion error")
 		})
 
@@ -230,9 +223,7 @@ var _ = Describe("SwitchoverReplication", func() {
 	When("Promoting the original secondary fails", func() {
 		BeforeEach(func() {
 			fakeFoundation1.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation2.PlanExistsResult.PlanExists = true
 			fakeFoundation2.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation1.PlanExistsResult.PlanExists = true
 			fakeFoundation2.UpdateServiceResult.Err = fmt.Errorf("some promotion error")
 		})
 
@@ -269,9 +260,7 @@ var _ = Describe("SwitchoverReplication", func() {
 	When("creating a host-info key on the original primary fails", func() {
 		BeforeEach(func() {
 			fakeFoundation1.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation2.PlanExistsResult.PlanExists = true
 			fakeFoundation2.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation1.PlanExistsResult.PlanExists = true
 			fakeFoundation1.CreateHostInfoKeyResult.Err = fmt.Errorf("[db0] create host info key error")
 		})
 
@@ -309,9 +298,7 @@ var _ = Describe("SwitchoverReplication", func() {
 	When("registering the new follower on the new primary fails", func() {
 		BeforeEach(func() {
 			fakeFoundation1.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation2.PlanExistsResult.PlanExists = true
 			fakeFoundation2.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation1.PlanExistsResult.PlanExists = true
 			fakeFoundation2.UpdateServiceResult.ErrFunc = func(instanceName, arbitraryParams string) error {
 				if strings.Contains(arbitraryParams, `foundation1-host-info`) {
 					return fmt.Errorf("some registration error on primary instance")
@@ -356,9 +343,7 @@ var _ = Describe("SwitchoverReplication", func() {
 	When("retrieving replication credentials from the new primary fails", func() {
 		BeforeEach(func() {
 			fakeFoundation1.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation2.PlanExistsResult.PlanExists = true
 			fakeFoundation2.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation1.PlanExistsResult.PlanExists = true
 			fakeFoundation2.CreateCredentialsKeyResult.Err = fmt.Errorf("create credentials service key error")
 		})
 
@@ -400,9 +385,7 @@ var _ = Describe("SwitchoverReplication", func() {
 	When("updating the new secondary instance with replication credentials fails ", func() {
 		BeforeEach(func() {
 			fakeFoundation1.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation2.PlanExistsResult.PlanExists = true
 			fakeFoundation2.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation1.PlanExistsResult.PlanExists = true
 
 			fakeFoundation1.UpdateServiceResult.ErrFunc = func(instanceName, arbitraryParams string) error {
 				if strings.Contains(arbitraryParams, "foundation2-cred-info") {
@@ -488,7 +471,6 @@ var _ = Describe("SwitchoverReplication", func() {
 	When("an unexpected error occurs while fetching the follower's plan name", func() {
 		BeforeEach(func() {
 			fakeFoundation1.InstancePlanNameResult.PlanName = "single-node-plan"
-			fakeFoundation2.PlanExistsResult.PlanExists = true
 			fakeFoundation2.InstancePlanNameResult.Err = fmt.Errorf("unexpected CF error")
 		})
 		It("returns a descriptive error", func() {
