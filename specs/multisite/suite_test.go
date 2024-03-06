@@ -9,6 +9,8 @@ import (
 	"github.com/cloudfoundry/cf-test-helpers/v2/workflowhelpers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/pivotal-cf/mysql-cli-plugin/internal/testing/helpers"
 )
 
 var (
@@ -24,6 +26,15 @@ func TestMultisite(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	requiredEnvs := []string{
+		"DC1_CONFIG",
+		"DC2_CONFIG",
+		"LEADER_PLAN_NAME",
+		"FOLLOWER_PLAN_NAME",
+		"SERVICE_NAME",
+	}
+	helpers.CheckForRequiredEnvVars(requiredEnvs)
+
 	Expect(config.Load(os.Getenv("DC1_CONFIG"), &leaderConfig)).To(Succeed())
 	leaderTestSetup = workflowhelpers.NewTestSuiteSetup(&leaderConfig)
 	leaderTestSetup.Setup()

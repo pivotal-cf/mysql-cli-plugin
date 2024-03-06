@@ -47,16 +47,17 @@ var _ = Describe("Multisite Setup Integration Tests", Ordered, Label("multisite"
 	BeforeAll(func() {
 		leaderPlanName = os.Getenv("LEADER_PLAN_NAME")
 		followerPlanName = os.Getenv("FOLLOWER_PLAN_NAME")
+		serviceName := os.Getenv("SERVICE_NAME")
 		By("initiating leader instance creation")
 		workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
 			leaderInstanceName = generator.PrefixedRandomName("MYSQL", "MS_LEADER")
-			test_helpers.CreateService(os.Getenv("SERVICE_NAME"), leaderPlanName, leaderInstanceName, "-c", `{"enable_external_access": true}`)
+			test_helpers.CreateService(serviceName, leaderPlanName, leaderInstanceName, "-c", `{"enable_external_access": true}`)
 		})
 
 		By("initiating follower instance creation")
 		workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
 			followerInstanceName = generator.PrefixedRandomName("MYSQL", "MS_FOLLOWER")
-			test_helpers.CreateService(os.Getenv("SERVICE_NAME"), followerPlanName, followerInstanceName, "-c", `{"enable_external_access": true}`)
+			test_helpers.CreateService(serviceName, followerPlanName, followerInstanceName, "-c", `{"enable_external_access": true}`)
 		})
 
 		By("waiting for leader instance creation")
