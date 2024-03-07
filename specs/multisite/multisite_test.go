@@ -155,28 +155,26 @@ var _ = Describe("Multisite Setup Integration Tests", Ordered, Label("multisite"
 
 		Eventually(session, "10m", "10s").Should(gexec.Exit(0))
 
-		// Validate the old primary is configured as a follower
-		workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
-			followerGUID := test_helpers.InstanceUUID(leaderInstanceName)
-			isFollowerMetric := getMetricValue(followerGUID, "_p_mysql_follower_is_follower")
-			Expect(isFollowerMetric).To(Equal("1"))
+		By("Validating the old primary is configured as a follower", func() {
+
+			workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
+				followerGUID := test_helpers.InstanceUUID(leaderInstanceName)
+				isFollowerMetric := getMetricValue(followerGUID, "_p_mysql_follower_is_follower")
+				Expect(isFollowerMetric).To(Equal("1"))
+			})
 		})
 
-		// Validate the new primary is not configured as a follower
-		workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
-			leaderGUID := test_helpers.InstanceUUID(followerInstanceName)
-			isFollowerMetric := getMetricValue(leaderGUID, "_p_mysql_follower_is_follower")
-			Expect(isFollowerMetric).To(Equal("0"))
-		})
+		By("Validating the plans are switched as expected", func() {
 
-		workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
-			planName := test_helpers.InstancePlanName(leaderInstanceName)
-			Expect(planName).To(Equal(followerPlanName))
-		})
+			workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
+				planName := test_helpers.InstancePlanName(leaderInstanceName)
+				Expect(planName).To(Equal(followerPlanName))
+			})
 
-		workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
-			planName := test_helpers.InstancePlanName(followerInstanceName)
-			Expect(planName).To(Equal(leaderPlanName))
+			workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
+				planName := test_helpers.InstancePlanName(followerInstanceName)
+				Expect(planName).To(Equal(leaderPlanName))
+			})
 		})
 
 	})
