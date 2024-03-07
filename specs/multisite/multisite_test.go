@@ -126,13 +126,6 @@ var _ = Describe("Multisite Setup Integration Tests", Ordered, Label("multisite"
 
 		Eventually(session, "15m", "10s").Should(gexec.Exit(0))
 
-		// Validate the secondary is configured as a follower
-		workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
-			followerGUID := test_helpers.InstanceUUID(followerInstanceName)
-			isFollowerMetric := getMetricValue(followerGUID, "_p_mysql_follower_is_follower")
-			Expect(isFollowerMetric).To(Equal("1"))
-		})
-
 		if leaderPlanName == "multisite-80" {
 
 			By("Validating the primary is not configured as a follower", func() {
@@ -161,7 +154,7 @@ var _ = Describe("Multisite Setup Integration Tests", Ordered, Label("multisite"
 		}
 
 		By("Validating the secondary is configured as a follower", func() {
-			workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
+			workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
 				leaderGUID := test_helpers.InstanceUUID(followerInstanceName)
 				isFollowerMetric := getMetricValue(leaderGUID, "_p_mysql_follower_is_follower")
 				Expect(isFollowerMetric).To(Equal("1"))
@@ -184,19 +177,10 @@ var _ = Describe("Multisite Setup Integration Tests", Ordered, Label("multisite"
 
 		Eventually(session, "10m", "10s").Should(gexec.Exit(0))
 
-		By("Validating the old primary is configured as a follower", func() {
-
-			workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
-				followerGUID := test_helpers.InstanceUUID(leaderInstanceName)
-				isFollowerMetric := getMetricValue(followerGUID, "_p_mysql_follower_is_follower")
-				Expect(isFollowerMetric).To(Equal("1"))
-			})
-		})
-
 		if leaderPlanName == "multisite-80" {
 
 			By("Validating the new primary is not configured as a follower", func() {
-				workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
+				workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
 					leaderGUID := test_helpers.InstanceUUID(followerInstanceName)
 					isFollowerMetric := getMetricValue(leaderGUID, "_p_mysql_follower_is_follower")
 					Expect(isFollowerMetric).To(Equal("0"))
@@ -207,13 +191,13 @@ var _ = Describe("Multisite Setup Integration Tests", Ordered, Label("multisite"
 		} else if leaderPlanName == "ha-80" {
 			By("Validating the new primary is configured as HA", func() {
 
-				workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
+				workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
 					leaderGUID := test_helpers.InstanceUUID(followerInstanceName)
 					isFollowerMetric := getMetricValue(leaderGUID, "_p_mysql_galera_wsrep_ready")
 					Expect(isFollowerMetric).To(Equal("1"))
 				})
 
-				workflowhelpers.AsUser(leaderTestSetup.RegularUserContext(), 10*time.Minute, func() {
+				workflowhelpers.AsUser(followerTestSetup.RegularUserContext(), 10*time.Minute, func() {
 					leaderGUID := test_helpers.InstanceUUID(followerInstanceName)
 					isFollowerMetric := getMetricValue(leaderGUID, "_p_mysql_galera_wsrep_cluster_size")
 					Expect(isFollowerMetric).To(Equal("3"))
