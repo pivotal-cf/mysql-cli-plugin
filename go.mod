@@ -8,7 +8,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cloudfoundry-community/go-cfclient/v2 v2.0.0
 	github.com/cloudfoundry/cf-test-helpers/v2 v2.9.0
-	github.com/go-sql-driver/mysql v1.7.1
+	github.com/go-sql-driver/mysql v1.8.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jessevdk/go-flags v1.5.0
@@ -29,6 +29,7 @@ require (
 	code.cloudfoundry.org/rfc5424 v0.0.0-20201103192249-000122071b78 // indirect
 	code.cloudfoundry.org/tlsconfig v0.0.0-20240213144909-765c8d6ec2ff // indirect
 	code.cloudfoundry.org/ykk v0.0.0-20170424192843-e4df4ce2fd4d // indirect
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/SermoDigital/jose v0.9.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
