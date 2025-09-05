@@ -1,64 +1,56 @@
-buildscript {
-    ext {
-        springBootVersion = '1.5.9.RELEASE'
-        springCloudConnectorsVersion = '1.2.5.RELEASE'
-    }
-
-    repositories {
-        jcenter()
-        mavenCentral()
-        maven { url "https://repo.spring.io/plugins-release" }
-    }
-
-    dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-    }
+plugins {
+    id 'org.springframework.boot' version '3.5.5'
+    id 'io.spring.dependency-management' version '1.1.5'
+    id 'java'
+    id 'eclipse-wtp'
+    id 'idea'
 }
-
-apply plugin: 'java'
-
-apply plugin: 'eclipse-wtp'
-apply plugin: 'idea'
-
-apply plugin: 'org.springframework.boot'
-
-version = '1.0'
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
 }
 
+ext {
+    javaCfEnvVersion = '3.1.5'
+}
+
 dependencies {
     // Spring Boot
-    compile "org.springframework.boot:spring-boot-starter-web"
-    compile "org.springframework.boot:spring-boot-starter-actuator"
-    compile "org.springframework.boot:spring-boot-starter-data-jpa"
+    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+    implementation "org.springframework.boot:spring-boot-starter-validation"
+    implementation "org.yaml:snakeyaml:2.0"
 
-    // Spring Cloud Connectors
-    compile "org.springframework.cloud:spring-cloud-core:${springCloudConnectorsVersion}"
-    compile "org.springframework.cloud:spring-cloud-spring-service-connector:${springCloudConnectorsVersion}"
-    compile "org.springframework.cloud:spring-cloud-cloudfoundry-connector:${springCloudConnectorsVersion}"
+    // Java CfEnv
+    implementation "io.pivotal.cfenv:java-cfenv-boot:${javaCfEnvVersion}"
 
     // JPA Persistence
-    compile "commons-dbcp:commons-dbcp"
-    runtime "com.h2database:h2"
-    runtime "mysql:mysql-connector-java"
+    runtimeOnly "org.apache.commons:commons-pool2"
+    runtimeOnly "org.mariadb.jdbc:mariadb-java-client"
 
     // Webjars
-    compile "org.webjars:bootstrap:3.1.1"
-    compile "org.webjars:angularjs:1.2.16"
-    compile "org.webjars:angular-ui:0.4.0-2"
-    compile "org.webjars:angular-ui-bootstrap:0.10.0-1"
-    compile "org.webjars:jquery:2.1.0-2"
+    implementation "org.webjars:bootstrap:5.3.8"
+    implementation "org.webjars:angularjs:1.2.16"
+    implementation "org.webjars:angular-ui:0.4.0-2"
+    implementation "org.webjars:angular-ui-bootstrap:0.10.0-1"
+    implementation "org.webjars:jquery:2.1.0-2"
 
     // Testing
-    testCompile "junit:junit"
+    testImplementation "junit:junit"
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+
+    if (JavaVersion.current() != project.targetCompatibility) {
+        logger.warn("The build is using Java ${JavaVersion.current()} to build a Java ${project.targetCompatibility} compatible archive.")
+        logger.warn("See the project README for instructions on changing the target Java version.")
+    }
 }
 
 jar {
-    baseName = "spring-music"
-    version = "" // omit the version from the war file name
+    enabled = false
 }
