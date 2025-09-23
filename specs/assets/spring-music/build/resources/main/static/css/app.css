@@ -228,12 +228,37 @@
     /* Align to the right edge */
     left: auto;
     /* Override default left positioning */
+    margin-top: 0.125rem;
+    /* Small gap from button */
+    transform: translateY(0);
+    /* Ensure no transform interference */
+}
+
+/* Ensure dropdown appears above cards */
+.card .dropdown.show .dropdown-menu {
+    display: block;
+    z-index: 1060;
+    /* Higher z-index when shown */
 }
 
 /* Ensure card body doesn't clip the dropdown */
 .card-body {
     overflow: visible;
     position: relative;
+}
+
+/* Force dropdown to extend outside card boundaries */
+.card .dropdown-menu {
+    position: absolute;
+    z-index: 1060;
+    min-width: 120px;
+}
+
+/* Alternative: Use dropup instead of dropdown for cards near bottom */
+.card .dropup .dropdown-menu {
+    top: auto;
+    bottom: 100%;
+    margin-bottom: 0.125rem;
 }
 
 /* Card overflow is already set above */
@@ -254,6 +279,13 @@
     display: contents;
 }
 
+/* Fallback: Force flex layout on ng-include wrapper */
+.multi-columns-row>div {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
 /* Fix inline editing in cards */
 .card .form-control-sm {
     font-size: 0.875rem;
@@ -271,6 +303,19 @@
 
 .modal-backdrop.show {
     opacity: 0.5;
+}
+
+/* Ensure modal buttons display text correctly */
+.modal-footer .btn {
+    min-width: 80px;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.modal-footer .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
 }
 
 /* Better delete confirmation */

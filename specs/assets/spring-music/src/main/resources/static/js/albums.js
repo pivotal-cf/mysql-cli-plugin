@@ -73,7 +73,9 @@ function AlbumsController($scope, Albums, Album, Status) {
     };
 
     $scope.setAlbumsView = function (viewName) {
+        console.log("Setting albums view to:", viewName);
         $scope.albumsView = "templates/" + viewName + ".html";
+        console.log("Albums view path:", $scope.albumsView);
     };
 
     $scope.init = function () {
