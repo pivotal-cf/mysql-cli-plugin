@@ -86,7 +86,7 @@ var _ = Describe("Migrate Task", func() {
 
 		Expect(docker.CreateContainer(docker.ContainerSpec{
 			Name:    sourceContainer,
-			Image:   "percona:5.7",
+			Image:   "percona/percona-server:8.0",
 			Network: containerNetwork,
 			Env:     []string{"MYSQL_ALLOW_EMPTY_PASSWORD=1", "MYSQL_DATABASE=service_instance_db"},
 			Volumes: []string{
@@ -96,7 +96,7 @@ var _ = Describe("Migrate Task", func() {
 
 		Expect(docker.CreateContainer(docker.ContainerSpec{
 			Name:    destContainer,
-			Image:   "percona:5.7",
+			Image:   "percona/percona-server:8.0",
 			Network: containerNetwork,
 			Env:     []string{"MYSQL_ALLOW_EMPTY_PASSWORD=1", "MYSQL_DATABASE=service_instance_db"},
 		})).Error().NotTo(HaveOccurred())
@@ -105,21 +105,21 @@ var _ = Describe("Migrate Task", func() {
 
 		sourcePort, err := docker.ContainerPort(sourceContainer, "3306/tcp")
 		Expect(err).NotTo(HaveOccurred())
-		sourceDSN := `root@tcp(localhost:` + sourcePort + `)/`
+		sourceDSN := `root@tcp(127.0.0.1:` + sourcePort + `)/`
 		sourceDB, err = sql.Open("mysql", sourceDSN)
 		Expect(err).NotTo(HaveOccurred())
 
 		destPort, err := docker.ContainerPort(destContainer, "3306/tcp")
 		Expect(err).NotTo(HaveOccurred())
-		destDSN := `root@tcp(localhost:` + destPort + `)/`
+		destDSN := `root@tcp(127.0.0.1:` + destPort + `)/`
 		destDB, err = sql.Open("mysql", destDSN)
 		Expect(err).NotTo(HaveOccurred())
 
-		Eventually(sourceDB.Ping, "1m", "1s").Should(Succeed(),
-			`Expected MySQL instance to be reachable after 1m, but it was not`,
+		Eventually(sourceDB.Ping, "5m", "1s").Should(Succeed(),
+			`Expected MySQL instance to be reachable after 5m, but it was not`,
 		)
-		Eventually(destDB.Ping, "1m", "1s").Should(Succeed(),
-			`Expected MySQL instance to be reachable after 1m, but it was not`,
+		Eventually(destDB.Ping, "5m", "1s").Should(Succeed(),
+			`Expected MySQL instance to be reachable after 5m, but it was not`,
 		)
 
 		sourceChecksums, err = schemaChecksum(sourceDB, "sakila")
@@ -139,7 +139,8 @@ var _ = Describe("Migrate Task", func() {
 			"--network="+containerNetwork,
 			"--rm",
 			"--volume="+migrateTaskBinPath+":/usr/local/bin/migrate",
-			"percona:5.7",
+			"--tty",
+			"percona/percona-server:8.0",
 			"migrate", "source", "dest",
 		)
 		Expect(err).NotTo(HaveOccurred())
@@ -163,7 +164,7 @@ var _ = Describe("Migrate Task", func() {
 				"--rm",
 				"--volume="+migrateTaskBinPath+":/usr/local/bin/migrate",
 				"--tty",
-				"percona:5.7",
+				"percona/percona-server:8.0",
 				"migrate", "source", "dest",
 			)
 			Expect(err).To(MatchError(`exit status 1`))
@@ -188,7 +189,7 @@ var _ = Describe("Migrate Task", func() {
 				"--rm",
 				"--volume="+migrateTaskBinPath+":/usr/local/bin/migrate",
 				"--tty",
-				"percona:5.7",
+				"percona/percona-server:8.0",
 				"migrate", "--skip-tls-validation", "source", "dest",
 			)
 			Expect(err).NotTo(HaveOccurred())

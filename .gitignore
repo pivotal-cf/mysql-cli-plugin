@@ -3,6 +3,8 @@ mysql-cli-plugin
 .DS_Store
 app/bin
 app/lib
-app/percona.README
+app/percona.README.md
+app/percona.README.MySQL
 app/percona.LICENSE
 app/migration-app.zip
+coverprofile.out

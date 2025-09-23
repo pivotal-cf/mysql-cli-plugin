@@ -29,7 +29,7 @@ install_mysql_client_utils() {
 
   local source_directory build_cache_digest="" source_digest=""
 
-  source_directory=$(readlink -f /usr/local/src/percona-server-*/)
+  source_directory=$(readlink -f /usr/local/src/percona-server-8.4*/)
   source_digest=$(sha256sum "${source_directory}/MYSQL_VERSION" | awk '{print $1}')
   if [[ -f VERSION.dep ]]; then
     build_cache_digest=$(sha256sum VERSION.dep | awk '{print $1}')
@@ -44,32 +44,44 @@ install_mysql_client_utils() {
     echo >&2
   fi
 
+ # start=12:52:55
+ # stop=12:56:56
+
+ # time cmake = 3m26.007s
+ # time make --jobs="$(nproc)" install/strip =
   # shellcheck disable=SC2016
   run cmake "${source_directory}" \
-    -Wno-deprecated \
     -DBUILD_CONFIG=mysql_release \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_INSTALL_PREFIX="${BUILD_DIR}" \
     -DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
-    -DFEATURE_SET=community \
-    -DINSTALL_MYSQLTESTDIR= \
-    -DWITH_BOOST=/usr/local/src/boost_1_59_0/ \
-    -DWITH_EMBEDDED_SERVER=OFF \
-    -DWITH_EDITLINE=bundled \
-    -DWITH_SSL=system \
-    -DWITH_ZLIB=bundled \
+    -DENABLED_LOCAL_INFILE=OFF \
     -DIGNORE_AIO_CHECK=ON \
-    -DWITHOUT_SERVER=ON
-  run make --jobs "$(nproc)" install/strip mysql mysqldump
+    -DINSTALL_MYSQLTESTDIR= \
+    -DWITHOUT_GROUP_REPLICATION=ON \
+    -DWITH_AUTHENTICATION_FIDO=OFF \
+    -DWITH_AUTHENTICATION_KERBEROS=OFF \
+    -DWITH_AUTHENTICATION_LDAP=OFF \
+    -DWITH_EDITLINE=bundled \
+    -DWITH_ICU=system \
+    -DWITH_NDB=OFF \
+    -DWITH_PACKAGE_FLAGS=OFF \
+    -DWITH_PERCONA_AUTHENTICATION_LDAP=OFF \
+    -DWITH_SSL=system \
+    -DWITH_UNIT_TESTS=OFF \
+    -DWITH_ZLIB=bundled \
+    -Wno-deprecated
+  run make --jobs=4 mysql mysqldump
   cd -
 
   run install --directory app/bin app/lib
-  run install --no-target-directory "${BUILD_DIR}/LICENSE" app/percona.LICENSE
-  run install --no-target-directory "${BUILD_DIR}/README" app/percona.README
-  run install --target-directory=app/bin "${BUILD_DIR}/bin/mysql" "${BUILD_DIR}/bin/mysqldump"
-  run install --target-directory=app/lib \
-    /usr/lib/x86_64-linux-gnu/{libssl.so.1.1,libcrypto.so.1.1} \
-    /lib/x86_64-linux-gnu/libtinfo.so.5
+  run install --no-target-directory "${source_directory}/LICENSE" app/percona.LICENSE
+  run install --no-target-directory "${source_directory}/README.md" app/percona.README.md
+  run install --no-target-directory "${source_directory}/README.MySQL" app/percona.README.MySQL
+  run install --target-directory=app/bin "${BUILD_DIR}/runtime_output_directory/mysql" "${BUILD_DIR}/runtime_output_directory/mysqldump"
+  #  run install --target-directory=app/lib \
+  #    /usr/lib/x86_64-linux-gnu/{libssl.so.1.1,libcrypto.so.1.1} \
+  #    /lib/x86_64-linux-gnu/libtinfo.so.5
 }
 
 install_migrate_task() {
@@ -80,8 +92,7 @@ package_app() {
   cd app
   run zip migration-app.zip \
     bin/{migrate,mysql,mysqldump} \
-    lib/{libssl.so.1.1,libcrypto.so.1.1,libtinfo.so.5} \
-    percona.LICENSE percona.README
+    percona.LICENSE percona.README.md percona.README.MySQL
   cd -
 }
 

@@ -29,10 +29,11 @@ run() {
 
 cd "${topdir}"
 
-docker_image=$(run docker build -q -f scripts/Dockerfile .)
+docker_image=$(run docker build --platform="$DOCKER_DEFAULT_PLATFORM" -q -f scripts/Dockerfile .)
 
 echo >&2 "Building app assets..."
 run docker run --rm \
+  --platform="$DOCKER_DEFAULT_PLATFORM" \
   --mount=type=volume,src=percona-build-cache,dst=/build \
   --mount=type=volume,src=gomod-cache,dst=/go \
   --mount=type="bind,src=$PWD,dst=/workspace" \

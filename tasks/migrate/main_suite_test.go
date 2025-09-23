@@ -14,7 +14,6 @@ package main_test
 
 import (
 	"log"
-	"os"
 	"testing"
 
 	"github.com/go-sql-driver/mysql"
@@ -36,8 +35,6 @@ var _ = BeforeSuite(func() {
 
 	log.SetOutput(GinkgoWriter)
 	_ = mysql.SetLogger(log.New(GinkgoWriter, "[mysql] ", log.Ldate|log.Ltime|log.Lshortfile))
-
-	Expect(os.Setenv("TMPDIR", "/tmp")).To(Succeed())
 
 	var err error
 	migrateTaskBinPath, err = gexec.BuildWithEnvironment(
