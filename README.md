@@ -1,6 +1,11 @@
 # mysql-cli-plugin
 
-The mysql-tools plugin can be used to migrate a p-mysql (v1) service instance to a
+The mysql-tools plugin can be used to establish replication between
+two instances of [pxc-release](https://github.com/cloudfoundry/pxc-release) configured to allow multi-site replication. This plugin
+functionality is for use alongside VMWare Tanzu for MySQL on Tanzu Platform. More information is available on [Using Tanzu for
+MySQL for multi-site replication](https://techdocs.broadcom.com/us/en/vmware-tanzu/platform/tanzu-mysql-tanzu-platform/10-1/mysql-tp/use-multi-site.html). 
+
+The mysql-tools can also be used to migrate a legacy p-mysql (v1) service instance to a
 [p.mysql (v2)](https://network.tanzu.vmware.com/products/pivotal-mysql/) service instance.
 
 ## Installation
@@ -11,7 +16,12 @@ A binary version of the plugin can be installed from the CF-Community plugin rep
 $ cf install-plugin -r CF-Community MysqlTools
 ```
 
-## Usage
+## Usage - Configure multi-site using the mysql-tools plug-in
+
+This procedure is available on the VMware documentation page [Using Tanzu for
+MySQL for multi-site replication](https://techdocs.broadcom.com/us/en/vmware-tanzu/platform/tanzu-mysql-tanzu-platform/10-1/mysql-tp/use-multi-site.html#create-multi-dc-with-mysql-tools).
+
+## Usage - Service Instance Migration
 
 Once the plugin is installed, migrate a v1 service instance to a new v2 service instance with the following command:
 
@@ -28,7 +38,7 @@ At the end of this operation, the v2 service instance will have the same name as
 instance (`V1-INSTANCE`), and the v1 instance will have `-old` appended to its name.
 
 More detailed instructions are available in the
-[VMware SQL with MySQL for Tanzu Application Service Documentation](https://docs.vmware.com/en/VMware-SQL-with-MySQL-for-Tanzu-Application-Service/3.0/mysql-for-tas/migrate-data.html).
+[VMware Tanzu for MySQL on Tanzu Platform for Cloud Foundry Documentation](https://techdocs.broadcom.com/us/en/vmware-tanzu/platform/tanzu-mysql-tanzu-platform/3-3/mysql-tp/migrate-data.html).
 
 Some Notice:
 
